@@ -12,7 +12,7 @@ on:
       working-directory:
         required: true
         type: string
-        default: 'libs/'
+        default: 'libs/elasticsearch'
 
 env:
   PYTHON_VERSION: "3.11"
@@ -158,7 +158,9 @@ jobs:
 
       - name: Run integration tests
         env:
-          PARTNER_API_KEY: ${{ secrets.PARTNER_API_KEY }}
+          ES_API_KEY: ${{ secrets.ES_API_KEY }}
+          ES_CLOUD_ID: ${{ secrets.ES_CLOUD_ID }}
+          ES_URL: ${{ secrets.ES_URL }}
         run: make integration_tests
         working-directory: ${{ inputs.working-directory }}
 
