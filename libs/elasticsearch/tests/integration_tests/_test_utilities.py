@@ -1,8 +1,11 @@
 import os
-from typing import Any, Dict, List
+import time
+from typing import Any, Dict, List, Optional
 
 from elastic_transport import Transport
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, NotFoundError
+
+from langchain_elasticsearch._utilities import check_if_model_deployed
 
 
 def clear_test_indices(es: Elasticsearch) -> None:
@@ -40,3 +43,35 @@ def requests_saving_es_client() -> Elasticsearch:
         es = Elasticsearch(hosts=[es_url], transport_class=CustomTransport)
 
     return es
+
+
+def deploy_model(
+    es_client: Elasticsearch,
+    model_id: str = ".elser_model_2",
+    field: str = "text_field",
+    model_type: Optional[str] = None,
+    inference_config: Optional[Dict] = None,
+):
+    try:
+        check_if_model_deployed(es_client, model_id)
+    except NotFoundError:
+        # download the model
+        es_client.ml.put_trained_model(
+            model_id=model_id,
+            input={"field_names": [field]},
+            model_type=model_type,
+            inference_config=inference_config,
+        )
+
+        # wait until ready
+        while True:
+            status = es_client.ml.get_trained_models(
+                model_id=model_id, include="definition_status"
+            )
+            if status["trained_model_configs"][0]["fully_defined"]:
+                # model is ready
+                break
+            time.sleep(1)
+
+        # deploy the model
+        es_client.ml.start_trained_model_deployment(model_id=model_id)

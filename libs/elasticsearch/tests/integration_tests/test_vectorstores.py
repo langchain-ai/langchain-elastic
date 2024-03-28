@@ -17,7 +17,7 @@ from ..fake_embeddings import (
     ConsistentFakeEmbeddings,
     FakeEmbeddings,
 )
-from ._test_utilities import clear_test_indices, requests_saving_es_client
+from ._test_utilities import clear_test_indices, deploy_model, requests_saving_es_client
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -40,17 +40,11 @@ Enable them by adding the model name to the modelsDeployed list below.
 """
 
 modelsDeployed: List[str] = [
-    # ".elser_model_1",
     # "sentence-transformers__all-minilm-l6-v2",
 ]
 
 
 class TestElasticsearch:
-    @classmethod
-    def setup_class(cls) -> None:
-        if not os.getenv("OPENAI_API_KEY"):
-            raise ValueError("OPENAI_API_KEY environment variable is not set")
-
     @pytest.fixture(scope="class", autouse=True)
     def elasticsearch_connection(self) -> Union[dict, Generator[dict, None, None]]:
         es_url = os.environ.get("ES_URL", "http://localhost:9200")
@@ -708,20 +702,23 @@ class TestElasticsearch:
         output = docsearch.similarity_search("bar", k=1)
         assert output == [Document(page_content="bar")]
 
-    @pytest.mark.skipif(
-        ".elser_model_1" not in modelsDeployed,
-        reason="ELSER not deployed in ML Node, skipping test",
-    )
     def test_similarity_search_with_sparse_infer_instack(
         self, elasticsearch_connection: dict, index_name: str
     ) -> None:
         """test end to end with sparse retrieval strategy and inference in-stack"""
+        model_id = ".elser_model_2"
+
+        es_client = ElasticsearchStore.connect_to_elasticsearch(
+            **elasticsearch_connection
+        )
+        deploy_model(es_client, model_id)
+
         texts = ["foo", "bar", "baz"]
         docsearch = ElasticsearchStore.from_texts(
             texts,
             **elasticsearch_connection,
             index_name=index_name,
-            strategy=ElasticsearchStore.SparseVectorRetrievalStrategy(),
+            strategy=ElasticsearchStore.SparseVectorRetrievalStrategy(model_id),
         )
         output = docsearch.similarity_search("foo", k=1)
         assert output == [Document(page_content="foo")]
