@@ -1,8 +1,35 @@
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from elastic_transport import Transport
 from elasticsearch import Elasticsearch
+
+
+def read_env() -> Dict:
+    url = os.environ.get("ES_URL", "http://localhost:9200")
+    cloud_id = os.environ.get("ES_CLOUD_ID")
+    api_key = os.environ.get("ES_API_KEY")
+
+    if cloud_id:
+        return {"es_cloud_id": cloud_id, "es_api_key": api_key}
+    return {"es_url": url}
+
+
+def create_es_client(
+    es_params: Optional[Dict[str, str]] = None, es_kwargs: Dict = {}
+) -> Elasticsearch:
+    if es_params is None:
+        es_params = read_env()
+    if not es_kwargs:
+        es_kwargs = {}
+
+    if "es_cloud_id" in es_params:
+        return Elasticsearch(
+            cloud_id=es_params["es_cloud_id"],
+            api_key=es_params["es_api_key"],
+            **es_kwargs,
+        )
+    return Elasticsearch(hosts=[es_params["es_url"]], **es_kwargs)
 
 
 def clear_test_indices(es: Elasticsearch) -> None:
@@ -23,20 +50,4 @@ def requests_saving_es_client() -> Elasticsearch:
             self.requests.append(kwargs)
             return super().perform_request(*args, **kwargs)
 
-    es_url = os.environ.get("ES_URL", "http://localhost:9200")
-    cloud_id = os.environ.get("ES_CLOUD_ID")
-    api_key = os.environ.get("ES_API_KEY")
-
-    if cloud_id:
-        # Running this integration test with Elastic Cloud
-        # Required for in-stack inference testing (ELSER + model_id)
-        es = Elasticsearch(
-            cloud_id=cloud_id,
-            api_key=api_key,
-            transport_class=CustomTransport,
-        )
-    else:
-        # Running this integration test with local docker instance
-        es = Elasticsearch(hosts=[es_url], transport_class=CustomTransport)
-
-    return es
+    return create_es_client(es_kwargs=dict(transport_class=CustomTransport))

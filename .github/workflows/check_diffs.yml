@@ -59,20 +59,21 @@ jobs:
       working-directory: ${{ matrix.working-directory }}
     secrets: inherit
 
-  compile-integration-tests:
+  integration-test:
     name: cd ${{ matrix.working-directory }}
     needs: [ build ]
     if: ${{ needs.build.outputs.dirs-to-test != '[]' }}
     strategy:
       matrix:
         working-directory: ${{ fromJson(needs.build.outputs.dirs-to-test) }}
-    uses: ./.github/workflows/_compile_integration_test.yml
+    uses: ./.github/workflows/_integration_test.yml
     with:
       working-directory: ${{ matrix.working-directory }}
     secrets: inherit
+
   ci_success:
     name: "CI Success"
-    needs: [build, lint, test, compile-integration-tests]
+    needs: [build, lint, test, integration-test]
     if: |
       always()
     runs-on: ubuntu-latest

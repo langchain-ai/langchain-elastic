@@ -1,23 +1,28 @@
 """Test ElasticsearchStore functionality."""
 
 import logging
-import os
 import re
 import uuid
 from typing import Any, Dict, Generator, List, Union
 
 import pytest
-from elasticsearch import Elasticsearch, NotFoundError
+from elasticsearch import NotFoundError
 from elasticsearch.helpers import BulkIndexError
 from langchain_core.documents import Document
 
+from langchain_elasticsearch._utilities import model_is_deployed
 from langchain_elasticsearch.vectorstores import ElasticsearchStore
 
 from ..fake_embeddings import (
     ConsistentFakeEmbeddings,
     FakeEmbeddings,
 )
-from ._test_utilities import clear_test_indices, requests_saving_es_client
+from ._test_utilities import (
+    clear_test_indices,
+    create_es_client,
+    read_env,
+    requests_saving_es_client,
+)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -32,47 +37,24 @@ To run against Elastic Cloud, set the following environment variables:
 
 Some of the tests require the following models to be deployed in the ML Node:
 - elser (can be downloaded and deployed through Kibana and trained models UI)
-- sentence-transformers__all-minilm-l6-v2 (can be deployed 
-  through API, loaded via eland)
+- sentence-transformers__all-minilm-l6-v2 (can be deployed through the API,
+  loaded via eland)
 
 These tests that require the models to be deployed are skipped by default. 
 Enable them by adding the model name to the modelsDeployed list below.
 """
 
-modelsDeployed: List[str] = [
-    # ".elser_model_1",
-    # "sentence-transformers__all-minilm-l6-v2",
-]
+ELSER_MODEL_ID = ".elser_model_2"
+TRANSFORMER_MODEL_ID = "sentence-transformers__all-minilm-l6-v2"
 
 
 class TestElasticsearch:
-    @classmethod
-    def setup_class(cls) -> None:
-        if not os.getenv("OPENAI_API_KEY"):
-            raise ValueError("OPENAI_API_KEY environment variable is not set")
-
     @pytest.fixture(scope="class", autouse=True)
     def elasticsearch_connection(self) -> Union[dict, Generator[dict, None, None]]:
-        es_url = os.environ.get("ES_URL", "http://localhost:9200")
-        cloud_id = os.environ.get("ES_CLOUD_ID")
-        api_key = os.environ.get("ES_API_KEY")
+        params = read_env()
+        es = create_es_client(params)
 
-        if cloud_id:
-            # Running this integration test with Elastic Cloud
-            # Required for in-stack inference testing (ELSER + model_id)
-            es = Elasticsearch(
-                cloud_id=cloud_id,
-                api_key=api_key,
-            )
-            yield {
-                "es_cloud_id": cloud_id,
-                "es_api_key": api_key,
-            }
-
-        else:
-            # Running this integration test with local docker instance
-            es = Elasticsearch(hosts=es_url)
-            yield {"es_url": es_url}
+        yield params
 
         # clear indices
         clear_test_indices(es)
@@ -620,8 +602,9 @@ class TestElasticsearch:
         assert output == [Document(page_content="bar")]
 
     @pytest.mark.skipif(
-        "sentence-transformers__all-minilm-l6-v2" not in modelsDeployed,
-        reason="Sentence Transformers model not deployed in ML Node, skipping test",
+        not model_is_deployed(create_es_client(), TRANSFORMER_MODEL_ID),
+        reason=f"{TRANSFORMER_MODEL_ID} model not deployed in ML Node, "
+        "skipping test",
     )
     def test_similarity_search_with_approx_infer_instack(
         self, elasticsearch_connection: dict, index_name: str
@@ -643,7 +626,7 @@ class TestElasticsearch:
             processors=[
                 {
                     "inference": {
-                        "model_id": "sentence-transformers__all-minilm-l6-v2",
+                        "model_id": TRANSFORMER_MODEL_ID,
                         "field_map": {"query_field": "text_field"},
                         "target_field": "vector_query_field",
                     }
@@ -694,7 +677,7 @@ class TestElasticsearch:
                     "num_candidates": 50,
                     "query_vector_builder": {
                         "text_embedding": {
-                            "model_id": "sentence-transformers__all-minilm-l6-v2",
+                            "model_id": TRANSFORMER_MODEL_ID,
                             "model_text": "foo",
                         }
                     },
@@ -709,8 +692,8 @@ class TestElasticsearch:
         assert output == [Document(page_content="bar")]
 
     @pytest.mark.skipif(
-        ".elser_model_1" not in modelsDeployed,
-        reason="ELSER not deployed in ML Node, skipping test",
+        not model_is_deployed(create_es_client(), ELSER_MODEL_ID),
+        reason=f"{ELSER_MODEL_ID} model not deployed in ML Node, skipping test",
     )
     def test_similarity_search_with_sparse_infer_instack(
         self, elasticsearch_connection: dict, index_name: str
@@ -721,7 +704,7 @@ class TestElasticsearch:
             texts,
             **elasticsearch_connection,
             index_name=index_name,
-            strategy=ElasticsearchStore.SparseVectorRetrievalStrategy(),
+            strategy=ElasticsearchStore.SparseVectorRetrievalStrategy(ELSER_MODEL_ID),
         )
         output = docsearch.similarity_search("foo", k=1)
         assert output == [Document(page_content="foo")]
