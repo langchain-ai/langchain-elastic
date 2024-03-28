@@ -51,7 +51,7 @@ def deploy_model(
     field: str = "text_field",
     model_type: Optional[str] = None,
     inference_config: Optional[Dict] = None,
-):
+) -> None:
     try:
         check_if_model_deployed(es_client, model_id)
     except NotFoundError:
