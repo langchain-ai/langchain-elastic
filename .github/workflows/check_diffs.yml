@@ -69,10 +69,22 @@ jobs:
     uses: ./.github/workflows/_compile_integration_test.yml
     with:
       working-directory: ${{ matrix.working-directory }}
+
+  integration-test:
+    name: cd ${{ matrix.working-directory }}
+    needs: [ compile-interation-tests ]
+    if: ${{ needs.build.outputs.dirs-to-test != '[]' }}
+    strategy:
+      matrix:
+        working-directory: ${{ fromJson(needs.build.outputs.dirs-to-test) }}
+    uses: ./.github/workflows/_integration_test.yml
+    with:
+      working-directory: ${{ matrix.working-directory }}
     secrets: inherit
+
   ci_success:
     name: "CI Success"
-    needs: [build, lint, test, compile-integration-tests]
+    needs: [build, lint, test, compile-integration-tests, integration-test]
     if: |
       always()
     runs-on: ubuntu-latest
@@ -87,15 +99,4 @@ jobs:
           echo $RESULTS_JSON
           echo "Exiting with $EXIT_CODE"
           exit $EXIT_CODE
-
-  integration_test:
-    name: cd ${{ matrix.working-directory }}
-    needs: [ compile-interation-tests ]
-    if: ${{ needs.build.outputs.dirs-to-test != '[]' }}
-    strategy:
-      matrix:
-        working-directory: ${{ fromJson(needs.build.outputs.dirs-to-test) }}
-    uses: ./.github/workflows/_integration_test.yml
-    with:
-      working-directory: ${{ matrix.working-directory }}
     secrets: inherit
