@@ -1,5 +1,4 @@
 import json
-import os
 import uuid
 from typing import Generator, Union
 
@@ -8,6 +7,12 @@ from langchain.memory import ConversationBufferMemory
 from langchain_core.messages import message_to_dict
 
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
+
+from ._test_utilities import (
+    clear_test_indices,
+    create_es_client,
+    read_env,
+)
 
 """
 cd tests/integration_tests
@@ -24,35 +29,15 @@ To run against Elastic Cloud, set the following environment variables:
 class TestElasticsearch:
     @pytest.fixture(scope="class", autouse=True)
     def elasticsearch_connection(self) -> Union[dict, Generator[dict, None, None]]:
-        # Run this integration test against Elasticsearch on localhost,
-        # or an Elastic Cloud instance
-        from elasticsearch import Elasticsearch
+        params = read_env()
+        es = create_es_client(params)
 
-        es_url = os.environ.get("ES_URL", "http://localhost:9200")
-        es_cloud_id = os.environ.get("ES_CLOUD_ID")
-        es_api_key = os.environ.get("ES_API_KEY")
+        yield params
 
-        if es_cloud_id:
-            es = Elasticsearch(
-                cloud_id=es_cloud_id,
-                api_key=es_api_key,
-            )
-            yield {
-                "es_cloud_id": es_cloud_id,
-                "es_api_key": es_api_key,
-            }
+        # clear indices
+        clear_test_indices(es)
 
-        else:
-            # Running this integration test with local docker instance
-            es = Elasticsearch(hosts=es_url)
-            yield {"es_url": es_url}
-
-        # Clear all indexes
-        index_names = es.indices.get(index="_all").keys()
-        for index_name in index_names:
-            if index_name.startswith("test_"):
-                es.indices.delete(index=index_name)
-        es.indices.refresh(index="_all")
+        return None
 
     @pytest.fixture(scope="function")
     def index_name(self) -> str:
