@@ -1,48 +1,44 @@
 """Test elasticsearch_embeddings embeddings."""
 
-import pytest
-from langchain_core.utils import get_from_env
+import os
 
+import pytest
+from elasticsearch import Elasticsearch
+
+from langchain_elasticsearch._utilities import model_is_deployed
 from langchain_elasticsearch.embeddings import ElasticsearchEmbeddings
 
 # deployed with
 # https://www.elastic.co/guide/en/machine-learning/current/ml-nlp-text-emb-vector-search-example.html
-DEFAULT_MODEL = "sentence-transformers__msmarco-minilm-l-12-v3"
-DEFAULT_NUM_DIMENSIONS = "384"
+MODEL_ID = os.getenv("MODEL_ID", "sentence-transformers__msmarco-minilm-l-12-v3")
+NUM_DIMENSIONS = int(os.getenv("NUM_DIMENTIONS", "384"))
+
+ES_URL = os.environ.get("ES_URL", "http://localhost:9200")
+ES_CLIENT = Elasticsearch(hosts=[ES_URL])
 
 
-@pytest.fixture
-def model_id() -> str:
-    return get_from_env("model_id", "MODEL_ID", DEFAULT_MODEL)
-
-
-@pytest.fixture
-def expected_num_dimensions() -> int:
-    return int(
-        get_from_env(
-            "expected_num_dimensions", "EXPECTED_NUM_DIMENSIONS", DEFAULT_NUM_DIMENSIONS
-        )
-    )
-
-
-def test_elasticsearch_embedding_documents(
-    model_id: str, expected_num_dimensions: int
-) -> None:
+@pytest.mark.skipif(
+    not model_is_deployed(ES_CLIENT, MODEL_ID),
+    reason=f"{MODEL_ID} model is not deployed in ML Node, skipping test",
+)
+def test_elasticsearch_embedding_documents() -> None:
     """Test Elasticsearch embedding documents."""
     documents = ["foo bar", "bar foo", "foo"]
-    embedding = ElasticsearchEmbeddings.from_credentials(model_id)
+    embedding = ElasticsearchEmbeddings.from_credentials(MODEL_ID)
     output = embedding.embed_documents(documents)
     assert len(output) == 3
-    assert len(output[0]) == expected_num_dimensions
-    assert len(output[1]) == expected_num_dimensions
-    assert len(output[2]) == expected_num_dimensions
+    assert len(output[0]) == NUM_DIMENSIONS
+    assert len(output[1]) == NUM_DIMENSIONS
+    assert len(output[2]) == NUM_DIMENSIONS
 
 
-def test_elasticsearch_embedding_query(
-    model_id: str, expected_num_dimensions: int
-) -> None:
+@pytest.mark.skipif(
+    not model_is_deployed(ES_CLIENT, MODEL_ID),
+    reason=f"{MODEL_ID} model is not deployed in ML Node, skipping test",
+)
+def test_elasticsearch_embedding_query() -> None:
     """Test Elasticsearch embedding query."""
     document = "foo bar"
-    embedding = ElasticsearchEmbeddings.from_credentials(model_id)
+    embedding = ElasticsearchEmbeddings.from_credentials(MODEL_ID)
     output = embedding.embed_query(document)
-    assert len(output) == expected_num_dimensions
+    assert len(output) == NUM_DIMENSIONS

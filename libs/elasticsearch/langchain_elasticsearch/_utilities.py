@@ -90,7 +90,7 @@ def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
         return similarity
 
 
-def check_if_model_deployed(client: Elasticsearch, model_id: str) -> None:
+def model_must_be_deployed(client: Elasticsearch, model_id: str) -> None:
     try:
         dummy = {"x": "y"}
         client.ml.infer_trained_model(model_id=model_id, docs=[dummy])
@@ -106,3 +106,11 @@ def check_if_model_deployed(client: Elasticsearch, model_id: str) -> None:
         # This error is expected because we do not know the expected document
         # shape and just use a dummy doc above.
         pass
+
+
+def model_is_deployed(es_client: Elasticsearch, model_id: str) -> bool:
+    try:
+        model_must_be_deployed(es_client, model_id)
+        return True
+    except NotFoundError:
+        return False
