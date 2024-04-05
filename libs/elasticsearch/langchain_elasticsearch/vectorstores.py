@@ -889,7 +889,7 @@ class ElasticsearchStore(VectorStore):
         def default_doc_builder(hit: Dict) -> Document:
             return Document(
                 page_content=hit["_source"].get(self.query_field, ""),
-                metadata=hit["_source"]["metadata"],
+                metadata=hit["_source"].get("metadata",{}),
             )
 
         doc_builder = doc_builder or default_doc_builder
@@ -897,12 +897,12 @@ class ElasticsearchStore(VectorStore):
         docs_and_scores = []
         for hit in response["hits"]["hits"]:
             for field in fields:
+                if "metadata" not in hit["_source"]:
+                        hit["_source"]["metadata"] = {}
                 if field in hit["_source"] and field not in [
                     "metadata",
                     self.query_field,
                 ]:
-                    if "metadata" not in hit["_source"]:
-                        hit["_source"]["metadata"] = {}
                     hit["_source"]["metadata"][field] = hit["_source"][field]
 
             docs_and_scores.append(
