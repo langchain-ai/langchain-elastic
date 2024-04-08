@@ -128,6 +128,46 @@ class TestElasticsearchRetriever:
             assert text_field not in r.metadata["_source"]
             assert "another_field" in r.metadata["_source"]
 
+    def test_multiple_index_and_content_fields(
+        self, es_client: Elasticsearch, index_name: str
+    ) -> None:
+        """Test multiple content fields"""
+        index_name_1 = f"{index_name}_1"
+        index_name_2 = f"{index_name}_2"
+        text_field_1 = "text_1"
+        text_field_2 = "text_2"
+
+        def body_func(query: str) -> Dict:
+            return {
+                "query": {
+                    "multi_match": {
+                        "query": query,
+                        "fields": [text_field_1, text_field_2],
+                    }
+                }
+            }
+
+        retriever = ElasticsearchRetriever(
+            index_name=[index_name_1, index_name_2],
+            content_field={index_name_1: text_field_1, index_name_2: text_field_2},
+            body_func=body_func,
+            es_client=es_client,
+        )
+
+        index_test_data(es_client, index_name_1, text_field_1)
+        index_test_data(es_client, index_name_2, text_field_2)
+        result = retriever.get_relevant_documents("foo")
+
+        # matches from both indices
+        assert sorted([(r.page_content, r.metadata["_index"]) for r in result]) == [
+            ("foo", index_name_1),
+            ("foo", index_name_2),
+            ("foo bar", index_name_1),
+            ("foo bar", index_name_2),
+            ("foo baz", index_name_1),
+            ("foo baz", index_name_2),
+        ]
+
     def test_custom_mapper(self, es_client: Elasticsearch, index_name: str) -> None:
         """Test custom document maper"""
 

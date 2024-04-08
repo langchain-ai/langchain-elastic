@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union, cast
 
 from elasticsearch import Elasticsearch
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
@@ -19,20 +19,21 @@ class ElasticsearchRetriever(BaseRetriever):
     Args:
         es_client: Elasticsearch client connection. Alternatively you can use the
             `from_es_params` method with parameters to initialize the client.
-        index_name: The name of the index to query.
+        index_name: The name of the index to query. Can also be a list of names.
         body_func: Function to create an Elasticsearch DSL query body from a search
             string. The returned query body must fit what you would normally send in a
             POST request the the _search endpoint. If applicable, it also includes
             parameters the `size` parameter etc.
-        content_field: The document field name that contains the page content.
+        content_field: The document field name that contains the page content. If
+            multiple indices are queried, specify a dict {index_name: field_name} here.
         document_mapper: Function to map Elasticsearch hits to LangChain Documents.
     """
 
     es_client: Elasticsearch
-    index_name: str
+    index_name: Union[str, Sequence[str]]
     body_func: Callable[[str], Dict]
-    content_field: Optional[str] = None
-    document_mapper: Optional[Callable[[Dict], Document]] = None
+    content_field: Optional[Union[str, Mapping[str, str]]] = None
+    document_mapper: Optional[Callable[[Mapping], Document]] = None
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -45,15 +46,24 @@ class ElasticsearchRetriever(BaseRetriever):
                 "Please provide only one."
             )
 
-        self.document_mapper = self.document_mapper or self._field_mapper
+        if not self.document_mapper:
+            if isinstance(self.content_field, str):
+                self.document_mapper = self._single_field_mapper
+            elif isinstance(self.content_field, Mapping):
+                self.document_mapper = self._multi_field_mapper
+            else:
+                raise ValueError(
+                    "unknown type for content_field, expected string or dict."
+                )
+
         self.es_client = with_user_agent_header(self.es_client, "langchain-py-r")
 
     @staticmethod
     def from_es_params(
-        index_name: str,
+        index_name: Union[str, Sequence[str]],
         body_func: Callable[[str], Dict],
         content_field: Optional[str] = None,
-        document_mapper: Optional[Callable[[Dict], Document]] = None,
+        document_mapper: Optional[Callable[[Mapping], Document]] = None,
         url: Optional[str] = None,
         cloud_id: Optional[str] = None,
         api_key: Optional[str] = None,
@@ -93,6 +103,12 @@ class ElasticsearchRetriever(BaseRetriever):
         results = self.es_client.search(index=self.index_name, body=body)
         return [self.document_mapper(hit) for hit in results["hits"]["hits"]]
 
-    def _field_mapper(self, hit: Dict[str, Any]) -> Document:
+    def _single_field_mapper(self, hit: Mapping[str, Any]) -> Document:
         content = hit["_source"].pop(self.content_field)
+        return Document(page_content=content, metadata=hit)
+
+    def _multi_field_mapper(self, hit: Mapping[str, Any]) -> Document:
+        self.content_field = cast(Mapping, self.content_field)
+        field = self.content_field[hit["_index"]]
+        content = hit["_source"].pop(field)
         return Document(page_content=content, metadata=hit)
