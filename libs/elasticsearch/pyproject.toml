@@ -28,6 +28,7 @@ pytest-watcher = "^0.3.4"
 pytest-asyncio = "^0.21.1"
 langchain = "^0.1.13"
 langchain-text-splitters = ">=0.0.1,<0.1"
+langchain-core = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core"}
 
 [tool.poetry.group.codespell]
 optional = true
@@ -43,11 +44,13 @@ ruff = "^0.1.5"
 
 [tool.poetry.group.typing.dependencies]
 mypy = "^0.991"
+langchain-core = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core"}
 
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
+langchain-core = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core"}
 
 [tool.poetry.group.test_integration]
 optional = true

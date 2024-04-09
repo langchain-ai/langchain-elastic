@@ -644,26 +644,30 @@ extended-testing = ["aiosqlite (>=0.19.0,<0.20.0)", "aleph-alpha-client (>=2.15.
 
 [[package]]
 name = "langchain-core"
-version = "0.1.34"
+version = "0.1.41"
 description = "Building applications with LLMs through composability"
 optional = false
-python-versions = "<4.0,>=3.8.1"
-files = [
-    {file = "langchain_core-0.1.34-py3-none-any.whl", hash = "sha256:9b4882e9dd3b612fc967acd1253a9bcb6a880b77433d20b8b87a60325b611920"},
-    {file = "langchain_core-0.1.34.tar.gz", hash = "sha256:f50612f292166f2c4ebfe76a94c4cbee310b4eb3da475fb252f3cd5d78935bff"},
-]
+python-versions = ">=3.8.1,<4.0"
+files = []
+develop = false
 
 [package.dependencies]
-jsonpatch = ">=1.33,<2.0"
-langsmith = ">=0.1.0,<0.2.0"
-packaging = ">=23.2,<24.0"
+jsonpatch = "^1.33"
+langsmith = "^0.1.0"
+packaging = "^23.2"
 pydantic = ">=1,<3"
 PyYAML = ">=5.3"
-requests = ">=2,<3"
-tenacity = ">=8.1.0,<9.0.0"
+tenacity = "^8.1.0"
 
 [package.extras]
 extended-testing = ["jinja2 (>=3,<4)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/langchain-ai/langchain.git"
+reference = "HEAD"
+resolved_reference = "2d83505be979fb947e976ae7c48be87e49f41a27"
+subdirectory = "libs/core"
 
 [[package]]
 name = "langchain-text-splitters"
@@ -1629,4 +1633,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<4.0"
-content-hash = "d538e783a689ee4e62fe4a2d6cad6a28c31f1666bcca457c30c1bd5c1f546ff2"
+content-hash = "89203fef71f432bc00345980c018ac3ebfea81749efa736a77200e9c7111a404"
