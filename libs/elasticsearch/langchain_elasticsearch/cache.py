@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class ElasticsearchCache(BaseCache):
-    """Cache store for LLM using Elasticsearch."""
+    """An Elasticsearch cache integration for LLMs."""
 
     def __init__(
         self,
@@ -43,7 +43,7 @@ class ElasticsearchCache(BaseCache):
         input parameters, and any other metadata) should be stored in the cache.
 
         Args:
-            index (str): The name of the index or the alias to use for the cache store.
+            es_index (str): The name of the index or the alias to use for the cache.
             If they do not exist an index is created, according to the default mapping
                 defined by `mapping` property.
             store_input (bool): Whether to store the LLM input in the cache, i.e.,
@@ -84,6 +84,11 @@ class ElasticsearchCache(BaseCache):
             except Exception as err:
                 logger.error(f"Error connecting to Elasticsearch: {err}")
                 raise err
+        else:
+            raise ValueError(
+                """Either provide a pre-existing Elasticsearch connection, \
+                or valid credentials for creating a new connection."""
+            )
         self._es_index = es_index
         self._store_input = store_input
         self._store_timestamp = store_timestamp
@@ -97,6 +102,7 @@ class ElasticsearchCache(BaseCache):
         if self._es_client.indices.exists_alias(name=self._es_index):
             self._is_alias = True
         elif not self._es_client.indices.exists(index=self._es_index):
+            logger.debug(f"Creating new Elasticsearch index: {self._es_index}")
             self._es_client.indices.create(index=self._es_index, body=self.mapping)
             return
         self._es_client.indices.put_mapping(
