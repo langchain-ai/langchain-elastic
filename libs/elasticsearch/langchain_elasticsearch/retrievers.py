@@ -62,7 +62,7 @@ class ElasticsearchRetriever(BaseRetriever):
     def from_es_params(
         index_name: Union[str, Sequence[str]],
         body_func: Callable[[str], Dict],
-        content_field: Optional[str] = None,
+        content_field: Optional[Union[str, Mapping[str, str]]] = None,
         document_mapper: Optional[Callable[[Mapping], Document]] = None,
         url: Optional[str] = None,
         cloud_id: Optional[str] = None,
