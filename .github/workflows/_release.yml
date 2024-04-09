@@ -81,6 +81,21 @@ jobs:
       - build
       - test-pypi-publish
     runs-on: ubuntu-latest
+    services:
+      elasticsearch:
+        image: elasticsearch:8.13.0
+        env:
+          discovery.type: single-node
+          xpack.license.self_generated.type: trial
+          xpack.security.enabled: false  # disable password and TLS; never do this in production!
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl --fail http://localhost:9200/_cluster/health"
+          --health-start-period 10s
+          --health-timeout 3s
+          --health-interval 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -156,9 +171,9 @@ jobs:
         run: make tests
         working-directory: ${{ inputs.working-directory }}
 
-      - uses: ./.github/workflows/_integration_test.yml
-        with:
-          working-directory: ${{ inputs.working-directory }}
+      - name: Run integration tests
+        run: make integration_test
+        working-directory: ${{ inputs.working-directory }}
 
       - name: Get minimum versions
         working-directory: ${{ inputs.working-directory }}
