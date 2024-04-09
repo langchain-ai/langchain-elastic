@@ -49,6 +49,37 @@ vectorstore = ElasticsearchStore(
 )
 ```
 
+### ElasticsearchRetriever
+
+The `ElasticsearchRetriever` class can be user to implement more complex queries.
+This can be useful for power users and necessary if data was ingested outside of LangChain
+(for example using a web crawler).
+
+```python
+def fuzzy_query(search_query: str) -> Dict:
+    return {
+        "query": {
+            "match": {
+                text_field: {
+                    "query": search_query,
+                    "fuzziness": "AUTO",
+                }
+            },
+        },
+    }
+
+
+fuzzy_retriever = ElasticsearchRetriever.from_es_params(
+    es_cloud_id="your-cloud-id",
+    es_api_key="your-api-key",
+    index_name="your-index-name",
+    body_func=fuzzy_query,
+    content_field=text_field,
+)
+
+fuzzy_retriever.get_relevant_documents("fooo")
+```
+
 ### ElasticsearchEmbeddings
 
 The `ElasticsearchEmbeddings` class provides an interface to generate embeddings using a model
