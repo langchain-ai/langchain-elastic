@@ -157,8 +157,8 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
 
       - uses: ./.github/workflows/_integration_test.yml
-        working-directory: ${{ inputs.working-directory }}
-        shell: bash
+        with:
+          working-directory: ${{ matrix.working-directory }}
 
       - name: Get minimum versions
         working-directory: ${{ inputs.working-directory }}
