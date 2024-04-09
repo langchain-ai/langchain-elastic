@@ -156,14 +156,7 @@ jobs:
         run: make tests
         working-directory: ${{ inputs.working-directory }}
 
-      - name: Run integration tests
-        env:
-          ES_API_KEY: ${{ secrets.ES_API_KEY }}
-          ES_CLOUD_ID: ${{ secrets.ES_CLOUD_ID }}
-          ES_URL: ${{ secrets.ES_URL }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: make integration_tests
-        working-directory: ${{ inputs.working-directory }}
+      - uses: ./.github/workflows/_integration_test.yml
 
       - name: Get minimum versions
         working-directory: ${{ inputs.working-directory }}
