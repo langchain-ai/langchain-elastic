@@ -44,8 +44,8 @@ class ElasticsearchCache(BaseCache):
 
         Args:
             es_index (str): The name of the index or the alias to use for the cache.
-            If they do not exist an index is created, according to the default mapping
-                defined by `mapping` property.
+                If they do not exist an index is created,
+                according to the default mapping defined by the `mapping` property.
             store_input (bool): Whether to store the LLM input in the cache, i.e.,
                 the input prompt. Default to True.
             store_timestamp (bool): Whether to store the datetime in the cache, i.e.,
@@ -97,7 +97,7 @@ class ElasticsearchCache(BaseCache):
         self._manage_index()
 
     def _manage_index(self) -> None:
-        """Write or update an index according to the default mapping"""
+        """Write or update an index or alias according to the default mapping"""
         self._is_alias = False
         if self._es_client.indices.exists_alias(name=self._es_index):
             self._is_alias = True
