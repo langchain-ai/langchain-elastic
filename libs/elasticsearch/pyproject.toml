@@ -13,8 +13,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
 langchain-core = "^0.1"
-elasticsearch = "^8.12.0"
-numpy = "^1"
+elasticsearch = "^8.13.1"
 
 [tool.poetry.group.test]
 optional = true
@@ -51,12 +50,6 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 langchain-core = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core"}
-
-[tool.poetry.group.test_integration]
-optional = true
-
-[tool.poetry.group.test_integration.dependencies]
-
 
 [tool.ruff]
 select = [

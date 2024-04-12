@@ -2,7 +2,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from elastic_transport import Transport
-from elasticsearch import Elasticsearch
+from elasticsearch import BadRequestError, ConflictError, Elasticsearch, NotFoundError
 
 
 def read_env() -> Dict:
@@ -15,8 +15,19 @@ def read_env() -> Dict:
     return {"es_url": url}
 
 
+class RequestSavingTransport(Transport):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.requests: List[Dict] = []
+
+    def perform_request(self, *args, **kwargs):  # type: ignore
+        self.requests.append(kwargs)
+        return super().perform_request(*args, **kwargs)
+
+
 def create_es_client(
-    es_params: Optional[Dict[str, str]] = None, es_kwargs: Dict = {}
+    es_params: Optional[Dict[str, str]] = None,
+    es_kwargs: Dict = {},
 ) -> Elasticsearch:
     if es_params is None:
         es_params = read_env()
@@ -29,25 +40,33 @@ def create_es_client(
             api_key=es_params["es_api_key"],
             **es_kwargs,
         )
+
     return Elasticsearch(hosts=[es_params["es_url"]], **es_kwargs)
 
 
+def requests_saving_es_client() -> Elasticsearch:
+    return create_es_client(es_kwargs={"transport_class": RequestSavingTransport})
+
+
 def clear_test_indices(es: Elasticsearch) -> None:
-    index_names = es.indices.get(index="_all").keys()
+    index_names_response = es.indices.get(index="_all")
+    index_names = index_names_response.keys()
     for index_name in index_names:
         if index_name.startswith("test_"):
             es.indices.delete(index=index_name)
     es.indices.refresh(index="_all")
 
 
-def requests_saving_es_client() -> Elasticsearch:
-    class CustomTransport(Transport):
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            super().__init__(*args, **kwargs)
-            self.requests: List[Dict] = []
-
-        def perform_request(self, *args, **kwargs):  # type: ignore
-            self.requests.append(kwargs)
-            return super().perform_request(*args, **kwargs)
-
-    return create_es_client(es_kwargs=dict(transport_class=CustomTransport))
+def model_is_deployed(client: Elasticsearch, model_id: str) -> bool:
+    try:
+        dummy = {"x": "y"}
+        client.ml.infer_trained_model(model_id=model_id, docs=[dummy])
+        return True
+    except NotFoundError:
+        return False
+    except ConflictError:
+        return False
+    except BadRequestError:
+        # This error is expected because we do not know the expected document
+        # shape and just use a dummy doc above.
+        return True
