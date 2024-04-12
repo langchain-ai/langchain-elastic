@@ -1,6 +1,6 @@
 import json
 import uuid
-from typing import Generator, Union
+from typing import Iterator
 
 import pytest
 from langchain.memory import ConversationBufferMemory
@@ -27,17 +27,14 @@ To run against Elastic Cloud, set the following environment variables:
 
 
 class TestElasticsearch:
-    @pytest.fixture(scope="class", autouse=True)
-    def elasticsearch_connection(self) -> Union[dict, Generator[dict, None, None]]:
+    @pytest.fixture
+    def elasticsearch_connection(self) -> Iterator[dict]:
         params = read_env()
         es = create_es_client(params)
 
         yield params
 
-        # clear indices
         clear_test_indices(es)
-
-        return None
 
     @pytest.fixture(scope="function")
     def index_name(self) -> str:
