@@ -898,7 +898,7 @@ class ElasticsearchStore(VectorStore):
         for hit in response["hits"]["hits"]:
             for field in fields:
                 if "metadata" not in hit["_source"]:
-                        hit["_source"]["metadata"] = {}
+                    hit["_source"]["metadata"] = {}
                 if field in hit["_source"] and field not in [
                     "metadata",
                     self.query_field,
