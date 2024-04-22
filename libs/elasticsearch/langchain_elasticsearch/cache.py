@@ -2,7 +2,6 @@ import hashlib
 import logging
 from datetime import datetime
 from functools import cached_property
-from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import elasticsearch
