@@ -7,6 +7,7 @@ from langchain_elasticsearch.vectorstores import (
     ExactRetrievalStrategy,
     SparseRetrievalStrategy,
 )
+from langchain_elasticsearch.cache import ElasticsearchCache
 
 __all__ = [
     "ApproxRetrievalStrategy",
@@ -16,4 +17,5 @@ __all__ = [
     "ElasticsearchStore",
     "ExactRetrievalStrategy",
     "SparseRetrievalStrategy",
+    "ElasticsearchCache"
 ]

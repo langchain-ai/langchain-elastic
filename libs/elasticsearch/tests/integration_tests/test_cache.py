@@ -5,7 +5,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration
 
-from langchain_elasticsearch.cache import ElasticsearchCache
+from langchain_elasticsearch import ElasticsearchCache
 
 
 def test_hit_and_miss(

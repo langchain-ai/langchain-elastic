@@ -9,7 +9,7 @@ from elasticsearch import NotFoundError, exceptions
 from langchain_core.load import dumps
 from langchain_core.outputs import Generation
 
-from langchain_elasticsearch.cache import ElasticsearchCache
+from langchain_elasticsearch import ElasticsearchCache
 
 
 def test_initialization(es_client_fx: MagicMock) -> None:
