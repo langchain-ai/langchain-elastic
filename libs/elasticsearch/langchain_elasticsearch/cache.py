@@ -133,15 +133,18 @@ class ElasticsearchCache(BaseCache):
         """Look up based on prompt and llm_string."""
         cache_key = self._key(prompt, llm_string)
         if self._is_alias:
+            # get the latest record according to its writing date, in order to
+            # address cases where multiple indices have a doc with the same id
             result = self._es_client.search(
                 index=self._es_index,
-                body={"query": {"term": {"_id": cache_key}}},
+                body={
+                    "query": {"term": {"_id": cache_key}},
+                    "sort": {"timestamp" : {"order" : "asc"}}
+                },
                 source_includes=["llm_output"],
             )
             if result["hits"]["total"]["value"] > 0:
-                # get the record from the latest index,
-                # assuming lexicographic order is chronological
-                record = max(result["hits"]["hits"], key=itemgetter("_index"))
+                record = result["hits"]["hits"][0]
             else:
                 return None
         else:
