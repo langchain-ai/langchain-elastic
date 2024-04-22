@@ -119,15 +119,16 @@ A caching layer for LLMs that exploits Elasticsearch.
 Simple example:
 
 ```python
-from langchain.globals import set_llm_cache
-from langchain_elasticsearch.cache import ElasticsearchCache
 from elasticsearch import Elasticsearch
+from langchain.globals import set_llm_cache
+
+from langchain_elasticsearch.cache import ElasticsearchCache
 
 es_client = Elasticsearch(hosts="http://localhost:9200")
 set_llm_cache(
     ElasticsearchCache(
-        es_connection=es_client, 
-        es_index="llm-chat-cache", 
+        es_connection=es_client,
+        es_index="llm-chat-cache",
         metadata={"project": "my_chatgpt_project"}
     )
 )
@@ -149,12 +150,14 @@ This can be done by subclassing end overriding methods.
 The new cache class can be applied also to a pre-existing cache index:
 
 ```python
-from langchain_elasticsearch.cache import ElasticsearchCache
-from elasticsearch import Elasticsearch
-from langchain_core.caches import RETURN_VAL_TYPE
-from typing import Any, Dict, List
-from langchain.globals import set_llm_cache
 import json
+from typing import Any, Dict, List
+
+from elasticsearch import Elasticsearch
+from langchain.globals import set_llm_cache
+from langchain_core.caches import RETURN_VAL_TYPE
+
+from langchain_elasticsearch.cache import ElasticsearchCache
 
 
 class SearchableElasticsearchCache(ElasticsearchCache):
@@ -162,19 +165,31 @@ class SearchableElasticsearchCache(ElasticsearchCache):
     @property
     def mapping(self) -> Dict[str, Any]:
         mapping = super().mapping
-        mapping["mappings"]["properties"]["parsed_llm_output"] = {"type": "text", "analyzer": "english"}
+        mapping["mappings"]["properties"]["parsed_llm_output"] = {
+            "type": "text",
+            "analyzer": "english"
+        }
         return mapping
-    
-    def build_document(self, prompt: str, llm_string: str, return_val: RETURN_VAL_TYPE) -> Dict[str, Any]:
+
+    def build_document(
+            self,
+            prompt: str,
+            llm_string: str,
+            return_val: RETURN_VAL_TYPE
+    ) -> Dict[str, Any]:
         body = super().build_document(prompt, llm_string, return_val)
         body["parsed_llm_output"] = self._parse_output(body["llm_output"])
         return body
 
     @staticmethod
     def _parse_output(data: List[str]) -> List[str]:
-        return [json.loads(output)["kwargs"]["message"]["kwargs"]["content"] for output in data]
+        return [json.loads(output)["kwargs"]["message"]["kwargs"]["content"]
+                for output in data]
 
 
 es_client = Elasticsearch(hosts="http://localhost:9200")
-set_llm_cache(SearchableElasticsearchCache(es_connection=es_client, es_index="llm-chat-cache"))
+set_llm_cache(SearchableElasticsearchCache(
+    es_connection=es_client,
+    es_index="llm-chat-cache"
+))
 ```
