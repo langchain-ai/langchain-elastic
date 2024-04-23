@@ -24,7 +24,6 @@ class ElasticsearchCache(BaseCache):
         self,
         es_index: str,
         store_input: bool = True,
-        store_timestamp: bool = True,
         store_input_params: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
         *,
@@ -47,8 +46,6 @@ class ElasticsearchCache(BaseCache):
                 according to the default mapping defined by the `mapping` property.
             store_input (bool): Whether to store the LLM input in the cache, i.e.,
                 the input prompt. Default to True.
-            store_timestamp (bool): Whether to store the datetime in the cache, i.e.,
-                the time of the first request for a LLM input. Default to True.
             store_input_params (bool): Whether to store the input parameters in the
                 cache, i.e., the LLM parameters used to generate the LLM response.
                 Default to True.
@@ -90,7 +87,6 @@ class ElasticsearchCache(BaseCache):
             )
         self._es_index = es_index
         self._store_input = store_input
-        self._store_timestamp = store_timestamp
         self._store_input_params = store_input_params
         self._metadata = metadata
         self._manage_index()
@@ -161,6 +157,7 @@ class ElasticsearchCache(BaseCache):
         """Build the Elasticsearch document for storing a single LLM interaction"""
         body: Dict[str, Any] = {
             "llm_output": [dumps(item) for item in return_val],
+            "timestamp": datetime.now().isoformat()
         }
         if self._store_input_params:
             body["llm_params"] = llm_string
@@ -168,8 +165,6 @@ class ElasticsearchCache(BaseCache):
             body["metadata"] = self._metadata
         if self._store_input:
             body["llm_input"] = prompt
-        if self._store_timestamp:
-            body["timestamp"] = datetime.now().isoformat()
         return body
 
     def update(self, prompt: str, llm_string: str, return_val: RETURN_VAL_TYPE) -> None:

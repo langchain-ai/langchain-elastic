@@ -24,7 +24,6 @@ def es_cache_fx(es_client_fx: MagicMock) -> Generator[ElasticsearchCache, None, 
         es_connection=es_client_fx,
         es_index="test_index",
         store_input=True,
-        store_timestamp=True,
         store_input_params=True,
         metadata={"project": "test_project"},
     )

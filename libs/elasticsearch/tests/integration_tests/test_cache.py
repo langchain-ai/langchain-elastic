@@ -49,7 +49,6 @@ def test_index(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
         es_index="test_index1",
         metadata={"project": "test"},
         store_input=False,
-        store_timestamp=False,
         store_input_params=False
     )
     set_llm_cache(cache2)
@@ -62,7 +61,7 @@ def test_index(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
                for record in es_client.search(index="test_index1")['hits']['hits']]
     assert all("test output" in record.get('llm_output', [''])[0] for record in records)
     assert not all(record.get('llm_input', '') for record in records)
-    assert not all(record.get('timestamp', '') for record in records)
+    assert all(record.get('timestamp', '') for record in records)
     assert not all(record.get('llm_params', '') for record in records)
     assert all(record.get('metadata') == {"project": "test"} for record in records)
 

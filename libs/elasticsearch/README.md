@@ -193,3 +193,6 @@ set_llm_cache(SearchableElasticsearchCache(
     es_index="llm-chat-cache"
 ))
 ```
+
+When overriding the mapping and the document building, 
+please only make additive modifications, keeping the base mapping intact.
