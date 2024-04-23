@@ -122,7 +122,7 @@ Simple example:
 from elasticsearch import Elasticsearch
 from langchain.globals import set_llm_cache
 
-from langchain_elasticsearch.cache import ElasticsearchCache
+from langchain_elasticsearch import ElasticsearchCache
 
 es_client = Elasticsearch(hosts="http://localhost:9200")
 set_llm_cache(
@@ -157,7 +157,7 @@ from elasticsearch import Elasticsearch
 from langchain.globals import set_llm_cache
 from langchain_core.caches import RETURN_VAL_TYPE
 
-from langchain_elasticsearch.cache import ElasticsearchCache
+from langchain_elasticsearch import ElasticsearchCache
 
 
 class SearchableElasticsearchCache(ElasticsearchCache):
