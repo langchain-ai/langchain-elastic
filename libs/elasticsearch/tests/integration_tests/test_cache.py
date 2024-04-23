@@ -29,7 +29,7 @@ def es_env_fx() -> Union[dict, Generator[dict, None, None]]:
 def test_index(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
     cache = ElasticsearchCache(
         **es_env_fx,
-        es_index="test_index1",
+        index_name="test_index1",
         metadata={"project": "test"}
     )
     es_client = cache._es_client
@@ -46,7 +46,7 @@ def test_index(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
     assert record.get('metadata') == {"project": "test"}
     cache2 = ElasticsearchCache(
         **es_env_fx,
-        es_index="test_index1",
+        index_name="test_index1",
         metadata={"project": "test"},
         store_input=False,
         store_input_params=False
@@ -69,7 +69,7 @@ def test_index(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
 def test_alias(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
     cache = ElasticsearchCache(
         **es_env_fx,
-        es_index="test_alias",
+        index_name="test_alias",
         metadata={"project": "test"}
     )
     es_client = cache._es_client
@@ -98,7 +98,7 @@ def test_alias(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
 def test_clear(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
     cache = ElasticsearchCache(
         **es_env_fx,
-        es_index="test_alias",
+        index_name="test_alias",
         metadata={"project": "test"}
     )
     es_client = cache._es_client

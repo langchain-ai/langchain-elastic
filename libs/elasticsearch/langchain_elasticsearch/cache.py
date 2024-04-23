@@ -22,7 +22,7 @@ class ElasticsearchCache(BaseCache):
 
     def __init__(
         self,
-        es_index: str,
+        index_name: str,
         store_input: bool = True,
         store_input_params: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
@@ -41,7 +41,7 @@ class ElasticsearchCache(BaseCache):
         input parameters, and any other metadata) should be stored in the cache.
 
         Args:
-            es_index (str): The name of the index or the alias to use for the cache.
+            index_name (str): The name of the index or the alias to use for the cache.
                 If they do not exist an index is created,
                 according to the default mapping defined by the `mapping` property.
             store_input (bool): Whether to store the LLM input in the cache, i.e.,
@@ -85,7 +85,7 @@ class ElasticsearchCache(BaseCache):
                 """Either provide a pre-existing Elasticsearch connection, \
                 or valid credentials for creating a new connection."""
             )
-        self._es_index = es_index
+        self._index_name = index_name
         self._store_input = store_input
         self._store_input_params = store_input_params
         self._metadata = metadata
@@ -94,14 +94,14 @@ class ElasticsearchCache(BaseCache):
     def _manage_index(self) -> None:
         """Write or update an index or alias according to the default mapping"""
         self._is_alias = False
-        if self._es_client.indices.exists_alias(name=self._es_index):
+        if self._es_client.indices.exists_alias(name=self._index_name):
             self._is_alias = True
-        elif not self._es_client.indices.exists(index=self._es_index):
-            logger.debug(f"Creating new Elasticsearch index: {self._es_index}")
-            self._es_client.indices.create(index=self._es_index, body=self.mapping)
+        elif not self._es_client.indices.exists(index=self._index_name):
+            logger.debug(f"Creating new Elasticsearch index: {self._index_name}")
+            self._es_client.indices.create(index=self._index_name, body=self.mapping)
             return
         self._es_client.indices.put_mapping(
-            index=self._es_index, body=self.mapping["mappings"]
+            index=self._index_name, body=self.mapping["mappings"]
         )
 
     @cached_property
@@ -131,7 +131,7 @@ class ElasticsearchCache(BaseCache):
             # get the latest record according to its writing date, in order to
             # address cases where multiple indices have a doc with the same id
             result = self._es_client.search(
-                index=self._es_index,
+                index=self._index_name,
                 body={
                     "query": {"term": {"_id": cache_key}},
                     "sort": {"timestamp" : {"order" : "asc"}}
@@ -145,7 +145,7 @@ class ElasticsearchCache(BaseCache):
         else:
             try:
                 record = self._es_client.get(
-                    index=self._es_index, id=cache_key, source=["llm_output"]
+                    index=self._index_name, id=cache_key, source=["llm_output"]
                 )
             except NotFoundError:
                 return None
@@ -171,7 +171,7 @@ class ElasticsearchCache(BaseCache):
         """Update based on prompt and llm_string."""
         body = self.build_document(prompt, llm_string, return_val)
         self._es_client.index(
-            index=self._es_index,
+            index=self._index_name,
             id=self._key(prompt, llm_string),
             body=body,
             require_alias=self._is_alias,
@@ -181,7 +181,7 @@ class ElasticsearchCache(BaseCache):
     def clear(self, **kwargs: Any) -> None:
         """Clear cache."""
         self._es_client.delete_by_query(
-            index=self._es_index,
+            index=self._index_name,
             body={"query": {"match_all": {}}},
             refresh=True,
             wait_for_completion=True,

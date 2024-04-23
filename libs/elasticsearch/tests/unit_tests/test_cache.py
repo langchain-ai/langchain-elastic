@@ -15,10 +15,10 @@ from langchain_elasticsearch import ElasticsearchCache
 def test_initialization(es_client_fx: MagicMock) -> None:
     es_client_fx.ping.return_value = False
     with pytest.raises(exceptions.ConnectionError):
-        ElasticsearchCache(es_connection=es_client_fx, es_index="test_index")
+        ElasticsearchCache(es_connection=es_client_fx, index_name="test_index")
     es_client_fx.ping.return_value = True
     es_client_fx.indices.exists_alias.return_value = True
-    cache = ElasticsearchCache(es_connection=es_client_fx, es_index="test_index")
+    cache = ElasticsearchCache(es_connection=es_client_fx, index_name="test_index")
     es_client_fx.indices.exists_alias.assert_called_with(name="test_index")
     assert cache._is_alias
     es_client_fx.indices.put_mapping.assert_called_with(
@@ -26,7 +26,7 @@ def test_initialization(es_client_fx: MagicMock) -> None:
     )
     es_client_fx.indices.exists_alias.return_value = False
     es_client_fx.indices.exists.return_value = False
-    cache = ElasticsearchCache(es_connection=es_client_fx, es_index="test_index")
+    cache = ElasticsearchCache(es_connection=es_client_fx, index_name="test_index")
     assert not cache._is_alias
     es_client_fx.indices.create.assert_called_with(
         index="test_index", body=cache.mapping
@@ -78,7 +78,7 @@ def test_update(es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache) -> Non
     )
     doc["timestamp"] = timestamp
     es_client_fx.index.assert_called_once_with(
-        index=es_cache_fx._es_index,
+        index=es_cache_fx._index_name,
         id=es_cache_fx._key("test_prompt", "test_llm_string"),
         body=doc,
         require_alias=es_cache_fx._is_alias,
