@@ -134,7 +134,7 @@ set_llm_cache(
 )
 ```
 
-The `es_index` parameter can also take aliases. This allows to use the 
+The `index_name` parameter can also accept aliases. This allows to use the 
 [ILM: Manage the index lifecycle](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-lifecycle-management.html)
 that we suggest to consider for managing retention and controlling cache growth.
 
