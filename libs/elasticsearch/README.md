@@ -114,7 +114,7 @@ chat_history = ElasticsearchChatMessageHistory(
 
 ### ElasticsearchCache
 
-A caching layer for LLMs that exploits Elasticsearch.
+A caching layer for LLMs that uses Elasticsearch.
 
 Simple example:
 
