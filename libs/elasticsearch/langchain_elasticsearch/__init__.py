@@ -11,11 +11,11 @@ from langchain_elasticsearch.vectorstores import (
 
 __all__ = [
     "ApproxRetrievalStrategy",
+    "ElasticsearchCache",
     "ElasticsearchChatMessageHistory",
     "ElasticsearchEmbeddings",
     "ElasticsearchRetriever",
     "ElasticsearchStore",
     "ExactRetrievalStrategy",
     "SparseRetrievalStrategy",
-    "ElasticsearchCache"
 ]

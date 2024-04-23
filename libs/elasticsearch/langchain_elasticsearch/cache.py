@@ -134,7 +134,7 @@ class ElasticsearchCache(BaseCache):
                 index=self._index_name,
                 body={
                     "query": {"term": {"_id": cache_key}},
-                    "sort": {"timestamp" : {"order" : "asc"}}
+                    "sort": {"timestamp": {"order": "asc"}}
                 },
                 source_includes=["llm_output"],
             )
