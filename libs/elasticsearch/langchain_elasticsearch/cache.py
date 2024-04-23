@@ -134,7 +134,7 @@ class ElasticsearchCache(BaseCache):
                 index=self._index_name,
                 body={
                     "query": {"term": {"_id": cache_key}},
-                    "sort": {"timestamp": {"order": "asc"}}
+                    "sort": {"timestamp": {"order": "asc"}},
                 },
                 source_includes=["llm_output"],
             )
@@ -157,7 +157,7 @@ class ElasticsearchCache(BaseCache):
         """Build the Elasticsearch document for storing a single LLM interaction"""
         body: Dict[str, Any] = {
             "llm_output": [dumps(item) for item in return_val],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
         if self._store_input_params:
             body["llm_params"] = llm_string

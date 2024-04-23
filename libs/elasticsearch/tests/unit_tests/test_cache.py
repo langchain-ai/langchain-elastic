@@ -88,10 +88,12 @@ def test_update(es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache) -> Non
 
 def test_lookup(es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache) -> None:
     cache_key = es_cache_fx._key("test_prompt", "test_llm_string")
-    doc: Dict[str, Any] = {"_source": {
-        "llm_output": [dumps(Generation(text="test"))],
-        "timestamp": "2024-03-07T13:25:36.410756"
-    }}
+    doc: Dict[str, Any] = {
+        "_source": {
+            "llm_output": [dumps(Generation(text="test"))],
+            "timestamp": "2024-03-07T13:25:36.410756",
+        }
+    }
     es_cache_fx._is_alias = False
     es_client_fx.get.side_effect = NotFoundError(
         "not found",
@@ -114,14 +116,14 @@ def test_lookup(es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache) -> Non
         index="test_index",
         body={
             "query": {"term": {"_id": cache_key}},
-            "sort": {"timestamp": {"order": "asc"}}
+            "sort": {"timestamp": {"order": "asc"}},
         },
         source_includes=["llm_output"],
     )
     doc2 = {
         "_source": {
             "llm_output": [dumps(Generation(text="test2"))],
-            "timestamp": "2024-03-08T13:25:36.410756"
+            "timestamp": "2024-03-08T13:25:36.410756",
         },
     }
     es_client_fx.search.return_value = {
