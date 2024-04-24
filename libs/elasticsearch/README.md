@@ -126,15 +126,15 @@ from langchain_elasticsearch import ElasticsearchCache
 
 es_client = Elasticsearch(hosts="http://localhost:9200")
 set_llm_cache(
-   ElasticsearchCache(
-      es_connection=es_client,
-      index_name="llm-chat-cache",
-      metadata={"project": "my_chatgpt_project"}
-   )
+    ElasticsearchCache(
+        es_connection=es_client,
+        index_name="llm-chat-cache",
+        metadata={"project": "my_chatgpt_project"},
+    )
 )
 ```
 
-The `es_index` parameter can also take aliases. This allows to use the 
+The `index_name` parameter can also accept aliases. This allows to use the 
 [ILM: Manage the index lifecycle](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-lifecycle-management.html)
 that we suggest to consider for managing retention and controlling cache growth.
 
@@ -161,37 +161,34 @@ from langchain_elasticsearch import ElasticsearchCache
 
 
 class SearchableElasticsearchCache(ElasticsearchCache):
+    @property
+    def mapping(self) -> Dict[str, Any]:
+        mapping = super().mapping
+        mapping["mappings"]["properties"]["parsed_llm_output"] = {
+            "type": "text",
+            "analyzer": "english",
+        }
+        return mapping
 
-   @property
-   def mapping(self) -> Dict[str, Any]:
-      mapping = super().mapping
-      mapping["mappings"]["properties"]["parsed_llm_output"] = {
-         "type": "text",
-         "analyzer": "english"
-      }
-      return mapping
+    def build_document(
+        self, prompt: str, llm_string: str, return_val: RETURN_VAL_TYPE
+    ) -> Dict[str, Any]:
+        body = super().build_document(prompt, llm_string, return_val)
+        body["parsed_llm_output"] = self._parse_output(body["llm_output"])
+        return body
 
-   def build_document(
-           self,
-           prompt: str,
-           llm_string: str,
-           return_val: RETURN_VAL_TYPE
-   ) -> Dict[str, Any]:
-      body = super().build_document(prompt, llm_string, return_val)
-      body["parsed_llm_output"] = self._parse_output(body["llm_output"])
-      return body
-
-   @staticmethod
-   def _parse_output(data: List[str]) -> List[str]:
-      return [json.loads(output)["kwargs"]["message"]["kwargs"]["content"]
-              for output in data]
+    @staticmethod
+    def _parse_output(data: List[str]) -> List[str]:
+        return [
+            json.loads(output)["kwargs"]["message"]["kwargs"]["content"]
+            for output in data
+        ]
 
 
 es_client = Elasticsearch(hosts="http://localhost:9200")
-set_llm_cache(SearchableElasticsearchCache(
-   es_connection=es_client,
-   index_name="llm-chat-cache"
-))
+set_llm_cache(
+    SearchableElasticsearchCache(es_connection=es_client, index_name="llm-chat-cache")
+)
 ```
 
 When overriding the mapping and the document building, 
