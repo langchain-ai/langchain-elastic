@@ -5,6 +5,7 @@ import re
 import uuid
 from typing import Any, Dict, Generator, List, Union
 
+import numpy as np
 import pytest
 from elasticsearch import NotFoundError
 from elasticsearch.helpers import BulkIndexError
@@ -464,6 +465,40 @@ class TestElasticsearch:
 
         output = docsearch.similarity_search("foo", k=1, custom_query=assert_query)
         assert output == [Document(page_content="foo")]
+
+    def test_similarity_search_approx_by_vector(
+        self, elasticsearch_connection: dict, index_name: str
+    ) -> None:
+        """Test end to end construction and search with metadata."""
+        texts = ["foo", "bar", "baz"]
+        embeddings = ConsistentFakeEmbeddings()
+        docsearch = ElasticsearchStore.from_texts(
+            texts,
+            embedding=embeddings,
+            **elasticsearch_connection,
+            index_name=index_name,
+        )
+        query_vector = embeddings.embed_query("foo")
+
+        def assert_query(query_body: dict, query: str) -> dict:
+            assert query_body == {
+                "knn": {
+                    "field": "vector",
+                    "filter": [],
+                    "k": 1,
+                    "num_candidates": 50,
+                    "query_vector": query_vector,
+                },
+            }
+            return query_body
+
+        # accept ndarray as query vector
+        output = docsearch.similarity_search_by_vector_with_relevance_scores(
+            np.array(query_vector),  # type: ignore
+            k=1,
+            custom_query=assert_query,
+        )
+        assert output == [(Document(page_content="foo"), 1.0)]
 
     def test_similarity_search_approx_with_hybrid_search_rrf(
         self, es_client: Any, elasticsearch_connection: dict, index_name: str

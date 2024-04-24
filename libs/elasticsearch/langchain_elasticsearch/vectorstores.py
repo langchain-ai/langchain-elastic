@@ -151,8 +151,8 @@ class ApproxRetrievalStrategy(BaseRetrievalStrategy):
         }
 
         # Embedding provided via the embedding function
-        if query_vector and not self.query_model_id:
-            knn["query_vector"] = query_vector
+        if query_vector is not None and not self.query_model_id:
+            knn["query_vector"] = list(query_vector)
 
         # Case 2: Used when model has been deployed to
         # Elasticsearch and can infer the query vector from the query text
