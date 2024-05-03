@@ -85,7 +85,7 @@ jobs:
       - name: Install unit+integration test dependencies
         working-directory: ${{ inputs.working-directory }}
         run: |
-          poetry install --with test,test_integration
+          poetry install --with test
 
       - name: Get .mypy_cache_test to speed up mypy
         uses: actions/cache@v4
