@@ -193,7 +193,7 @@ class TestVectorStore:
     def test_similarity_search(
         self, store: ElasticsearchStore, static_hits: List[Dict]
     ) -> None:
-        store._store.search = Mock(return_value=static_hits)
+        store._store.search = Mock(return_value=static_hits)  # type: ignore[assignment]
         actual1 = store.similarity_search(
             query="test",
             k=7,
@@ -210,7 +210,7 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
 
-        store._store.search = Mock(return_value=static_hits)
+        store._store.search = Mock(return_value=static_hits)  # type: ignore[assignment]
 
         actual2 = store.similarity_search_with_score(
             query="test",
@@ -230,7 +230,7 @@ class TestVectorStore:
     def test_similarity_search_by_vector_with_relevance_scores(
         self, store: ElasticsearchStore, static_hits: List[Dict]
     ) -> None:
-        store._store.search = Mock(return_value=static_hits)
+        store._store.search = Mock(return_value=static_hits)  # type: ignore[assignment]
         actual = store.similarity_search_by_vector_with_relevance_scores(
             embedding=[1, 2, 3],
             k=7,
@@ -333,7 +333,7 @@ class TestVectorStore:
         embeddings: Embeddings,
         static_hits: List[Dict],
     ) -> None:
-        hybrid_store._store.max_marginal_relevance_search = Mock(
+        hybrid_store._store.max_marginal_relevance_search = Mock(  # type: ignore[assignment]
             return_value=static_hits
         )
         actual = hybrid_store.max_marginal_relevance_search(
