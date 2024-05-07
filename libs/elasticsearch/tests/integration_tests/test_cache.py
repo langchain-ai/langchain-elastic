@@ -16,6 +16,8 @@ from tests.integration_tests._test_utilities import (
 def es_env_fx() -> Union[dict, Generator[dict, None, None]]:
     params = read_env()
     es = create_es_client(params)
+    es.options(ignore_status=404).indices.delete(index="test_index1")
+    es.options(ignore_status=404).indices.delete(index="test_index2")
     es.indices.create(index="test_index1")
     es.indices.create(index="test_index2")
     es.indices.put_alias(index="test_index1", name="test_alias")
