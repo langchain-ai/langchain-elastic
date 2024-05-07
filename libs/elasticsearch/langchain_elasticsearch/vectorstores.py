@@ -323,6 +323,25 @@ class ElasticsearchStore(VectorStore):
     def embeddings(self) -> Optional[Embeddings]:
         return self.embedding
 
+    @staticmethod
+    def connect_to_elasticsearch(
+        *,
+        es_url: Optional[str] = None,
+        cloud_id: Optional[str] = None,
+        api_key: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        es_params: Optional[Dict[str, Any]] = None,
+    ) -> Elasticsearch:
+        return create_elasticsearch_client(
+            url=es_url,
+            cloud_id=cloud_id,
+            api_key=api_key,
+            username=username,
+            password=password,
+            params=es_params,
+        )
+
     def similarity_search(
         self,
         query: str,
