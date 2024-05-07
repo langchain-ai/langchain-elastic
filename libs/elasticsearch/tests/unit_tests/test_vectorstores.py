@@ -11,7 +11,17 @@ from langchain_core.documents import Document
 from langchain_elasticsearch.embeddings import Embeddings, EmbeddingServiceAdapter
 from langchain_elasticsearch.vectorstores import (
     ApproxRetrievalStrategy,
+    BM25RetrievalStrategy,
+    BM25Strategy,
+    DenseVectorScriptScoreStrategy,
+    DenseVectorStrategy,
+    DistanceMetric,
+    DistanceStrategy,
     ElasticsearchStore,
+    ExactRetrievalStrategy,
+    SparseRetrievalStrategy,
+    SparseVectorStrategy,
+    _convert_retrieval_strategy,
     _hits_to_docs_scores,
 )
 
@@ -141,6 +151,39 @@ class TestHitsToDocsScores:
             hits, content_field=content_field, fields=[other_field]
         )
         assert actual == expected
+
+
+class TestConvertStrategy:
+    def test_dense_approx(self) -> None:
+        actual = _convert_retrieval_strategy(
+            ApproxRetrievalStrategy(query_model_id="my model", hybrid=True, rrf=False),
+            distance=DistanceStrategy.DOT_PRODUCT,
+        )
+        assert isinstance(actual, DenseVectorStrategy)
+        assert actual.distance == DistanceMetric.DOT_PRODUCT
+        assert actual.model_id == "my model"
+        assert actual.hybrid is True
+        assert actual.rrf is False
+
+    def test_dense_exact(self) -> None:
+        actual = _convert_retrieval_strategy(
+            ExactRetrievalStrategy(), distance=DistanceStrategy.EUCLIDEAN_DISTANCE
+        )
+        assert isinstance(actual, DenseVectorScriptScoreStrategy)
+        assert actual.distance == DistanceMetric.EUCLIDEAN_DISTANCE
+
+    def test_sparse(self) -> None:
+        actual = _convert_retrieval_strategy(
+            SparseRetrievalStrategy(model_id="my model ID")
+        )
+        assert isinstance(actual, SparseVectorStrategy)
+        assert actual.model_id == "my model ID"
+
+    def test_bm25(self) -> None:
+        actual = _convert_retrieval_strategy(BM25RetrievalStrategy(k1=1.7, b=5.4))
+        assert isinstance(actual, BM25Strategy)
+        assert actual.k1 == 1.7
+        assert actual.b == 5.4
 
 
 class TestVectorStore:

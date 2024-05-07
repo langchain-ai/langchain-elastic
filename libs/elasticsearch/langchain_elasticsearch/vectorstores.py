@@ -24,6 +24,7 @@ from elasticsearch.helpers.vectorstore import (
 from elasticsearch.helpers.vectorstore import (
     VectorStore as EVectorStore,
 )
+from langchain_core._api.deprecation import deprecated
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
@@ -39,6 +40,7 @@ from langchain_elasticsearch.embeddings import EmbeddingServiceAdapter
 logger = logging.getLogger(__name__)
 
 
+@deprecated("0.1.4", alternative="RetrievalStrategy", pending=True)
 class BaseRetrievalStrategy(ABC):
     """Base class for `Elasticsearch` retrieval strategies."""
 
@@ -124,6 +126,7 @@ class BaseRetrievalStrategy(ABC):
         return True
 
 
+@deprecated("0.1.4", alternative="DenseVectorStrategy", pending=True)
 class ApproxRetrievalStrategy(BaseRetrievalStrategy):
     """Approximate retrieval strategy using the `HNSW` algorithm."""
 
@@ -251,6 +254,7 @@ class ApproxRetrievalStrategy(BaseRetrievalStrategy):
         }
 
 
+@deprecated("0.1.4", alternative="DenseVectorScriptScoreStrategy", pending=True)
 class ExactRetrievalStrategy(BaseRetrievalStrategy):
     """Exact retrieval strategy using the `script_score` query."""
 
@@ -319,6 +323,7 @@ class ExactRetrievalStrategy(BaseRetrievalStrategy):
         }
 
 
+@deprecated("0.1.4", alternative="SparseVectorStrategy", pending=True)
 class SparseRetrievalStrategy(BaseRetrievalStrategy):
     """Sparse retrieval strategy using the `text_expansion` processor."""
 
@@ -403,6 +408,7 @@ class SparseRetrievalStrategy(BaseRetrievalStrategy):
         return False
 
 
+@deprecated("0.1.4", alternative="BM25Strategy", pending=True)
 class BM25RetrievalStrategy(BaseRetrievalStrategy):
     """Retrieval strategy using the native BM25 algorithm of Elasticsearch."""
 
@@ -474,9 +480,14 @@ class BM25RetrievalStrategy(BaseRetrievalStrategy):
 
 
 def _convert_retrieval_strategy(
-    langchain_strategy: BaseRetrievalStrategy, distance: DistanceStrategy
+    langchain_strategy: BaseRetrievalStrategy,
+    distance: Optional[DistanceStrategy] = None,
 ) -> RetrievalStrategy:
     if isinstance(langchain_strategy, ApproxRetrievalStrategy):
+        if distance is None:
+            raise ValueError(
+                "ApproxRetrievalStrategy requires a distance strategy to be provided."
+            )
         return DenseVectorStrategy(
             distance=DistanceMetric[distance],
             model_id=langchain_strategy.query_model_id,
@@ -488,6 +499,10 @@ def _convert_retrieval_strategy(
             rrf=False if langchain_strategy.rrf is None else langchain_strategy.rrf,
         )
     elif isinstance(langchain_strategy, ExactRetrievalStrategy):
+        if distance is None:
+            raise ValueError(
+                "ExactRetrievalStrategy requires a distance strategy to be provided."
+            )
         return DenseVectorScriptScoreStrategy(distance=DistanceMetric[distance])
     elif isinstance(langchain_strategy, SparseRetrievalStrategy):
         return SparseVectorStrategy(langchain_strategy.model_id)
