@@ -30,6 +30,7 @@ from langchain_core.vectorstores import VectorStore
 
 from langchain_elasticsearch._utilities import (
     DistanceStrategy,
+    model_must_be_deployed,
     user_agent,
 )
 from langchain_elasticsearch.client import create_elasticsearch_client
@@ -39,15 +40,88 @@ logger = logging.getLogger(__name__)
 
 
 class BaseRetrievalStrategy(ABC):
-    """LangChain base class for Elasticsearch retrieval strategies.
-    This is a legacy interface. Please use the strategies in the orchestration library.
-    """
+    """Base class for `Elasticsearch` retrieval strategies."""
 
     @abstractmethod
-    def to_orchestration_strategy(
-        self, distance: DistanceStrategy
-    ) -> RetrievalStrategy:
-        """Map the legacy class to the new class."""
+    def query(
+        self,
+        query_vector: Union[List[float], None],
+        query: Union[str, None],
+        *,
+        k: int,
+        fetch_k: int,
+        vector_query_field: str,
+        text_field: str,
+        filter: List[dict],
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        """
+        Executes when a search is performed on the store.
+
+        Args:
+            query_vector: The query vector,
+                          or None if not using vector-based query.
+            query: The text query, or None if not using text-based query.
+            k: The total number of results to retrieve.
+            fetch_k: The number of results to fetch initially.
+            vector_query_field: The field containing the vector
+                                representations in the index.
+            text_field: The field containing the text data in the index.
+            filter: List of filter clauses to apply to the query.
+            similarity: The similarity strategy to use, or None if not using one.
+
+        Returns:
+            Dict: The Elasticsearch query body.
+        """
+
+    @abstractmethod
+    def index(
+        self,
+        dims_length: Union[int, None],
+        vector_query_field: str,
+        text_field: str,
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        """
+        Executes when the index is created.
+
+        Args:
+            dims_length: Numeric length of the embedding vectors,
+                        or None if not using vector-based query.
+            vector_query_field: The field containing the vector
+                                representations in the index.
+            text_field: The field containing the text data in the index.
+            similarity: The similarity strategy to use,
+                        or None if not using one.
+
+        Returns:
+            Dict: The Elasticsearch settings and mappings for the strategy.
+        """
+
+    def before_index_setup(
+        self, client: "Elasticsearch", text_field: str, vector_query_field: str
+    ) -> None:
+        """
+        Executes before the index is created. Used for setting up
+        any required Elasticsearch resources like a pipeline.
+
+        Args:
+            client: The Elasticsearch client.
+            text_field: The field containing the text data in the index.
+            vector_query_field: The field containing the vector
+                                representations in the index.
+        """
+
+    def require_inference(self) -> bool:
+        """
+        Returns whether or not the strategy requires inference
+        to be performed on the text before it is added to the index.
+
+        Returns:
+            bool: Whether or not the strategy requires inference
+            to be performed on the text before it is added to the index.
+        """
+        return True
 
 
 class ApproxRetrievalStrategy(BaseRetrievalStrategy):
@@ -58,31 +132,191 @@ class ApproxRetrievalStrategy(BaseRetrievalStrategy):
         query_model_id: Optional[str] = None,
         hybrid: Optional[bool] = False,
         rrf: Optional[Union[dict, bool]] = True,
-        knn_type: Literal["hnsw", "int8_hnsw", "flat", "int8_flat"] = "hnsw",
     ):
         self.query_model_id = query_model_id
         self.hybrid = hybrid
-        self.rrf = rrf
-        self.knn_type = knn_type
 
-    def to_orchestration_strategy(
-        self, distance: DistanceStrategy
-    ) -> RetrievalStrategy:
-        return DenseVectorStrategy(
-            distance=DistanceMetric[distance],
-            model_id=self.query_model_id,
-            hybrid=False if self.hybrid is None else self.hybrid,
-            rrf=False if self.rrf is None else self.rrf,
-        )
+        # RRF has two optional parameters
+        # 'rank_constant', 'window_size'
+        # https://www.elastic.co/guide/en/elasticsearch/reference/current/rrf.html
+        self.rrf = rrf
+
+    def query(
+        self,
+        query_vector: Union[List[float], None],
+        query: Union[str, None],
+        k: int,
+        fetch_k: int,
+        vector_query_field: str,
+        text_field: str,
+        filter: List[dict],
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        knn = {
+            "filter": filter,
+            "field": vector_query_field,
+            "k": k,
+            "num_candidates": fetch_k,
+        }
+
+        # Embedding provided via the embedding function
+        if query_vector is not None and not self.query_model_id:
+            knn["query_vector"] = list(query_vector)
+
+        # Case 2: Used when model has been deployed to
+        # Elasticsearch and can infer the query vector from the query text
+        elif query and self.query_model_id:
+            knn["query_vector_builder"] = {
+                "text_embedding": {
+                    "model_id": self.query_model_id,  # use 'model_id' argument
+                    "model_text": query,  # use 'query' argument
+                }
+            }
+
+        else:
+            raise ValueError(
+                "You must provide an embedding function or a"
+                " query_model_id to perform a similarity search."
+            )
+
+        # If hybrid, add a query to the knn query
+        # RRF is used to even the score from the knn query and text query
+        # RRF has two optional parameters: {'rank_constant':int, 'window_size':int}
+        # https://www.elastic.co/guide/en/elasticsearch/reference/current/rrf.html
+        if self.hybrid:
+            query_body = {
+                "knn": knn,
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "match": {
+                                    text_field: {
+                                        "query": query,
+                                    }
+                                }
+                            }
+                        ],
+                        "filter": filter,
+                    }
+                },
+            }
+
+            if isinstance(self.rrf, dict):
+                query_body["rank"] = {"rrf": self.rrf}
+            elif isinstance(self.rrf, bool) and self.rrf is True:
+                query_body["rank"] = {"rrf": {}}
+
+            return query_body
+        else:
+            return {"knn": knn}
+
+    def before_index_setup(
+        self, client: "Elasticsearch", text_field: str, vector_query_field: str
+    ) -> None:
+        if self.query_model_id:
+            model_must_be_deployed(client, self.query_model_id)
+
+    def index(
+        self,
+        dims_length: Union[int, None],
+        vector_query_field: str,
+        text_field: str,
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        """Create the mapping for the Elasticsearch index."""
+
+        if similarity is DistanceStrategy.COSINE:
+            similarityAlgo = "cosine"
+        elif similarity is DistanceStrategy.EUCLIDEAN_DISTANCE:
+            similarityAlgo = "l2_norm"
+        elif similarity is DistanceStrategy.DOT_PRODUCT:
+            similarityAlgo = "dot_product"
+        elif similarity is DistanceStrategy.MAX_INNER_PRODUCT:
+            similarityAlgo = "max_inner_product"
+        else:
+            raise ValueError(f"Similarity {similarity} not supported.")
+
+        return {
+            "mappings": {
+                "properties": {
+                    vector_query_field: {
+                        "type": "dense_vector",
+                        "dims": dims_length,
+                        "index": True,
+                        "similarity": similarityAlgo,
+                    },
+                }
+            }
+        }
 
 
 class ExactRetrievalStrategy(BaseRetrievalStrategy):
     """Exact retrieval strategy using the `script_score` query."""
 
-    def to_orchestration_strategy(
-        self, distance: DistanceStrategy
-    ) -> RetrievalStrategy:
-        return DenseVectorScriptScoreStrategy(distance=DistanceMetric[distance])
+    def query(
+        self,
+        query_vector: Union[List[float], None],
+        query: Union[str, None],
+        k: int,
+        fetch_k: int,
+        vector_query_field: str,
+        text_field: str,
+        filter: Union[List[dict], None],
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        if similarity is DistanceStrategy.COSINE:
+            similarityAlgo = (
+                f"cosineSimilarity(params.query_vector, '{vector_query_field}') + 1.0"
+            )
+        elif similarity is DistanceStrategy.EUCLIDEAN_DISTANCE:
+            similarityAlgo = (
+                f"1 / (1 + l2norm(params.query_vector, '{vector_query_field}'))"
+            )
+        elif similarity is DistanceStrategy.DOT_PRODUCT:
+            similarityAlgo = f"""
+            double value = dotProduct(params.query_vector, '{vector_query_field}');
+            return sigmoid(1, Math.E, -value);
+            """
+        else:
+            raise ValueError(f"Similarity {similarity} not supported.")
+
+        queryBool: Dict = {"match_all": {}}
+        if filter:
+            queryBool = {"bool": {"filter": filter}}
+
+        return {
+            "query": {
+                "script_score": {
+                    "query": queryBool,
+                    "script": {
+                        "source": similarityAlgo,
+                        "params": {"query_vector": query_vector},
+                    },
+                },
+            }
+        }
+
+    def index(
+        self,
+        dims_length: Union[int, None],
+        vector_query_field: str,
+        text_field: str,
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        """Create the mapping for the Elasticsearch index."""
+
+        return {
+            "mappings": {
+                "properties": {
+                    vector_query_field: {
+                        "type": "dense_vector",
+                        "dims": dims_length,
+                        "index": False,
+                    },
+                }
+            }
+        }
 
 
 class SparseRetrievalStrategy(BaseRetrievalStrategy):
@@ -91,10 +325,82 @@ class SparseRetrievalStrategy(BaseRetrievalStrategy):
     def __init__(self, model_id: Optional[str] = None):
         self.model_id = model_id or ".elser_model_1"
 
-    def to_orchestration_strategy(
-        self, distance: DistanceStrategy
-    ) -> RetrievalStrategy:
-        return SparseVectorStrategy(self.model_id)
+    def query(
+        self,
+        query_vector: Union[List[float], None],
+        query: Union[str, None],
+        k: int,
+        fetch_k: int,
+        vector_query_field: str,
+        text_field: str,
+        filter: List[dict],
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        return {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "text_expansion": {
+                                f"{vector_query_field}.tokens": {
+                                    "model_id": self.model_id,
+                                    "model_text": query,
+                                }
+                            }
+                        }
+                    ],
+                    "filter": filter,
+                }
+            }
+        }
+
+    def _get_pipeline_name(self) -> str:
+        return f"{self.model_id}_sparse_embedding"
+
+    def before_index_setup(
+        self, client: "Elasticsearch", text_field: str, vector_query_field: str
+    ) -> None:
+        if self.model_id:
+            model_must_be_deployed(client, self.model_id)
+
+            # Create a pipeline for the model
+            client.ingest.put_pipeline(
+                id=self._get_pipeline_name(),
+                description="Embedding pipeline for langchain vectorstore",
+                processors=[
+                    {
+                        "inference": {
+                            "model_id": self.model_id,
+                            "target_field": vector_query_field,
+                            "field_map": {text_field: "text_field"},
+                            "inference_config": {
+                                "text_expansion": {"results_field": "tokens"}
+                            },
+                        }
+                    }
+                ],
+            )
+
+    def index(
+        self,
+        dims_length: Union[int, None],
+        vector_query_field: str,
+        text_field: str,
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        return {
+            "mappings": {
+                "properties": {
+                    vector_query_field: {
+                        "properties": {"tokens": {"type": "rank_features"}}
+                    }
+                }
+            },
+            "settings": {"default_pipeline": self._get_pipeline_name()},
+        }
+
+    def require_inference(self) -> bool:
+        return False
 
 
 class BM25RetrievalStrategy(BaseRetrievalStrategy):
@@ -104,10 +410,94 @@ class BM25RetrievalStrategy(BaseRetrievalStrategy):
         self.k1 = k1
         self.b = b
 
-    def to_orchestration_strategy(
-        self, distance: DistanceStrategy
-    ) -> RetrievalStrategy:
-        return BM25Strategy(k1=self.k1, b=self.b)
+    def query(
+        self,
+        query_vector: Union[List[float], None],
+        query: Union[str, None],
+        k: int,
+        fetch_k: int,
+        vector_query_field: str,
+        text_field: str,
+        filter: List[dict],
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        return {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "match": {
+                                text_field: {
+                                    "query": query,
+                                }
+                            },
+                        },
+                    ],
+                    "filter": filter,
+                },
+            },
+        }
+
+    def index(
+        self,
+        dims_length: Union[int, None],
+        vector_query_field: str,
+        text_field: str,
+        similarity: Union[DistanceStrategy, None],
+    ) -> Dict:
+        mappings: Dict = {
+            "properties": {
+                text_field: {
+                    "type": "text",
+                    "similarity": "custom_bm25",
+                },
+            },
+        }
+        settings: Dict = {
+            "similarity": {
+                "custom_bm25": {
+                    "type": "BM25",
+                },
+            },
+        }
+
+        if self.k1 is not None:
+            settings["similarity"]["custom_bm25"]["k1"] = self.k1
+
+        if self.b is not None:
+            settings["similarity"]["custom_bm25"]["b"] = self.b
+
+        return {"mappings": mappings, "settings": settings}
+
+    def require_inference(self) -> bool:
+        return False
+
+
+def _convert_retrieval_strategy(
+    langchain_strategy: BaseRetrievalStrategy, distance: DistanceStrategy
+) -> RetrievalStrategy:
+    if isinstance(langchain_strategy, ApproxRetrievalStrategy):
+        return DenseVectorStrategy(
+            distance=DistanceMetric[distance],
+            model_id=langchain_strategy.query_model_id,
+            hybrid=(
+                False
+                if langchain_strategy.hybrid is None
+                else langchain_strategy.hybrid
+            ),
+            rrf=False if langchain_strategy.rrf is None else langchain_strategy.rrf,
+        )
+    elif isinstance(langchain_strategy, ExactRetrievalStrategy):
+        return DenseVectorScriptScoreStrategy(distance=DistanceMetric[distance])
+    elif isinstance(langchain_strategy, SparseRetrievalStrategy):
+        return SparseVectorStrategy(langchain_strategy.model_id)
+    elif isinstance(langchain_strategy, BM25RetrievalStrategy):
+        return BM25Strategy(k1=langchain_strategy.k1, b=langchain_strategy.b)
+    else:
+        raise TypeError(
+            f"Strategy {langchain_strategy} not supported. To provide a "
+            f"custom strategy, please subclass {RetrievalStrategy}."
+        )
 
 
 def _hits_to_docs_scores(
@@ -283,8 +673,8 @@ class ElasticsearchStore(VectorStore):
         es_params: Optional[Dict[str, Any]] = None,
     ):
         if isinstance(strategy, BaseRetrievalStrategy):
-            strategy = strategy.to_orchestration_strategy(
-                distance=distance_strategy or DistanceStrategy.COSINE
+            strategy = _convert_retrieval_strategy(
+                strategy, distance=distance_strategy or DistanceStrategy.COSINE
             )
 
         embedding_service = None

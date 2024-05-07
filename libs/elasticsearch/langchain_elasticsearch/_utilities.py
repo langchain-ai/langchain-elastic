@@ -1,6 +1,6 @@
 from enum import Enum
 
-from elasticsearch import Elasticsearch
+from elasticsearch import BadRequestError, ConflictError, Elasticsearch, NotFoundError
 from langchain_core import __version__ as langchain_version
 
 
@@ -23,3 +23,21 @@ def with_user_agent_header(client: Elasticsearch, header_prefix: str) -> Elastic
     headers = dict(client._headers)
     headers.update({"user-agent": f"{user_agent(header_prefix)}"})
     return client.options(headers=headers)
+
+
+def model_must_be_deployed(client: Elasticsearch, model_id: str) -> None:
+    try:
+        dummy = {"x": "y"}
+        client.ml.infer_trained_model(model_id=model_id, docs=[dummy])
+    except NotFoundError as err:
+        raise err
+    except ConflictError as err:
+        raise NotFoundError(
+            f"model '{model_id}' not found, please deploy it first",
+            meta=err.meta,
+            body=err.body,
+        ) from err
+    except BadRequestError:
+        # This error is expected because we do not know the expected document
+        # shape and just use a dummy doc above.
+        pass
