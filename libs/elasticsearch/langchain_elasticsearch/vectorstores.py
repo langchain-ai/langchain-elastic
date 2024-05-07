@@ -348,6 +348,7 @@ class ElasticsearchStore(VectorStore):
         k: int = 4,
         fetch_k: int = 50,
         filter: Optional[List[dict]] = None,
+        *,
         custom_query: Optional[
             Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
         ] = None,
@@ -387,6 +388,7 @@ class ElasticsearchStore(VectorStore):
         fetch_k: int = 20,
         lambda_mult: float = 0.5,
         fields: Optional[List[str]] = None,
+        *,
         custom_query: Optional[
             Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
         ] = None,
@@ -461,6 +463,7 @@ class ElasticsearchStore(VectorStore):
         query: str,
         k: int = 4,
         filter: Optional[List[dict]] = None,
+        *,
         custom_query: Optional[
             Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
         ] = None,
@@ -497,6 +500,7 @@ class ElasticsearchStore(VectorStore):
         embedding: List[float],
         k: int = 4,
         filter: Optional[List[Dict]] = None,
+        *,
         custom_query: Optional[
             Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
         ] = None,
