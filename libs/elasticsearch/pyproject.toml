@@ -13,8 +13,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
 langchain-core = "^0.1"
-elasticsearch = "^8.12.0"
-numpy = "^1"
+elasticsearch = {version = "^8.13.1", extras = ["vectorstore_mmr"]}
 
 [tool.poetry.group.test]
 optional = true

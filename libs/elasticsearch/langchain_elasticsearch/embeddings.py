@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional
 
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers.vectorstore import EmbeddingService
 from langchain_core.embeddings import Embeddings
 from langchain_core.utils import get_from_env
 
@@ -206,3 +207,45 @@ class ElasticsearchEmbeddings(Embeddings):
             List[float]: The embedding for the input query text.
         """
         return self._embedding_func([text])[0]
+
+
+class EmbeddingServiceAdapter(EmbeddingService):
+    """
+    Adapter for LangChain Embeddings to support the EmbeddingService interface from
+    elasticsearch.helpers.vectorstore.
+    """
+
+    def __init__(self, langchain_embeddings: Embeddings):
+        self._langchain_embeddings = langchain_embeddings
+
+    def __eq__(self, other):  # type: ignore[no-untyped-def]
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        Generate embeddings for a list of documents.
+
+        Args:
+            texts (List[str]): A list of document text strings to generate embeddings
+                for.
+
+        Returns:
+            List[List[float]]: A list of embeddings, one for each document in the input
+                list.
+        """
+        return self._langchain_embeddings.embed_documents(texts)
+
+    def embed_query(self, text: str) -> List[float]:
+        """
+        Generate an embedding for a single query text.
+
+        Args:
+            text (str): The query text to generate an embedding for.
+
+        Returns:
+            List[float]: The embedding for the input query text.
+        """
+        return self._langchain_embeddings.embed_query(text)
