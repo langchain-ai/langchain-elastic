@@ -40,7 +40,7 @@ from langchain_elasticsearch.embeddings import EmbeddingServiceAdapter
 logger = logging.getLogger(__name__)
 
 
-@deprecated("0.1.4", alternative="RetrievalStrategy", pending=True)
+@deprecated("0.2.0", alternative="RetrievalStrategy", pending=True)
 class BaseRetrievalStrategy(ABC):
     """Base class for `Elasticsearch` retrieval strategies."""
 
@@ -126,7 +126,7 @@ class BaseRetrievalStrategy(ABC):
         return True
 
 
-@deprecated("0.1.4", alternative="DenseVectorStrategy", pending=True)
+@deprecated("0.2.0", alternative="DenseVectorStrategy", pending=True)
 class ApproxRetrievalStrategy(BaseRetrievalStrategy):
     """Approximate retrieval strategy using the `HNSW` algorithm."""
 
@@ -254,7 +254,7 @@ class ApproxRetrievalStrategy(BaseRetrievalStrategy):
         }
 
 
-@deprecated("0.1.4", alternative="DenseVectorScriptScoreStrategy", pending=True)
+@deprecated("0.2.0", alternative="DenseVectorScriptScoreStrategy", pending=True)
 class ExactRetrievalStrategy(BaseRetrievalStrategy):
     """Exact retrieval strategy using the `script_score` query."""
 
@@ -323,7 +323,7 @@ class ExactRetrievalStrategy(BaseRetrievalStrategy):
         }
 
 
-@deprecated("0.1.4", alternative="SparseVectorStrategy", pending=True)
+@deprecated("0.2.0", alternative="SparseVectorStrategy", pending=True)
 class SparseRetrievalStrategy(BaseRetrievalStrategy):
     """Sparse retrieval strategy using the `text_expansion` processor."""
 
@@ -408,7 +408,7 @@ class SparseRetrievalStrategy(BaseRetrievalStrategy):
         return False
 
 
-@deprecated("0.1.4", alternative="BM25Strategy", pending=True)
+@deprecated("0.2.0", alternative="BM25Strategy", pending=True)
 class BM25RetrievalStrategy(BaseRetrievalStrategy):
     """Retrieval strategy using the native BM25 algorithm of Elasticsearch."""
 
