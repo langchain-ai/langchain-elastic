@@ -20,15 +20,15 @@ from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.load import dumps, loads
 from langchain_core.stores import BaseStore
 
-from langchain_elasticsearch._utilities import ElasticsearchIndexer
+from langchain_elasticsearch._utilities import ElasticsearchCacheIndexer
 
 if TYPE_CHECKING:
-    pass
+    from elasticsearch import Elasticsearch
 
 logger = logging.getLogger(__name__)
 
 
-class ElasticsearchCache(BaseCache, ElasticsearchIndexer):
+class ElasticsearchCache(BaseCache, ElasticsearchCacheIndexer):
     """An Elasticsearch cache integration for LLMs."""
 
     @cached_property
@@ -115,8 +115,8 @@ class ElasticsearchCache(BaseCache, ElasticsearchIndexer):
         )
 
 
-class ElasticsearchCacheBackedEmbeddings(
-    BaseStore[str, List[float]], ElasticsearchIndexer
+class ElasticsearchStoreEmbeddings(
+    BaseStore[str, List[float]], ElasticsearchCacheIndexer
 ):
     @cached_property
     def mapping(self) -> Dict[str, Any]:

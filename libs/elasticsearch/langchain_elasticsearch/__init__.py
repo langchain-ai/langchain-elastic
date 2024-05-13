@@ -9,7 +9,7 @@ from elasticsearch.helpers.vectorstore import (
 
 from langchain_elasticsearch.cache import (
     ElasticsearchCache,
-    ElasticsearchCacheBackedEmbeddings,
+    ElasticsearchStoreEmbeddings,
 )
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
 from langchain_elasticsearch.embeddings import ElasticsearchEmbeddings
@@ -24,7 +24,7 @@ from langchain_elasticsearch.vectorstores import (
 
 __all__ = [
     "ElasticsearchCache",
-    "ElasticsearchCacheBackedEmbeddings",
+    "ElasticsearchStoreEmbeddings",
     "ElasticsearchChatMessageHistory",
     "ElasticsearchEmbeddings",
     "ElasticsearchRetriever",

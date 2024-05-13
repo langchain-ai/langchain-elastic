@@ -17,7 +17,7 @@ from langchain_elasticsearch.client import create_elasticsearch_client
 logger = logging.getLogger(__name__)
 
 
-class ElasticsearchIndexer:
+class ElasticsearchCacheIndexer:
     """Mixin for Elasticsearch clients"""
 
     def __init__(
@@ -54,6 +54,7 @@ class ElasticsearchIndexer:
                 for filtering purposes. This must be JSON serializable in an
                 Elasticsearch document. Default to None.
             namespace: Optional namespace to use for the cache. Default to None.
+                utilized only by CacheBackedEmbeddings.
             es_connection: Optional pre-existing Elasticsearch connection.
             es_url: URL of the Elasticsearch instance to connect to.
             es_cloud_id: Cloud ID of the Elasticsearch instance to connect to.
