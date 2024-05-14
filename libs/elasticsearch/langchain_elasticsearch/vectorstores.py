@@ -1,16 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers.vectorstore import (
@@ -21,9 +11,7 @@ from elasticsearch.helpers.vectorstore import (
     RetrievalStrategy,
     SparseVectorStrategy,
 )
-from elasticsearch.helpers.vectorstore import (
-    VectorStore as EVectorStore,
-)
+from elasticsearch.helpers.vectorstore import VectorStore as EVectorStore
 from langchain_core._api.deprecation import deprecated
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings

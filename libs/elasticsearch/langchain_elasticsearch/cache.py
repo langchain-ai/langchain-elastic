@@ -15,12 +15,7 @@ from typing import (
     Tuple,
 )
 
-from elasticsearch import (
-    Elasticsearch,
-    NotFoundError,
-    exceptions,
-    helpers,
-)
+from elasticsearch import Elasticsearch, NotFoundError, exceptions, helpers
 from elasticsearch.helpers import BulkIndexError
 from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.load import dumps, loads
@@ -333,19 +328,23 @@ class ElasticsearchEmbeddingsCache(
                 body={
                     "query": {"ids": {"values": cache_keys}},
                     "size": len(cache_keys),
-                    "sort": {"timestamp": {"order": "asc"}},
                 },
                 source_includes=["vector_dump"],
             )
-            if results["hits"]["total"]["value"] > 0:
-                # todo fix me
-                map_ids = {
-                    r["_id"]: r["_source"]["vector_dump"]
-                    for r in results["hits"]["hits"]
-                }
-                return [map_ids.get(k) for k in cache_keys]
-            else:
+            if results["hits"]["total"]["value"] > len(keys):
+                # we are not able to deduplicate possible the results.
+                logger.warning(
+                    f"Found more results than expected: "
+                    f"{results['hits']['total']['value']}, "
+                    f"expected: {len(keys)}."
+                )
                 return [None] * len(keys)
+
+            map_ids = {
+                r["_id"]: r["_source"]["vector_dump"] for r in results["hits"]["hits"]
+            }
+            return [map_ids.get(k) for k in cache_keys]
+
         else:
             records = self._es_client.mget(
                 index=self._index_name, ids=cache_keys, source_includes=["vector_dump"]

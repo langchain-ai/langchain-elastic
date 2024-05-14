@@ -4,9 +4,7 @@ import pytest
 from langchain.globals import set_llm_cache
 from langchain_core.language_models import BaseChatModel
 
-from langchain_elasticsearch import (
-    ElasticsearchCache,
-)
+from langchain_elasticsearch import ElasticsearchCache
 from tests.integration_tests._test_utilities import (
     clear_test_indices,
     create_es_client,

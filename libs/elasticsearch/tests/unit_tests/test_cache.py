@@ -208,7 +208,6 @@ def test_mget_cache_store(
         body={
             "query": {"ids": {"values": cache_keys}},
             "size": 3,
-            "sort": {"timestamp": {"order": "asc"}},
         },
         source_includes=["vector_dump"],
     )
@@ -221,6 +220,58 @@ def test_mget_cache_store(
         [1.5, 2, 3.6],
         [5, 6, 7.1],
     ]
+
+
+def test_mget_cache_store_duplicate_keys(
+    es_client_fx: MagicMock, es_cache_store_fx: ElasticsearchEmbeddingsCache
+) -> None:
+    cache_keys = [
+        es_cache_store_fx._key("test_text1"),
+        es_cache_store_fx._key("test_text2"),
+    ]
+
+    resp = {
+        "hits": {
+            "total": {"value": 3},
+            "hits": {
+                "docs": [
+                    {"_index": "test_index", "_id": cache_keys[0], "found": False},
+                    {
+                        "_index": "test_index",
+                        "_id": cache_keys[1],
+                        "found": True,
+                        "_source": {"vector_dump": [1.5, 2, 3.6]},
+                    },
+                    {
+                        "_index": "test_index",
+                        "_id": cache_keys[0],
+                        "found": True,
+                        "_source": {"vector_dump": [5, 6, 7.1]},
+                    },
+                    {
+                        "_index": "test_index",
+                        "_id": cache_keys[0],
+                        "found": True,
+                        "_source": {"vector_dump": [5, 6, 7.1]},
+                    },
+                ]
+            },
+        }
+    }
+
+    es_cache_store_fx._is_alias = True
+    es_client_fx.search.return_value = resp
+    assert es_cache_store_fx.mget(["test_text1", "test_text2"]) == [None] * len(
+        cache_keys
+    )
+    es_client_fx.search.assert_called_with(
+        index="test_index",
+        body={
+            "query": {"ids": {"values": cache_keys}},
+            "size": len(cache_keys),
+        },
+        source_includes=["vector_dump"],
+    )
 
 
 def _del_timestamp(doc: Dict[str, Any]) -> Dict[str, Any]:

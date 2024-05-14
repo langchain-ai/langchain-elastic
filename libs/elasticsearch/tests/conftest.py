@@ -8,10 +8,7 @@ from langchain_community.chat_models.fake import FakeMessagesListChatModel
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
-from langchain_elasticsearch import (
-    ElasticsearchCache,
-    ElasticsearchEmbeddingsCache,
-)
+from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache
 
 
 @pytest.fixture
