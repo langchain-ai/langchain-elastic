@@ -1,10 +1,13 @@
 from typing import Dict, Generator, Union
+from unittest.mock import MagicMock
 
 import pytest
+from langchain.embeddings import CacheBackedEmbeddings
 from langchain.globals import set_llm_cache
+from langchain_core.embeddings import FakeEmbeddings
 from langchain_core.language_models import BaseChatModel
 
-from langchain_elasticsearch import ElasticsearchCache
+from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache
 from tests.integration_tests._test_utilities import (
     clear_test_indices,
     create_es_client,
@@ -115,3 +118,27 @@ def test_clear(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
     assert es_client.count(index="test_alias")["count"] == 3
     cache.clear()
     assert es_client.count(index="test_alias")["count"] == 0
+
+
+def test_hit_and_miss_cache_store(
+    es_cache_store_fx: ElasticsearchEmbeddingsCache,
+) -> None:
+    store_mock = MagicMock(es_cache_store_fx)
+    underlying_embeddings = FakeEmbeddings(size=3)
+    cached_embeddings = CacheBackedEmbeddings(underlying_embeddings, store_mock)
+    store_mock.mget.return_value = [None, None]
+    assert all(cached_embeddings.embed_documents(["test_text1", "test_text2"]))
+    store_mock.mget.assert_called_once()
+    store_mock.mset.assert_called_once()
+    store_mock.reset_mock()
+    store_mock.mget.return_value = [None, [1.5, 2, 3.6]]
+    assert all(cached_embeddings.embed_documents(["test_text1", "test_text2"]))
+    store_mock.mget.assert_called_once()
+    store_mock.mset.assert_called_once()
+    assert len(store_mock.mset.call_args.args) == 1
+    assert store_mock.mset.call_args.args[0][0][0] == "test_text1"
+    store_mock.reset_mock()
+    store_mock.mget.return_value = [[1.5, 2.3, 3], [1.5, 2, 3.6]]
+    assert all(cached_embeddings.embed_documents(["test_text1", "test_text2"]))
+    store_mock.mget.assert_called_once()
+    store_mock.mset.assert_not_called()
