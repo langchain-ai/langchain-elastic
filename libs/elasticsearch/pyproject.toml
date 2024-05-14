@@ -12,7 +12,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
-langchain-core = "^0.1"
+langchain-core = ">=0.1.50,<0.3"
 elasticsearch = {version = "^8.13.1", extras = ["vectorstore_mmr"]}
 
 [tool.poetry.group.test]
@@ -25,8 +25,9 @@ pytest-mock = "^3.10.0"
 syrupy = "^4.0.2"
 pytest-watcher = "^0.3.4"
 pytest-asyncio = "^0.21.1"
-langchain = "^0.1.13"
-langchain-text-splitters = ">=0.0.1,<0.1"
+langchain = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/langchain"}
+langchain-community = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/community"}
+langchain-text-splitters = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/text-splitters"}
 langchain-core = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core"}
 
 [tool.poetry.group.codespell]
