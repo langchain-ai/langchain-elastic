@@ -58,7 +58,8 @@ class TestElasticsearchRetriever:
         assert retriever.es_client
         user_agent = retriever.es_client._headers["User-Agent"]
         assert (
-            re.match(r"^langchain-py-r/\d+\.\d+\.\d+$", user_agent) is not None
+            re.match(r"^langchain-py-r/\d+\.\d+\.\d+(?:rc\d+)?$", user_agent)
+            is not None
         ), f"The string '{user_agent}' does not match the expected pattern."
 
         index_test_data(es_client, index_name, "text")
@@ -67,7 +68,8 @@ class TestElasticsearchRetriever:
         search_request = es_client.transport.requests[-1]  # type: ignore[attr-defined]
         user_agent = search_request["headers"]["User-Agent"]
         assert (
-            re.match(r"^langchain-py-r/\d+\.\d+\.\d+$", user_agent) is not None
+            re.match(r"^langchain-py-r/\d+\.\d+\.\d+(?:rc\d+)?$", user_agent)
+            is not None
         ), f"The string '{user_agent}' does not match the expected pattern."
 
     def test_init_url(self, index_name: str) -> None:
