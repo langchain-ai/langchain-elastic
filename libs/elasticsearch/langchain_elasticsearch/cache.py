@@ -140,7 +140,7 @@ class ElasticsearchCacheIndexer:
 
     @property
     @abstractmethod
-    def mapping(self) -> dict[str, Any]:
+    def mapping(self) -> Dict[str, Any]:
         """Get the default mapping for the index."""
         return {}
 
