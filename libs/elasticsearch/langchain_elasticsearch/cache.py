@@ -1,5 +1,6 @@
 import hashlib
 import logging
+from abc import abstractmethod
 from datetime import datetime
 from functools import cached_property
 from typing import (
@@ -14,18 +15,139 @@ from typing import (
     Tuple,
 )
 
-from elasticsearch import NotFoundError, helpers
+from elasticsearch import (
+    Elasticsearch,
+    NotFoundError,
+    exceptions,
+    helpers,
+)
 from elasticsearch.helpers import BulkIndexError
 from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.load import dumps, loads
 from langchain_core.stores import BaseStore
 
-from langchain_elasticsearch._utilities import ElasticsearchCacheIndexer
+from langchain_elasticsearch.client import create_elasticsearch_client
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
 
 logger = logging.getLogger(__name__)
+
+
+class ElasticsearchCacheIndexer:
+    """Mixin for Elasticsearch clients"""
+
+    def __init__(
+        self,
+        index_name: str,
+        store_input: bool = True,
+        store_input_params: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+        *,
+        es_connection: Optional["Elasticsearch"] = None,
+        es_url: Optional[str] = None,
+        es_cloud_id: Optional[str] = None,
+        es_user: Optional[str] = None,
+        es_api_key: Optional[str] = None,
+        es_password: Optional[str] = None,
+        es_params: Optional[Dict[str, Any]] = None,
+    ):
+        """
+        Initialize the Elasticsearch cache store by specifying the index/alias
+        to use and determining which additional information (like input, timestamp,
+        input parameters, and any other metadata) should be stored in the cache.
+
+        Args:
+            index_name (str): The name of the index or the alias to use for the cache.
+                If they do not exist an index is created,
+                according to the default mapping defined by the `mapping` property.
+            store_input (bool): Whether to store the LLM input in the cache, i.e.,
+                the input prompt. Default to True.
+            store_input_params (bool): Whether to store the input parameters in the
+                cache, i.e., the LLM parameters used to generate the LLM response.
+                Default to True.
+            metadata (Optional[dict]): Additional metadata to store in the cache,
+                for filtering purposes. This must be JSON serializable in an
+                Elasticsearch document. Default to None.
+            es_connection: Optional pre-existing Elasticsearch connection.
+            es_url: URL of the Elasticsearch instance to connect to.
+            es_cloud_id: Cloud ID of the Elasticsearch instance to connect to.
+            es_user: Username to use when connecting to Elasticsearch.
+            es_password: Password to use when connecting to Elasticsearch.
+            es_api_key: API key to use when connecting to Elasticsearch.
+            es_params: Other parameters for the Elasticsearch client.
+        """
+
+        self._index_name = index_name
+        self._store_input = store_input
+        self._store_input_params = store_input_params
+        self._metadata = metadata
+        self._setup_connection(
+            es_connection=es_connection,
+            es_url=es_url,
+            es_cloud_id=es_cloud_id,
+            es_user=es_user,
+            es_api_key=es_api_key,
+            es_password=es_password,
+            es_params=es_params,
+        )
+        self._manage_index()
+
+    def _setup_connection(
+        self,
+        *,
+        es_connection: Optional["Elasticsearch"] = None,
+        es_url: Optional[str] = None,
+        es_cloud_id: Optional[str] = None,
+        es_user: Optional[str] = None,
+        es_api_key: Optional[str] = None,
+        es_password: Optional[str] = None,
+        es_params: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        if es_connection is not None:
+            self._es_client = es_connection
+            if not self._es_client.ping():
+                raise exceptions.ConnectionError(
+                    "Elasticsearch cluster is not available,"
+                    " not able to set up the cache"
+                )
+        elif es_url is not None or es_cloud_id is not None:
+            try:
+                self._es_client = create_elasticsearch_client(
+                    url=es_url,
+                    cloud_id=es_cloud_id,
+                    api_key=es_api_key,
+                    username=es_user,
+                    password=es_password,
+                    params=es_params,
+                )
+            except Exception as err:
+                logger.error(f"Error connecting to Elasticsearch: {err}")
+                raise err
+        else:
+            raise ValueError(
+                """Either provide a pre-existing Elasticsearch connection, \
+                or valid credentials for creating a new connection."""
+            )
+
+    def _manage_index(self) -> None:
+        """Write or update an index or alias according to the default mapping"""
+        self._is_alias = False
+        if self._es_client.indices.exists_alias(name=self._index_name):
+            self._is_alias = True
+        elif not self._es_client.indices.exists(index=self._index_name):
+            logger.debug(f"Creating new Elasticsearch index: {self._index_name}")
+            self._es_client.indices.create(index=self._index_name, body=self.mapping)
+            return
+        self._es_client.indices.put_mapping(
+            index=self._index_name, body=self.mapping["mappings"]
+        )
+
+    @property
+    @abstractmethod
+    def mapping(self) -> dict[str, Any]:
+        """Get the default mapping for the index."""
+        return {}
 
 
 class ElasticsearchCache(BaseCache, ElasticsearchCacheIndexer):
@@ -115,9 +237,68 @@ class ElasticsearchCache(BaseCache, ElasticsearchCacheIndexer):
         )
 
 
-class ElasticsearchStoreEmbeddings(
+class ElasticsearchEmbeddingsCache(
     BaseStore[str, List[float]], ElasticsearchCacheIndexer
 ):
+    """An Elasticsearch store for embeddings."""
+
+    def __init__(
+        self,
+        index_name: str,
+        store_input: bool = True,
+        store_input_params: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+        namespace: Optional[str] = None,
+        *,
+        es_connection: Optional["Elasticsearch"] = None,
+        es_url: Optional[str] = None,
+        es_cloud_id: Optional[str] = None,
+        es_user: Optional[str] = None,
+        es_api_key: Optional[str] = None,
+        es_password: Optional[str] = None,
+        es_params: Optional[Dict[str, Any]] = None,
+    ):
+        """
+        Initialize the Elasticsearch cache store by specifying the index/alias
+        to use and determining which additional information (like input, timestamp,
+        input parameters, and any other metadata) should be stored in the cache.
+
+        Args:
+            index_name (str): The name of the index or the alias to use for the cache.
+                If they do not exist an index is created,
+                according to the default mapping defined by the `mapping` property.
+            store_input (bool): Whether to store the LLM input in the cache, i.e.,
+                the input prompt. Default to True.
+            store_input_params (bool): Whether to store the input parameters in the
+                cache, i.e., the LLM parameters used to generate the LLM response.
+                Default to True.
+            metadata (Optional[dict]): Additional metadata to store in the cache,
+                for filtering purposes. This must be JSON serializable in an
+                Elasticsearch document. Default to None.
+            namespace (Optional[str]): A namespace to use for the cache.
+            es_connection: Optional pre-existing Elasticsearch connection.
+            es_url: URL of the Elasticsearch instance to connect to.
+            es_cloud_id: Cloud ID of the Elasticsearch instance to connect to.
+            es_user: Username to use when connecting to Elasticsearch.
+            es_password: Password to use when connecting to Elasticsearch.
+            es_api_key: API key to use when connecting to Elasticsearch.
+            es_params: Other parameters for the Elasticsearch client.
+        """
+        self._namespace = namespace
+        super().__init__(
+            index_name=index_name,
+            store_input=store_input,
+            store_input_params=store_input_params,
+            metadata=metadata,
+            es_connection=es_connection,
+            es_url=es_url,
+            es_cloud_id=es_cloud_id,
+            es_user=es_user,
+            es_api_key=es_api_key,
+            es_password=es_password,
+            es_params=es_params,
+        )
+
     @cached_property
     def mapping(self) -> Dict[str, Any]:
         """Get the default mapping for the index."""
@@ -152,13 +333,19 @@ class ElasticsearchStoreEmbeddings(
                 body={
                     "query": {"ids": {"values": cache_keys}},
                     "size": len(cache_keys),
+                    "sort": {"timestamp": {"order": "asc"}},
                 },
                 source_includes=["vector_dump"],
             )
-            map_ids = {
-                r["_id"]: r["_source"]["vector_dump"] for r in results["hits"]["hits"]
-            }
-            return [map_ids.get(k) for k in cache_keys]
+            if results["hits"]["total"]["value"] > 0:
+                # todo fix me
+                map_ids = {
+                    r["_id"]: r["_source"]["vector_dump"]
+                    for r in results["hits"]["hits"]
+                }
+                return [map_ids.get(k) for k in cache_keys]
+            else:
+                return [None] * len(keys)
         else:
             records = self._es_client.mget(
                 index=self._index_name, ids=cache_keys, source_includes=["vector_dump"]
@@ -170,18 +357,19 @@ class ElasticsearchStoreEmbeddings(
 
     def build_document(self, llm_input: str, vector: List[float]) -> Dict[str, Any]:
         """Build the Elasticsearch document for storing a single embedding"""
-        body: Dict[str, Any] = {"vector_dump": vector}
+        body: Dict[str, Any] = {
+            "vector_dump": vector,
+            "timestamp": datetime.now().isoformat(),
+        }
         if self._metadata is not None:
             body["metadata"] = self._metadata
         if self._store_input:
             body["llm_input"] = llm_input
-        if self._store_input:
-            body["timestamp"] = datetime.now().isoformat()
         if self._namespace:
             body["namespace"] = self._namespace
         return body
 
-    def _bulk(self, actions: Iterable[Dict[str, Any]]):
+    def _bulk(self, actions: Iterable[Dict[str, Any]]) -> None:
         try:
             helpers.bulk(
                 client=self._es_client,
@@ -216,6 +404,7 @@ class ElasticsearchStoreEmbeddings(
 
     def yield_keys(self, *, prefix: Optional[str] = None) -> Iterator[str]:
         """Get an iterator over keys that match the given prefix."""
-        # TODO This method is not currently used by CacheBackedEmbeddings, we can leave it blank.
-        #      It could be implemented with ES "index_prefixes", but they are limited and expensive.
+        # TODO This method is not currently used by CacheBackedEmbeddings,
+        #  we can leave it blank. It could be implemented with ES "index_prefixes",
+        #  but they are limited and expensive.
         raise NotImplementedError()

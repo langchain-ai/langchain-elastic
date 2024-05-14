@@ -194,54 +194,54 @@ set_llm_cache(
 When overriding the mapping and the document building, 
 please only make additive modifications, keeping the base mapping intact.
 
-
-
 ## Embeddings cache usage
+
+Store and temporary cache embeddings.
 
 Caching embeddings is obtained by using the [CacheBackedEmbeddings](https://python.langchain.com/docs/modules/data_connection/text_embedding/caching_embeddings),
 in a slightly different way than the official documentation.
 
 ```python
-from langchain_elasticsearch import ElasticsearchStoreEmbeddings
-from elasticsearch import Elasticsearch
-from langchain.embeddings import CacheBackedEmbeddings
-from langchain_openai import OpenAIEmbeddings
+ from elasticsearch import Elasticsearch
+ from langchain.embeddings import CacheBackedEmbeddings
+ from langchain_openai import OpenAIEmbeddings
 
-es_client = Elasticsearch(hosts="http://localhost:9200")
+ from langchain_elasticsearch import ElasticsearchEmbeddingsCache
 
-underlying_embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-store = ElasticsearchStoreEmbeddings(
-   es_client=es_client,
-   es_index="llm-embeddings-cache",
-   namespace=underlying_embeddings.model,
-   metadata={"project": "my_llm_project"}
-)
-cached_embeddings = CacheBackedEmbeddings(
-   underlying_embeddings,
-   store
-)
+ es_client = Elasticsearch(hosts="http://localhost:9200")
+
+ underlying_embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+ store = ElasticsearchEmbeddingsCache(
+     es_connection=es_client,
+     index_name="llm-chat-cache",
+     metadata={"project": "my_chatgpt_project"},
+     namespace="my_chatgpt_project",
+ )
+ cached_embeddings = CacheBackedEmbeddings(underlying_embeddings, store)
 ```
 
 Similarly to the chat cache, one can subclass `ElasticsearchStore` in order to index vectors for search.
 
 ```python
-from langchain_elasticsearch import ElasticsearchStoreEmbeddings
 from typing import Any, Dict, List
+from langchain_elasticsearch import ElasticsearchEmbeddingsCache
 
+class SearchableElasticsearchStore(ElasticsearchEmbeddingsCache):
+    @property
+    def mapping(self) -> Dict[str, Any]:
+        mapping = super().mapping
+        mapping["mappings"]["properties"]["vector"] = {
+            "type": "dense_vector",
+            "dims": 1536,
+            "index": True,
+            "similarity": "dot_product",
+        }
+        return mapping
 
-class SearchableElasticsearchStore(ElasticsearchStoreEmbeddings):
-
-   @property
-   def mapping(self) -> Dict[str, Any]:
-      mapping = super().mapping
-      mapping["mappings"]["properties"]["vector"] = {"type": "dense_vector", "dims": 1536, "index": True,
-                                                     "similarity": "dot_product"}
-      return mapping
-
-   def build_document(self, llm_input: str, vector: List[float]) -> Dict[str, Any]:
-      body = super().build_document(llm_input, vector)
-      body["vector"] = vector
-      return body
+    def build_document(self, llm_input: str, vector: List[float]) -> Dict[str, Any]:
+        body = super().build_document(llm_input, vector)
+        body["vector"] = vector
+        return body
 ```
 
 Be aware that `CacheBackedEmbeddings` does 

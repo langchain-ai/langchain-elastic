@@ -10,7 +10,7 @@ from langchain_core.messages import AIMessage
 
 from langchain_elasticsearch import (
     ElasticsearchCache,
-    ElasticsearchStoreEmbeddings,
+    ElasticsearchEmbeddingsCache,
 )
 
 
@@ -22,10 +22,10 @@ def es_client_fx() -> Generator[MagicMock, None, None]:
 
 
 @pytest.fixture
-def es_store_fx(
+def es_cache_store_fx(
     es_client_fx: MagicMock,
-) -> Generator[ElasticsearchStoreEmbeddings, None, None]:
-    yield ElasticsearchStoreEmbeddings(
+) -> Generator[ElasticsearchEmbeddingsCache, None, None]:
+    yield ElasticsearchEmbeddingsCache(
         es_connection=es_client_fx,
         index_name="test_index",
         store_input=True,
