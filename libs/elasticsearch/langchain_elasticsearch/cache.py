@@ -257,6 +257,8 @@ class ElasticsearchEmbeddingsCache(
         Initialize the Elasticsearch cache store by specifying the index/alias
         to use and determining which additional information (like input, timestamp,
         input parameters, and any other metadata) should be stored in the cache.
+        Provide a namespace to organize the cache.
+
 
         Args:
             index_name (str): The name of the index or the alias to use for the cache.
@@ -332,7 +334,7 @@ class ElasticsearchEmbeddingsCache(
                 source_includes=["vector_dump"],
             )
             if results["hits"]["total"]["value"] > len(keys):
-                # we are not able to deduplicate possible the results.
+                # we are not able to deduplicate the results
                 logger.warning(
                     f"Found more results than expected: "
                     f"{results['hits']['total']['value']}, "
