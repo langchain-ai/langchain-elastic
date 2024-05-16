@@ -49,8 +49,8 @@ class ElasticsearchCacheIndexer:
     ):
         """
         Initialize the Elasticsearch cache store by specifying the index/alias
-        to use and determining which additional information (like input, timestamp,
-        input parameters, and any other metadata) should be stored in the cache.
+        to use and determining which additional information (like input, input
+        parameters, and any other metadata) should be stored in the cache.
 
         Args:
             index_name (str): The name of the index or the alias to use for the cache.
@@ -235,7 +235,7 @@ class ElasticsearchCache(BaseCache, ElasticsearchCacheIndexer):
 class ElasticsearchEmbeddingsCache(
     BaseStore[str, List[float]], ElasticsearchCacheIndexer
 ):
-    """An Elasticsearch store for embeddings."""
+    """An Elasticsearch store for caching embeddings."""
 
     def __init__(
         self,
@@ -255,8 +255,8 @@ class ElasticsearchEmbeddingsCache(
     ):
         """
         Initialize the Elasticsearch cache store by specifying the index/alias
-        to use and determining which additional information (like input, timestamp,
-        input parameters, and any other metadata) should be stored in the cache.
+        to use and determining which additional information (like input, input
+        parameters, and any other metadata) should be stored in the cache.
         Provide a namespace to organize the cache.
 
 

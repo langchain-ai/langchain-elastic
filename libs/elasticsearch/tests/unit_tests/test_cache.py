@@ -12,7 +12,7 @@ from langchain_core.outputs import Generation
 from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache
 
 
-def test_initialization(es_client_fx: MagicMock) -> None:
+def test_initialization_llm_cache(es_client_fx: MagicMock) -> None:
     es_client_fx.ping.return_value = False
     with pytest.raises(exceptions.ConnectionError):
         ElasticsearchCache(es_connection=es_client_fx, index_name="test_index")
@@ -33,13 +33,15 @@ def test_initialization(es_client_fx: MagicMock) -> None:
     )
 
 
-def test_mapping(es_cache_fx: ElasticsearchCache, request: FixtureRequest) -> None:
+def test_mapping_llm_cache(
+    es_cache_fx: ElasticsearchCache, request: FixtureRequest
+) -> None:
     mapping = request.getfixturevalue("es_cache_fx").mapping
     assert mapping.get("mappings")
     assert mapping["mappings"].get("properties")
 
 
-def test_key_generation(es_cache_fx: ElasticsearchCache) -> None:
+def test_key_generation_llm_cache(es_cache_fx: ElasticsearchCache) -> None:
     key1 = es_cache_fx._key("test_prompt", "test_llm_string")
     assert key1 and isinstance(key1, str)
     key2 = es_cache_fx._key("test_prompt", "test_llm_string1")
@@ -48,7 +50,9 @@ def test_key_generation(es_cache_fx: ElasticsearchCache) -> None:
     assert key3 and key1 != key3
 
 
-def test_clear(es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache) -> None:
+def test_clear_llm_cache(
+    es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache
+) -> None:
     es_cache_fx.clear()
     es_client_fx.delete_by_query.assert_called_once_with(
         index="test_index",
@@ -58,7 +62,7 @@ def test_clear(es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache) -> None
     )
 
 
-def test_build_document(es_cache_fx: ElasticsearchCache) -> None:
+def test_build_document_llm_cache(es_cache_fx: ElasticsearchCache) -> None:
     doc = es_cache_fx.build_document(
         "test_prompt", "test_llm_string", [Generation(text="test_prompt")]
     )
@@ -70,7 +74,9 @@ def test_build_document(es_cache_fx: ElasticsearchCache) -> None:
     assert doc["metadata"] == es_cache_fx._metadata
 
 
-def test_update(es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache) -> None:
+def test_update_llm_cache(
+    es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache
+) -> None:
     es_cache_fx.update("test_prompt", "test_llm_string", [Generation(text="test")])
     timestamp = es_client_fx.index.call_args.kwargs["body"]["timestamp"]
     doc = es_cache_fx.build_document(
@@ -86,7 +92,9 @@ def test_update(es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache) -> Non
     )
 
 
-def test_lookup(es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache) -> None:
+def test_lookup_llm_cache(
+    es_client_fx: MagicMock, es_cache_fx: ElasticsearchCache
+) -> None:
     cache_key = es_cache_fx._key("test_prompt", "test_llm_string")
     doc: Dict[str, Any] = {
         "_source": {
@@ -222,7 +230,7 @@ def test_mget_cache_store(
     ]
 
 
-def test_mget_cache_store_duplicate_keys(
+def test_mget_duplicate_keys_cache_store(
     es_client_fx: MagicMock, es_cache_store_fx: ElasticsearchEmbeddingsCache
 ) -> None:
     cache_keys = [
