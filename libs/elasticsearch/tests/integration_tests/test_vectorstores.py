@@ -660,7 +660,7 @@ class TestElasticsearch:
             )
 
         # 2. check query result is okay
-        es_output = docsearch._store.client.search(
+        es_output = docsearch.client.search(
             index=index_name,
             query={
                 "bool": {

@@ -717,6 +717,7 @@ class ElasticsearchStore(VectorStore):
         )
 
         self.embedding = embedding
+        self.client = self._store.client
         self._embedding_service = embedding_service
         self.query_field = query_field
         self.vector_query_field = vector_query_field
