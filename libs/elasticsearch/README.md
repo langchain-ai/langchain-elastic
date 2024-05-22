@@ -224,7 +224,7 @@ cached_embeddings = CacheBackedEmbeddings(
 )
 ```
 
-Similarly to the chat cache, one can subclass `ElasticsearchStore` in order to index vectors for search.
+Similarly to the chat cache, one can subclass `ElasticsearchEmbeddingsCache` in order to index vectors for search.
 
 ```python
 from typing import Any, Dict, List
