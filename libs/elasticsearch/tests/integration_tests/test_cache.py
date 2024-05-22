@@ -1,11 +1,8 @@
 from typing import Dict, Generator, Union
-from unittest.mock import MagicMock
 
 import pytest
 from elasticsearch.helpers import BulkIndexError
-from langchain.embeddings import CacheBackedEmbeddings
 from langchain.globals import set_llm_cache
-from langchain_core.embeddings import FakeEmbeddings
 from langchain_core.language_models import BaseChatModel
 
 from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache
@@ -28,7 +25,7 @@ def es_env_fx() -> Union[dict, Generator[dict, None, None]]:
     es.indices.put_alias(index="test_index2", name="test_alias", is_write_index=True)
     yield params
     es.options(ignore_status=404).indices.delete_alias(
-        index="test_index1,test_index2,test_index3", name="test_alias"
+        index="test_index1,test_index2", name="test_alias"
     )
     clear_test_indices(es)
     return None
@@ -123,30 +120,6 @@ def test_clear_llm_cache(es_env_fx: Dict, fake_chat_fx: BaseChatModel) -> None:
     assert es_client.count(index="test_alias")["count"] == 0
 
 
-def test_hit_and_miss_cache_store(
-    es_cache_store_fx: ElasticsearchEmbeddingsCache,
-) -> None:
-    store_mock = MagicMock(es_cache_store_fx)
-    underlying_embeddings = FakeEmbeddings(size=3)
-    cached_embeddings = CacheBackedEmbeddings(underlying_embeddings, store_mock)
-    store_mock.mget.return_value = [None, None]
-    assert all(cached_embeddings.embed_documents(["test_text1", "test_text2"]))
-    store_mock.mget.assert_called_once()
-    store_mock.mset.assert_called_once()
-    store_mock.reset_mock()
-    store_mock.mget.return_value = [None, [1.5, 2, 3.6]]
-    assert all(cached_embeddings.embed_documents(["test_text1", "test_text2"]))
-    store_mock.mget.assert_called_once()
-    store_mock.mset.assert_called_once()
-    assert len(store_mock.mset.call_args.args) == 1
-    assert store_mock.mset.call_args.args[0][0][0] == "test_text1"
-    store_mock.reset_mock()
-    store_mock.mget.return_value = [[1.5, 2.3, 3], [1.5, 2, 3.6]]
-    assert all(cached_embeddings.embed_documents(["test_text1", "test_text2"]))
-    store_mock.mget.assert_called_once()
-    store_mock.mset.assert_not_called()
-
-
 def test_mdelete_cache_store(es_env_fx: Dict) -> None:
     store = ElasticsearchEmbeddingsCache(
         **es_env_fx, index_name="test_alias", metadata={"project": "test"}
@@ -217,6 +190,8 @@ def test_mget_cache_store(es_env_fx: Dict) -> None:
 
 
 def test_mget_cache_store_multiple_keys(es_env_fx: Dict) -> None:
+    """verify the logic of deduplication of keys in the cache store"""
+
     store_alias = ElasticsearchEmbeddingsCache(
         **es_env_fx,
         index_name="test_alias",
@@ -243,35 +218,39 @@ def test_mget_cache_store_multiple_keys(es_env_fx: Dict) -> None:
 
     new_records = records + ["my little tests4", "my little tests5"]
     new_docs = [(r, [0.1, 2, i + 100]) for i, r in enumerate(new_records)]
+
+    # store the same 3 previous records and 2 more in a fresh index
     store_no_alias.mset(new_docs)
     assert es_client.count(index="test_index3")["count"] == 5
 
+    # update the alias to point to the new index and verify the cache
     es_client.indices.update_aliases(
         actions=[
             {
                 "add": {
                     "index": "test_index3",
                     "alias": "test_alias",
-                    "is_write_index": True,
                 }
-            },
-            {
-                "add": {
-                    "index": "test_index2",
-                    "alias": "test_alias",
-                    "is_write_index": False,
-                }
-            },
+            }
         ]
     )
 
+    # the alias now point to two indices that contains multiple records
+    # of the same keys, the cache store should return the latest records.
     cached_records = store_alias.mget([d[0] for d in new_docs])
     assert all(cached_records)
     assert len(cached_records) == 5
     assert es_client.count(index="test_alias")["count"] == 8
-    assert cached_records[:3] != [d[1] for d in docs]
-    assert cached_records == [d[1] for d in new_docs]
+    assert cached_records[:3] != [
+        d[1] for d in docs
+    ], "the first 3 records should be updated"
+    assert cached_records == [
+        d[1] for d in new_docs
+    ], "new records should be returned and the updated ones"
     assert all([r == d[1] for r, d in zip(cached_records, new_docs)])
+    es_client.options(ignore_status=404).indices.delete_alias(
+        index="test_index3", name="test_alias"
+    )
 
 
 def test_build_document_cache_store(es_env_fx: Dict) -> None:

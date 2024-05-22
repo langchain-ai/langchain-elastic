@@ -360,11 +360,21 @@ class ElasticsearchEmbeddingsCache(
                 )
 
             except BadRequestError as e:
-                raise ValueError("Error while searching for keys in the cache.") from e
+                if "window too large" in (
+                    e.body.get("error", {}).get("root_cause", [{}])[0].get("reason", "")
+                ):
+                    logger.warning(
+                        "Exceeded the maximum window size, "
+                        "Reduce the duplicates manually to use or lower "
+                        "`maximum_duplicate_allowed.`"
+                    )
+                    raise e
 
             total_hits = results["hits"]["total"]["value"]
             if self._maximum_duplicate_allowed > 1 and total_hits > len(cache_keys):
-                logger.warning(f"Found {total_hits} hits for {len(cache_keys)} keys")
+                logger.warning(
+                    f"Deduplicating, found {total_hits} hits for {len(cache_keys)} keys"
+                )
                 map_ids = self._deduplicate_hits(results["hits"]["hits"])
             else:
                 map_ids = {
