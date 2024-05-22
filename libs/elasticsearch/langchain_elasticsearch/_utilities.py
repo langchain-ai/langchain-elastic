@@ -1,4 +1,3 @@
-import logging
 from enum import Enum
 
 from elasticsearch import BadRequestError, ConflictError, Elasticsearch, NotFoundError
