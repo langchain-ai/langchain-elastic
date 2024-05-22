@@ -217,7 +217,7 @@ def test_mget_cache_store(
             "query": {"ids": {"values": cache_keys}},
             "size": 3,
         },
-        source_includes=["vector_dump"],
+        source_includes=["vector_dump", "timestamp"],
     )
     resp = {
         "hits": {"total": {"value": 3}, "hits": [d for d in docs["docs"] if d["found"]]}
@@ -228,6 +228,29 @@ def test_mget_cache_store(
         [1.5, 2, 3.6],
         [5, 6, 7.1],
     ]
+
+
+def test_deduplicate_hits(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> None:
+    hits = [
+        {
+            "_id": "1",
+            "_source": {"timestamp": "2022-01-01T00:00:00", "vector_dump": [1, 2, 3]},
+        },
+        {
+            "_id": "1",
+            "_source": {"timestamp": "2022-01-02T00:00:00", "vector_dump": [4, 5, 6]},
+        },
+        {
+            "_id": "2",
+            "_source": {"timestamp": "2022-01-01T00:00:00", "vector_dump": [7, 8, 9]},
+        },
+    ]
+
+    result = es_cache_store_fx._deduplicate_hits(hits)
+
+    assert len(result) == 2
+    assert result["1"] == [4, 5, 6]
+    assert result["2"] == [7, 8, 9]
 
 
 def test_mget_duplicate_keys_cache_store(
@@ -241,44 +264,51 @@ def test_mget_duplicate_keys_cache_store(
     resp = {
         "hits": {
             "total": {"value": 3},
-            "hits": {
-                "docs": [
-                    {"_index": "test_index", "_id": cache_keys[0], "found": False},
-                    {
-                        "_index": "test_index",
-                        "_id": cache_keys[1],
-                        "found": True,
-                        "_source": {"vector_dump": [1.5, 2, 3.6]},
+            "hits": [
+                {
+                    "_index": "test_index",
+                    "_id": cache_keys[1],
+                    "found": True,
+                    "_source": {
+                        "vector_dump": [1.5, 2, 3.6],
+                        "timestamp": "2024-03-07T13:25:36.410756",
                     },
-                    {
-                        "_index": "test_index",
-                        "_id": cache_keys[0],
-                        "found": True,
-                        "_source": {"vector_dump": [5, 6, 7.1]},
+                },
+                {
+                    "_index": "test_index",
+                    "_id": cache_keys[0],
+                    "found": True,
+                    "_source": {
+                        "vector_dump": [1, 6, 7.1],
+                        "timestamp": "2024-03-07T13:25:46.410756",
                     },
-                    {
-                        "_index": "test_index",
-                        "_id": cache_keys[0],
-                        "found": True,
-                        "_source": {"vector_dump": [5, 6, 7.1]},
+                },
+                {
+                    "_index": "test_index",
+                    "_id": cache_keys[0],
+                    "found": True,
+                    "_source": {
+                        "vector_dump": [2, 6, 7.1],
+                        "timestamp": "2024-03-07T13:27:46.410756",
                     },
-                ]
-            },
+                },
+            ],
         }
     }
 
     es_cache_store_fx._is_alias = True
     es_client_fx.search.return_value = resp
-    assert es_cache_store_fx.mget(["test_text1", "test_text2"]) == [None] * len(
-        cache_keys
-    )
+    assert es_cache_store_fx.mget(["test_text1", "test_text2"]) == [
+        [2, 6, 7.1],
+        [1.5, 2, 3.6],
+    ]
     es_client_fx.search.assert_called_with(
         index="test_index",
         body={
             "query": {"ids": {"values": cache_keys}},
             "size": len(cache_keys),
         },
-        source_includes=["vector_dump"],
+        source_includes=["vector_dump", "timestamp"],
     )
 
 

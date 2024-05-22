@@ -15,7 +15,13 @@ from typing import (
     Tuple,
 )
 
-from elasticsearch import Elasticsearch, NotFoundError, exceptions, helpers
+from elasticsearch import (
+    BadRequestError,
+    Elasticsearch,
+    NotFoundError,
+    exceptions,
+    helpers,
+)
 from elasticsearch.helpers import BulkIndexError
 from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.load import dumps, loads
@@ -244,6 +250,7 @@ class ElasticsearchEmbeddingsCache(
         store_input_params: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
         namespace: Optional[str] = None,
+        maximum_duplicate_allowed: int = 1,
         *,
         es_connection: Optional["Elasticsearch"] = None,
         es_url: Optional[str] = None,
@@ -273,6 +280,9 @@ class ElasticsearchEmbeddingsCache(
                 for filtering purposes. This must be JSON serializable in an
                 Elasticsearch document. Default to None.
             namespace (Optional[str]): A namespace to use for the cache.
+            maximum_duplicate_allowed (int): Defines the maximum number of duplicate
+                keys permitted. Must be used in scenarios where the same key appears
+                across multiple indices that share the same alias. Default to 1.
             es_connection: Optional pre-existing Elasticsearch connection.
             es_url: URL of the Elasticsearch instance to connect to.
             es_cloud_id: Cloud ID of the Elasticsearch instance to connect to.
@@ -282,6 +292,7 @@ class ElasticsearchEmbeddingsCache(
             es_params: Other parameters for the Elasticsearch client.
         """
         self._namespace = namespace
+        self._maximum_duplicate_allowed = maximum_duplicate_allowed
         super().__init__(
             index_name=index_name,
             store_input=store_input,
@@ -319,32 +330,53 @@ class ElasticsearchEmbeddingsCache(
         """Generate a key for the store."""
         return hashlib.md5(((self._namespace or "") + input_text).encode()).hexdigest()
 
+    @staticmethod
+    def _deduplicate_hits(hits: List[dict]) -> Dict[str, List[float]]:
+        """
+        Collapse the results from a search query with multiple indices
+        returning only the latest version of the documents
+        """
+        map_ids = {}
+        for hit in sorted(
+            hits,
+            key=lambda x: datetime.fromisoformat(x["_source"]["timestamp"]),
+            reverse=True,
+        ):
+            if hit["_id"] not in map_ids:
+                map_ids[hit["_id"]] = hit["_source"]["vector_dump"]
+
+        return map_ids
+
     def mget(self, keys: Sequence[str]) -> List[Optional[List[float]]]:
         """Get the values associated with the given keys."""
         if not any(keys):
             return []
+
         cache_keys = [self._key(k) for k in keys]
         if self._is_alias:
-            results = self._es_client.search(
-                index=self._index_name,
-                body={
-                    "query": {"ids": {"values": cache_keys}},
-                    "size": len(cache_keys),
-                },
-                source_includes=["vector_dump"],
-            )
-            if results["hits"]["total"]["value"] > len(keys):
-                # we are not able to deduplicate the results
-                logger.warning(
-                    f"Found more results than expected: "
-                    f"{results['hits']['total']['value']}, "
-                    f"expected: {len(keys)}."
+            try:
+                results = self._es_client.search(
+                    index=self._index_name,
+                    body={
+                        "query": {"ids": {"values": cache_keys}},
+                        "size": len(cache_keys) * self._maximum_duplicate_allowed,
+                    },
+                    source_includes=["vector_dump", "timestamp"],
                 )
-                return [None] * len(keys)
 
-            map_ids = {
-                r["_id"]: r["_source"]["vector_dump"] for r in results["hits"]["hits"]
-            }
+            except BadRequestError as e:
+                raise ValueError("Error while searching for keys in the cache.") from e
+
+            total_hits = results["hits"]["total"]["value"]
+            if self._maximum_duplicate_allowed > 1 and total_hits > len(cache_keys):
+                logger.warning(f"Found {total_hits} hits for {len(cache_keys)} keys")
+                map_ids = self._deduplicate_hits(results["hits"]["hits"])
+            else:
+                map_ids = {
+                    r["_id"]: r["_source"]["vector_dump"]
+                    for r in results["hits"]["hits"]
+                }
+
             return [map_ids.get(k) for k in cache_keys]
 
         else:

@@ -202,22 +202,26 @@ Caching embeddings is obtained by using the [CacheBackedEmbeddings](https://pyth
 in a slightly different way than the official documentation.
 
 ```python
- from elasticsearch import Elasticsearch
- from langchain.embeddings import CacheBackedEmbeddings
- from langchain_openai import OpenAIEmbeddings
+from elasticsearch import Elasticsearch
+from langchain.embeddings import CacheBackedEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
- from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+from langchain_elasticsearch import ElasticsearchEmbeddingsCache
 
- es_client = Elasticsearch(hosts="http://localhost:9200")
+es_client = Elasticsearch(hosts="http://localhost:9200")
 
- underlying_embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
- store = ElasticsearchEmbeddingsCache(
-     es_connection=es_client,
-     index_name="llm-chat-cache",
-     metadata={"project": "my_chatgpt_project"},
-     namespace="my_chatgpt_project",
- )
- cached_embeddings = CacheBackedEmbeddings(underlying_embeddings, store)
+underlying_embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+store = ElasticsearchEmbeddingsCache(
+  es_connection=es_client,
+  index_name="llm-chat-cache",
+  metadata={"project": "my_chatgpt_project"},
+  namespace="my_chatgpt_project",
+)
+cached_embeddings = CacheBackedEmbeddings(
+ underlying_embeddings=underlying_embeddings, 
+ document_embedding_store=store,
+ query_embedding_store=store,
+)
 ```
 
 Similarly to the chat cache, one can subclass `ElasticsearchStore` in order to index vectors for search.
@@ -243,8 +247,3 @@ class SearchableElasticsearchStore(ElasticsearchEmbeddingsCache):
         body["vector"] = vector
         return body
 ```
-
-Be aware that `CacheBackedEmbeddings` does 
-[not currently support caching queries](https://api.python.langchain.com/en/latest/embeddings/langchain.embeddings.cache.CacheBackedEmbeddings.html#langchain.embeddings.cache.CacheBackedEmbeddings.embed_query),
-this means that text queries, for vector searches, won't be cached.
-However, by overriding the `embed_query` method one should be able to easily implement it.
