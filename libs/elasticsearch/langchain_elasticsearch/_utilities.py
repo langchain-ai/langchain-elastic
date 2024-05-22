@@ -4,8 +4,6 @@ from enum import Enum
 from elasticsearch import BadRequestError, ConflictError, Elasticsearch, NotFoundError
 from langchain_core import __version__ as langchain_version
 
-logger = logging.getLogger(__name__)
-
 
 class DistanceStrategy(str, Enum):
     """Enumerator of the Distance strategies for calculating distances
