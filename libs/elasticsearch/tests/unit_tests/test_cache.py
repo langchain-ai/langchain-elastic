@@ -161,7 +161,7 @@ def test_build_document_cache_store(
     es_cache_store_fx: ElasticsearchEmbeddingsCache,
 ) -> None:
     doc = es_cache_store_fx.build_document("test_text", [1.5, 2, 3.6])
-    assert doc["llm_input"] == "test_text"
+    assert doc["text_input"] == "test_text"
     assert doc["vector_dump"] == [1.5, 2, 3.6]
     assert datetime.fromisoformat(str(doc["timestamp"]))
     assert doc["metadata"] == es_cache_store_fx._metadata

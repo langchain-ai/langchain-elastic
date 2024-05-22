@@ -247,7 +247,6 @@ class ElasticsearchEmbeddingsCache(
         self,
         index_name: str,
         store_input: bool = True,
-        store_input_params: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
         namespace: Optional[str] = None,
         maximum_duplicate_allowed: int = 1,
@@ -271,10 +270,7 @@ class ElasticsearchEmbeddingsCache(
             index_name (str): The name of the index or the alias to use for the cache.
                 If they do not exist an index is created,
                 according to the default mapping defined by the `mapping` property.
-            store_input (bool): Whether to store the LLM input in the cache, i.e.,
-                the input prompt. Default to True.
-            store_input_params (bool): Whether to store the input parameters in the
-                cache, i.e., the LLM parameters used to generate the LLM response.
+            store_input (bool): Whether to store the input in the cache.
                 Default to True.
             metadata (Optional[dict]): Additional metadata to store in the cache,
                 for filtering purposes. This must be JSON serializable in an
@@ -296,7 +292,6 @@ class ElasticsearchEmbeddingsCache(
         super().__init__(
             index_name=index_name,
             store_input=store_input,
-            store_input_params=store_input_params,
             metadata=metadata,
             es_connection=es_connection,
             es_url=es_url,
@@ -313,7 +308,7 @@ class ElasticsearchEmbeddingsCache(
         return {
             "mappings": {
                 "properties": {
-                    "llm_input": {"type": "text", "index": False},
+                    "text_input": {"type": "text", "index": False},
                     "vector_dump": {
                         "type": "float",
                         "index": False,
@@ -388,7 +383,7 @@ class ElasticsearchEmbeddingsCache(
                 for r in records["docs"]
             ]
 
-    def build_document(self, llm_input: str, vector: List[float]) -> Dict[str, Any]:
+    def build_document(self, text_input: str, vector: List[float]) -> Dict[str, Any]:
         """Build the Elasticsearch document for storing a single embedding"""
         body: Dict[str, Any] = {
             "vector_dump": vector,
@@ -397,7 +392,7 @@ class ElasticsearchEmbeddingsCache(
         if self._metadata is not None:
             body["metadata"] = self._metadata
         if self._store_input:
-            body["llm_input"] = llm_input
+            body["text_input"] = text_input
         if self._namespace:
             body["namespace"] = self._namespace
         return body

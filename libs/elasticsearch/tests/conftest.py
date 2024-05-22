@@ -26,7 +26,6 @@ def es_cache_store_fx(
         es_connection=es_client_fx,
         index_name="test_index",
         store_input=True,
-        store_input_params=True,
         namespace="test",
         metadata={"project": "test_project"},
     )

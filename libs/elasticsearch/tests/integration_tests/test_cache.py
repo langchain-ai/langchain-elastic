@@ -287,5 +287,5 @@ def test_build_document_cache_store(es_env_fx: Dict) -> None:
     assert record.get("metadata") == {"project": "test"}
     assert record.get("namespace") == "test"
     assert record.get("timestamp")
-    assert record.get("llm_input") == "my little tests"
+    assert record.get("text_input") == "my little tests"
     assert record.get("vector_dump") == [0.1, 2, 3]
