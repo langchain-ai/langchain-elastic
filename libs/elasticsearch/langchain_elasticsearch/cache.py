@@ -365,7 +365,7 @@ class ElasticsearchEmbeddingsCache(
                 ):
                     logger.warning(
                         "Exceeded the maximum window size, "
-                        "Reduce the duplicates manually to use or lower "
+                        "Reduce the duplicates manually or lower "
                         "`maximum_duplicate_allowed.`"
                     )
                     raise e
