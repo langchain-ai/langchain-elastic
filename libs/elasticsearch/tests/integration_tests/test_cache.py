@@ -2,6 +2,7 @@ from typing import Dict, Generator, Union
 
 import pytest
 from elasticsearch.helpers import BulkIndexError
+from langchain.embeddings.cache import _value_serializer
 from langchain.globals import set_llm_cache
 from langchain_core.language_models import BaseChatModel
 
@@ -126,7 +127,13 @@ def test_mdelete_cache_store(es_env_fx: Dict) -> None:
     )
 
     recors = ["my little tests", "my little tests2", "my little tests3"]
-    store.mset([(recors[0], [1, 2, 3]), (recors[1], [1, 2, 3]), (recors[2], [1, 2, 3])])
+    store.mset(
+        [
+            (recors[0], _value_serializer([1, 2, 3])),
+            (recors[1], _value_serializer([1, 2, 3])),
+            (recors[2], _value_serializer([1, 2, 3])),
+        ]
+    )
 
     assert store._es_client.count(index="test_alias")["count"] == 3
 
@@ -147,11 +154,16 @@ def test_mset_cache_store(es_env_fx: Dict) -> None:
 
     records = ["my little tests", "my little tests2", "my little tests3"]
 
-    store.mset([(records[0], [1, 2, 3])])
+    store.mset([(records[0], _value_serializer([1, 2, 3]))])
     assert store._es_client.count(index="test_alias")["count"] == 1
-    store.mset([(records[0], [1, 2, 3])])
+    store.mset([(records[0], _value_serializer([1, 2, 3]))])
     assert store._es_client.count(index="test_alias")["count"] == 1
-    store.mset([(records[1], [1, 2, 3]), (records[2], [1, 2, 3])])
+    store.mset(
+        [
+            (records[1], _value_serializer([1, 2, 3])),
+            (records[2], _value_serializer([1, 2, 3])),
+        ]
+    )
     assert store._es_client.count(index="test_alias")["count"] == 3
 
 
@@ -164,7 +176,7 @@ def test_mget_cache_store(es_env_fx: Dict) -> None:
     )
 
     records = ["my little tests", "my little tests2", "my little tests3"]
-    docs = [(r, [0.1, 2, i]) for i, r in enumerate(records)]
+    docs = [(r, _value_serializer([0.1, 2, i])) for i, r in enumerate(records)]
 
     store_no_alias.mset(docs)
     assert store_no_alias._es_client.count(index="test_index3")["count"] == 3
@@ -178,7 +190,7 @@ def test_mget_cache_store(es_env_fx: Dict) -> None:
         index_name="test_alias",
         metadata={"project": "test"},
         namespace="test",
-        maximum_duplicate_allowed=1,
+        maximum_duplicates_allowed=1,
     )
 
     store_alias.mset(docs)
@@ -197,13 +209,13 @@ def test_mget_cache_store_multiple_keys(es_env_fx: Dict) -> None:
         index_name="test_alias",
         metadata={"project": "test"},
         namespace="test",
-        maximum_duplicate_allowed=2,
+        maximum_duplicates_allowed=2,
     )
 
     es_client = store_alias._es_client
 
     records = ["my little tests", "my little tests2", "my little tests3"]
-    docs = [(r, [0.1, 2, i]) for i, r in enumerate(records)]
+    docs = [(r, _value_serializer([0.1, 2, i])) for i, r in enumerate(records)]
 
     store_alias.mset(docs)
     assert es_client.count(index="test_alias")["count"] == 3
@@ -213,11 +225,13 @@ def test_mget_cache_store_multiple_keys(es_env_fx: Dict) -> None:
         index_name="test_index3",
         metadata={"project": "test"},
         namespace="test",
-        maximum_duplicate_allowed=1,
+        maximum_duplicates_allowed=1,
     )
 
     new_records = records + ["my little tests4", "my little tests5"]
-    new_docs = [(r, [0.1, 2, i + 100]) for i, r in enumerate(new_records)]
+    new_docs = [
+        (r, _value_serializer([0.1, 2, i + 100])) for i, r in enumerate(new_records)
+    ]
 
     # store the same 3 previous records and 2 more in a fresh index
     store_no_alias.mset(new_docs)
@@ -261,10 +275,13 @@ def test_build_document_cache_store(es_env_fx: Dict) -> None:
         namespace="test",
     )
 
-    store.mset([("my little tests", [0.1, 2, 3])])
+    store.mset([("my little tests", _value_serializer([0.1, 2, 3]))])
     record = store._es_client.search(index="test_alias")["hits"]["hits"][0]["_source"]
+
     assert record.get("metadata") == {"project": "test"}
     assert record.get("namespace") == "test"
     assert record.get("timestamp")
     assert record.get("text_input") == "my little tests"
-    assert record.get("vector_dump") == [0.1, 2, 3]
+    assert record.get("vector_dump") == ElasticsearchEmbeddingsCache.encode_vector(
+        _value_serializer([0.1, 2, 3])
+    )

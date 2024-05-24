@@ -194,12 +194,12 @@ set_llm_cache(
 When overriding the mapping and the document building, 
 please only make additive modifications, keeping the base mapping intact.
 
-## Embeddings cache usage
+###  ElasticsearchEmbeddingsCache
 
-Store and temporary cache embeddings.
+Store and temporarily cache embeddings.
 
 Caching embeddings is obtained by using the [CacheBackedEmbeddings](https://python.langchain.com/docs/modules/data_connection/text_embedding/caching_embeddings),
-in a slightly different way than the official documentation.
+it can be instantiated  directly as an argument of the `CacheBackedEmbeddings` class or using `from_bytes_store` method.
 
 ```python
 from elasticsearch import Elasticsearch

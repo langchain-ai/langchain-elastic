@@ -6,10 +6,15 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
 from elasticsearch import NotFoundError, exceptions
+from langchain.embeddings.cache import _value_serializer
 from langchain_core.load import dumps
 from langchain_core.outputs import Generation
 
 from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache
+
+
+def serialize_encode_vector(vector: Any) -> str:
+    return ElasticsearchEmbeddingsCache.encode_vector(_value_serializer(vector))
 
 
 def test_initialization_llm_cache(es_client_fx: MagicMock) -> None:
@@ -160,9 +165,11 @@ def test_key_generation_cache_store(
 def test_build_document_cache_store(
     es_cache_store_fx: ElasticsearchEmbeddingsCache,
 ) -> None:
-    doc = es_cache_store_fx.build_document("test_text", [1.5, 2, 3.6])
+    doc = es_cache_store_fx.build_document(
+        "test_text", _value_serializer([1.5, 2, 3.6])
+    )
     assert doc["text_input"] == "test_text"
-    assert doc["vector_dump"] == [1.5, 2, 3.6]
+    assert doc["vector_dump"] == serialize_encode_vector([1.5, 2, 3.6])
     assert datetime.fromisoformat(str(doc["timestamp"]))
     assert doc["metadata"] == es_cache_store_fx._metadata
 
@@ -182,13 +189,13 @@ def test_mget_cache_store(
                 "_index": "test_index",
                 "_id": cache_keys[1],
                 "found": True,
-                "_source": {"vector_dump": [1.5, 2, 3.6]},
+                "_source": {"vector_dump": serialize_encode_vector([1.5, 2, 3.6])},
             },
             {
                 "_index": "test_index",
                 "_id": cache_keys[2],
                 "found": True,
-                "_source": {"vector_dump": [5, 6, 7.1]},
+                "_source": {"vector_dump": serialize_encode_vector([5, 6, 7.1])},
             },
         ]
     }
@@ -197,8 +204,8 @@ def test_mget_cache_store(
     assert es_cache_store_fx.mget([]) == []
     assert es_cache_store_fx.mget(["test_text1", "test_text2", "test_text3"]) == [
         None,
-        [1.5, 2, 3.6],
-        [5, 6, 7.1],
+        _value_serializer([1.5, 2, 3.6]),
+        _value_serializer([5, 6, 7.1]),
     ]
     es_client_fx.mget.assert_called_with(
         index="test_index", ids=cache_keys, source_includes=["vector_dump"]
@@ -225,8 +232,8 @@ def test_mget_cache_store(
     es_client_fx.search.return_value = resp
     assert es_cache_store_fx.mget(["test_text1", "test_text2", "test_text3"]) == [
         None,
-        [1.5, 2, 3.6],
-        [5, 6, 7.1],
+        _value_serializer([1.5, 2, 3.6]),
+        _value_serializer([5, 6, 7.1]),
     ]
 
 
@@ -234,23 +241,32 @@ def test_deduplicate_hits(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> No
     hits = [
         {
             "_id": "1",
-            "_source": {"timestamp": "2022-01-01T00:00:00", "vector_dump": [1, 2, 3]},
+            "_source": {
+                "timestamp": "2022-01-01T00:00:00",
+                "vector_dump": serialize_encode_vector([1, 2, 3]),
+            },
         },
         {
             "_id": "1",
-            "_source": {"timestamp": "2022-01-02T00:00:00", "vector_dump": [4, 5, 6]},
+            "_source": {
+                "timestamp": "2022-01-02T00:00:00",
+                "vector_dump": serialize_encode_vector([4, 5, 6]),
+            },
         },
         {
             "_id": "2",
-            "_source": {"timestamp": "2022-01-01T00:00:00", "vector_dump": [7, 8, 9]},
+            "_source": {
+                "timestamp": "2022-01-01T00:00:00",
+                "vector_dump": serialize_encode_vector([7, 8, 9]),
+            },
         },
     ]
 
     result = es_cache_store_fx._deduplicate_hits(hits)
 
     assert len(result) == 2
-    assert result["1"] == [4, 5, 6]
-    assert result["2"] == [7, 8, 9]
+    assert result["1"] == _value_serializer([4, 5, 6])
+    assert result["2"] == _value_serializer([7, 8, 9])
 
 
 def test_mget_duplicate_keys_cache_store(
@@ -270,7 +286,7 @@ def test_mget_duplicate_keys_cache_store(
                     "_id": cache_keys[1],
                     "found": True,
                     "_source": {
-                        "vector_dump": [1.5, 2, 3.6],
+                        "vector_dump": serialize_encode_vector([1.5, 2, 3.6]),
                         "timestamp": "2024-03-07T13:25:36.410756",
                     },
                 },
@@ -279,7 +295,7 @@ def test_mget_duplicate_keys_cache_store(
                     "_id": cache_keys[0],
                     "found": True,
                     "_source": {
-                        "vector_dump": [1, 6, 7.1],
+                        "vector_dump": serialize_encode_vector([1, 6, 7.1]),
                         "timestamp": "2024-03-07T13:25:46.410756",
                     },
                 },
@@ -288,7 +304,7 @@ def test_mget_duplicate_keys_cache_store(
                     "_id": cache_keys[0],
                     "found": True,
                     "_source": {
-                        "vector_dump": [2, 6, 7.1],
+                        "vector_dump": serialize_encode_vector([2, 6, 7.1]),
                         "timestamp": "2024-03-07T13:27:46.410756",
                     },
                 },
@@ -299,8 +315,8 @@ def test_mget_duplicate_keys_cache_store(
     es_cache_store_fx._is_alias = True
     es_client_fx.search.return_value = resp
     assert es_cache_store_fx.mget(["test_text1", "test_text2"]) == [
-        [2, 6, 7.1],
-        [1.5, 2, 3.6],
+        _value_serializer([2, 6, 7.1]),
+        _value_serializer([1.5, 2, 3.6]),
     ]
     es_client_fx.search.assert_called_with(
         index="test_index",
@@ -318,7 +334,10 @@ def _del_timestamp(doc: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def test_mset_cache_store(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> None:
-    input = [("test_text1", [1.5, 2, 3.6]), ("test_text2", [5, 6, 7.1])]
+    input = [
+        ("test_text1", _value_serializer([1.5, 2, 3.6])),
+        ("test_text2", _value_serializer([5, 6, 7.1])),
+    ]
     actions = [
         {
             "_op_type": "index",

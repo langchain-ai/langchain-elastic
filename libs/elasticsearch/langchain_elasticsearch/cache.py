@@ -1,6 +1,6 @@
+import base64
 import hashlib
 import logging
-from abc import abstractmethod
 from datetime import datetime
 from functools import cached_property
 from typing import (
@@ -13,21 +13,20 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    cast,
 )
 
 from elasticsearch import (
-    BadRequestError,
     Elasticsearch,
-    NotFoundError,
     exceptions,
     helpers,
 )
 from elasticsearch.helpers import BulkIndexError
 from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.load import dumps, loads
-from langchain_core.stores import BaseStore
+from langchain_core.stores import ByteStore
 
-from langchain_elasticsearch.client import create_elasticsearch_client
+from langchain_elasticsearch._utilities import manage_cache_index, setup_connection
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
@@ -35,8 +34,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ElasticsearchCacheIndexer:
-    """Mixin for Elasticsearch clients"""
+class ElasticsearchCache(BaseCache):
+    """An Elasticsearch cache integration for LLMs."""
 
     def __init__(
         self,
@@ -45,7 +44,7 @@ class ElasticsearchCacheIndexer:
         store_input_params: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
         *,
-        es_connection: Optional["Elasticsearch"] = None,
+        es_connection: Optional[Elasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
@@ -83,7 +82,7 @@ class ElasticsearchCacheIndexer:
         self._store_input = store_input
         self._store_input_params = store_input_params
         self._metadata = metadata
-        self._setup_connection(
+        self._es_client = setup_connection(
             es_connection=es_connection,
             es_url=es_url,
             es_cloud_id=es_cloud_id,
@@ -92,67 +91,11 @@ class ElasticsearchCacheIndexer:
             es_password=es_password,
             es_params=es_params,
         )
-        self._manage_index()
-
-    def _setup_connection(
-        self,
-        *,
-        es_connection: Optional["Elasticsearch"] = None,
-        es_url: Optional[str] = None,
-        es_cloud_id: Optional[str] = None,
-        es_user: Optional[str] = None,
-        es_api_key: Optional[str] = None,
-        es_password: Optional[str] = None,
-        es_params: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        if es_connection is not None:
-            self._es_client = es_connection
-            if not self._es_client.ping():
-                raise exceptions.ConnectionError(
-                    "Elasticsearch cluster is not available,"
-                    " not able to set up the cache"
-                )
-        elif es_url is not None or es_cloud_id is not None:
-            try:
-                self._es_client = create_elasticsearch_client(
-                    url=es_url,
-                    cloud_id=es_cloud_id,
-                    api_key=es_api_key,
-                    username=es_user,
-                    password=es_password,
-                    params=es_params,
-                )
-            except Exception as err:
-                logger.error(f"Error connecting to Elasticsearch: {err}")
-                raise err
-        else:
-            raise ValueError(
-                """Either provide a pre-existing Elasticsearch connection, \
-                or valid credentials for creating a new connection."""
-            )
-
-    def _manage_index(self) -> None:
-        """Write or update an index or alias according to the default mapping"""
-        self._is_alias = False
-        if self._es_client.indices.exists_alias(name=self._index_name):
-            self._is_alias = True
-        elif not self._es_client.indices.exists(index=self._index_name):
-            logger.debug(f"Creating new Elasticsearch index: {self._index_name}")
-            self._es_client.indices.create(index=self._index_name, body=self.mapping)
-            return
-        self._es_client.indices.put_mapping(
-            index=self._index_name, body=self.mapping["mappings"]
+        self._is_alias = manage_cache_index(
+            self._es_client,
+            self._index_name,
+            self.mapping,
         )
-
-    @property
-    @abstractmethod
-    def mapping(self) -> Dict[str, Any]:
-        """Get the default mapping for the index."""
-        return {}
-
-
-class ElasticsearchCache(BaseCache, ElasticsearchCacheIndexer):
-    """An Elasticsearch cache integration for LLMs."""
 
     @cached_property
     def mapping(self) -> Dict[str, Any]:
@@ -197,7 +140,7 @@ class ElasticsearchCache(BaseCache, ElasticsearchCacheIndexer):
                 record = self._es_client.get(
                     index=self._index_name, id=cache_key, source=["llm_output"]
                 )
-            except NotFoundError:
+            except exceptions.NotFoundError:
                 return None
         return [loads(item) for item in record["_source"]["llm_output"]]
 
@@ -238,9 +181,7 @@ class ElasticsearchCache(BaseCache, ElasticsearchCacheIndexer):
         )
 
 
-class ElasticsearchEmbeddingsCache(
-    BaseStore[str, List[float]], ElasticsearchCacheIndexer
-):
+class ElasticsearchEmbeddingsCache(ByteStore):
     """An Elasticsearch store for caching embeddings."""
 
     def __init__(
@@ -249,9 +190,9 @@ class ElasticsearchEmbeddingsCache(
         store_input: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
         namespace: Optional[str] = None,
-        maximum_duplicate_allowed: int = 1,
+        maximum_duplicates_allowed: int = 1,
         *,
-        es_connection: Optional["Elasticsearch"] = None,
+        es_connection: Optional[Elasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
@@ -276,7 +217,7 @@ class ElasticsearchEmbeddingsCache(
                 for filtering purposes. This must be JSON serializable in an
                 Elasticsearch document. Default to None.
             namespace (Optional[str]): A namespace to use for the cache.
-            maximum_duplicate_allowed (int): Defines the maximum number of duplicate
+            maximum_duplicates_allowed (int): Defines the maximum number of duplicate
                 keys permitted. Must be used in scenarios where the same key appears
                 across multiple indices that share the same alias. Default to 1.
             es_connection: Optional pre-existing Elasticsearch connection.
@@ -288,11 +229,11 @@ class ElasticsearchEmbeddingsCache(
             es_params: Other parameters for the Elasticsearch client.
         """
         self._namespace = namespace
-        self._maximum_duplicate_allowed = maximum_duplicate_allowed
-        super().__init__(
-            index_name=index_name,
-            store_input=store_input,
-            metadata=metadata,
+        self._maximum_duplicates_allowed = maximum_duplicates_allowed
+        self._index_name = index_name
+        self._store_input = store_input
+        self._metadata = metadata
+        self._es_client = setup_connection(
             es_connection=es_connection,
             es_url=es_url,
             es_cloud_id=es_cloud_id,
@@ -301,6 +242,21 @@ class ElasticsearchEmbeddingsCache(
             es_password=es_password,
             es_params=es_params,
         )
+        self._is_alias = manage_cache_index(
+            self._es_client,
+            self._index_name,
+            self.mapping,
+        )
+
+    @staticmethod
+    def encode_vector(data: bytes) -> str:
+        """Encode the vector data as bytes to as a base64 string."""
+        return base64.b64encode(data).decode("ascii")
+
+    @staticmethod
+    def decode_vector(data: str) -> bytes:
+        """Decode the base64 string to vector data as bytes."""
+        return base64.b64decode(data)
 
     @cached_property
     def mapping(self) -> Dict[str, Any]:
@@ -310,8 +266,7 @@ class ElasticsearchEmbeddingsCache(
                 "properties": {
                     "text_input": {"type": "text", "index": False},
                     "vector_dump": {
-                        "type": "float",
-                        "index": False,
+                        "type": "binary",
                         "doc_values": False,
                     },
                     "metadata": {"type": "object"},
@@ -325,8 +280,8 @@ class ElasticsearchEmbeddingsCache(
         """Generate a key for the store."""
         return hashlib.md5(((self._namespace or "") + input_text).encode()).hexdigest()
 
-    @staticmethod
-    def _deduplicate_hits(hits: List[dict]) -> Dict[str, List[float]]:
+    @classmethod
+    def _deduplicate_hits(cls, hits: List[dict]) -> Dict[str, bytes]:
         """
         Collapse the results from a search query with multiple indices
         returning only the latest version of the documents
@@ -337,12 +292,13 @@ class ElasticsearchEmbeddingsCache(
             key=lambda x: datetime.fromisoformat(x["_source"]["timestamp"]),
             reverse=True,
         ):
-            if hit["_id"] not in map_ids:
-                map_ids[hit["_id"]] = hit["_source"]["vector_dump"]
+            vector_id: str = hit["_id"]
+            if vector_id not in map_ids:
+                map_ids[vector_id] = cls.decode_vector(hit["_source"]["vector_dump"])
 
         return map_ids
 
-    def mget(self, keys: Sequence[str]) -> List[Optional[List[float]]]:
+    def mget(self, keys: Sequence[str]) -> List[Optional[bytes]]:
         """Get the values associated with the given keys."""
         if not any(keys):
             return []
@@ -354,12 +310,12 @@ class ElasticsearchEmbeddingsCache(
                     index=self._index_name,
                     body={
                         "query": {"ids": {"values": cache_keys}},
-                        "size": len(cache_keys) * self._maximum_duplicate_allowed,
+                        "size": len(cache_keys) * self._maximum_duplicates_allowed,
                     },
                     source_includes=["vector_dump", "timestamp"],
                 )
 
-            except BadRequestError as e:
+            except exceptions.BadRequestError as e:
                 if "window too large" in (
                     e.body.get("error", {}).get("root_cause", [{}])[0].get("reason", "")
                 ):
@@ -371,32 +327,37 @@ class ElasticsearchEmbeddingsCache(
                     raise e
 
             total_hits = results["hits"]["total"]["value"]
-            if self._maximum_duplicate_allowed > 1 and total_hits > len(cache_keys):
+            if self._maximum_duplicates_allowed > 1 and total_hits > len(cache_keys):
                 logger.warning(
                     f"Deduplicating, found {total_hits} hits for {len(cache_keys)} keys"
                 )
                 map_ids = self._deduplicate_hits(results["hits"]["hits"])
             else:
                 map_ids = {
-                    r["_id"]: r["_source"]["vector_dump"]
+                    r["_id"]: self.decode_vector(r["_source"]["vector_dump"])
                     for r in results["hits"]["hits"]
                 }
 
-            return [map_ids.get(k) for k in cache_keys]
+            return cast(List[Optional[bytes]], [map_ids.get(k) for k in cache_keys])
 
         else:
             records = self._es_client.mget(
                 index=self._index_name, ids=cache_keys, source_includes=["vector_dump"]
             )
-            return [
-                r["_source"]["vector_dump"] if r["found"] else None
-                for r in records["docs"]
-            ]
+            return cast(
+                List[Optional[bytes]],
+                [
+                    self.decode_vector(r["_source"]["vector_dump"])
+                    if r["found"]
+                    else None
+                    for r in records["docs"]
+                ],
+            )
 
-    def build_document(self, text_input: str, vector: List[float]) -> Dict[str, Any]:
+    def build_document(self, text_input: str, vector: bytes) -> Dict[str, Any]:
         """Build the Elasticsearch document for storing a single embedding"""
         body: Dict[str, Any] = {
-            "vector_dump": vector,
+            "vector_dump": self.encode_vector(vector),
             "timestamp": datetime.now().isoformat(),
         }
         if self._metadata is not None:
@@ -421,7 +382,7 @@ class ElasticsearchEmbeddingsCache(
             logger.error(f"First bulk error reason: {first_error.get('reason')}")
             raise e
 
-    def mset(self, key_value_pairs: Sequence[Tuple[str, List[float]]]) -> None:
+    def mset(self, key_value_pairs: Sequence[Tuple[str, bytes]]) -> None:
         """Set the values for the given keys."""
         actions = (
             {
@@ -432,13 +393,11 @@ class ElasticsearchEmbeddingsCache(
             for key, vector in key_value_pairs
         )
         self._bulk(actions)
-        return
 
     def mdelete(self, keys: Sequence[str]) -> None:
         """Delete the given keys and their associated values."""
         actions = ({"_op_type": "delete", "_id": self._key(key)} for key in keys)
         self._bulk(actions)
-        return
 
     def yield_keys(self, *, prefix: Optional[str] = None) -> Iterator[str]:
         """Get an iterator over keys that match the given prefix."""
