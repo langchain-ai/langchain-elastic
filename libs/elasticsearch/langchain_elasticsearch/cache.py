@@ -251,7 +251,7 @@ class ElasticsearchEmbeddingsCache(ByteStore):
     @staticmethod
     def encode_vector(data: bytes) -> str:
         """Encode the vector data as bytes to as a base64 string."""
-        return base64.b64encode(data).decode("ascii")
+        return base64.b64encode(data).decode("utf-8")
 
     @staticmethod
     def decode_vector(data: str) -> bytes:
