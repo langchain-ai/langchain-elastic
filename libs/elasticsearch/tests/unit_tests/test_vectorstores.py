@@ -228,9 +228,9 @@ class TestVectorStore:
         return {"dummy": "query"}
 
     def test_agent_header(self, store: ElasticsearchStore) -> None:
-        agent = store._store.client._headers["User-Agent"]
+        agent = store.client._headers["User-Agent"]
         assert (
-            re.match(r"^langchain-py-vs/\d+\.\d+\.\d+$", agent) is not None
+            re.match(r"^langchain-py-vs/\d+\.\d+\.\d+(?:rc\d+)?$", agent) is not None
         ), f"The string '{agent}' does not match the expected pattern."
 
     def test_similarity_search(
