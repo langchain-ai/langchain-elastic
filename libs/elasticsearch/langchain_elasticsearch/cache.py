@@ -13,7 +13,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    cast,
 )
 
 from elasticsearch import (
@@ -26,12 +25,28 @@ from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.load import dumps, loads
 from langchain_core.stores import ByteStore
 
-from langchain_elasticsearch._utilities import manage_cache_index, setup_connection
+from langchain_elasticsearch.client import create_elasticsearch_client
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
 
 logger = logging.getLogger(__name__)
+
+
+def _manage_cache_index(
+    es_client: Elasticsearch, index_name: str, mapping: Dict[str, Any]
+) -> bool:
+    """Write or update an index or alias according to the default mapping"""
+    if es_client.indices.exists_alias(name=index_name):
+        es_client.indices.put_mapping(index=index_name, body=mapping["mappings"])
+        return True
+
+    elif not es_client.indices.exists(index=index_name):
+        logger.debug(f"Creating new Elasticsearch index: {index_name}")
+        es_client.indices.create(index=index_name, body=mapping)
+        return False
+
+    return False
 
 
 class ElasticsearchCache(BaseCache):
@@ -44,7 +59,6 @@ class ElasticsearchCache(BaseCache):
         store_input_params: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
         *,
-        es_connection: Optional[Elasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
@@ -69,7 +83,6 @@ class ElasticsearchCache(BaseCache):
             metadata (Optional[dict]): Additional metadata to store in the cache,
                 for filtering purposes. This must be JSON serializable in an
                 Elasticsearch document. Default to None.
-            es_connection: Optional pre-existing Elasticsearch connection.
             es_url: URL of the Elasticsearch instance to connect to.
             es_cloud_id: Cloud ID of the Elasticsearch instance to connect to.
             es_user: Username to use when connecting to Elasticsearch.
@@ -82,16 +95,15 @@ class ElasticsearchCache(BaseCache):
         self._store_input = store_input
         self._store_input_params = store_input_params
         self._metadata = metadata
-        self._es_client = setup_connection(
-            es_connection=es_connection,
-            es_url=es_url,
-            es_cloud_id=es_cloud_id,
-            es_user=es_user,
-            es_api_key=es_api_key,
-            es_password=es_password,
-            es_params=es_params,
+        self._es_client = create_elasticsearch_client(
+            url=es_url,
+            cloud_id=es_cloud_id,
+            api_key=es_api_key,
+            username=es_user,
+            password=es_password,
+            params=es_params,
         )
-        self._is_alias = manage_cache_index(
+        self._is_alias = _manage_cache_index(
             self._es_client,
             self._index_name,
             self.mapping,
@@ -192,7 +204,6 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         namespace: Optional[str] = None,
         maximum_duplicates_allowed: int = 1,
         *,
-        es_connection: Optional[Elasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
@@ -220,7 +231,6 @@ class ElasticsearchEmbeddingsCache(ByteStore):
             maximum_duplicates_allowed (int): Defines the maximum number of duplicate
                 keys permitted. Must be used in scenarios where the same key appears
                 across multiple indices that share the same alias. Default to 1.
-            es_connection: Optional pre-existing Elasticsearch connection.
             es_url: URL of the Elasticsearch instance to connect to.
             es_cloud_id: Cloud ID of the Elasticsearch instance to connect to.
             es_user: Username to use when connecting to Elasticsearch.
@@ -233,16 +243,15 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         self._index_name = index_name
         self._store_input = store_input
         self._metadata = metadata
-        self._es_client = setup_connection(
-            es_connection=es_connection,
-            es_url=es_url,
-            es_cloud_id=es_cloud_id,
-            es_user=es_user,
-            es_api_key=es_api_key,
-            es_password=es_password,
-            es_params=es_params,
+        self._es_client = create_elasticsearch_client(
+            url=es_url,
+            cloud_id=es_cloud_id,
+            api_key=es_api_key,
+            username=es_user,
+            password=es_password,
+            params=es_params,
         )
-        self._is_alias = manage_cache_index(
+        self._is_alias = _manage_cache_index(
             self._es_client,
             self._index_name,
             self.mapping,
@@ -338,21 +347,16 @@ class ElasticsearchEmbeddingsCache(ByteStore):
                     for r in results["hits"]["hits"]
                 }
 
-            return cast(List[Optional[bytes]], [map_ids.get(k) for k in cache_keys])
+            return [map_ids.get(k) for k in cache_keys]
 
         else:
             records = self._es_client.mget(
                 index=self._index_name, ids=cache_keys, source_includes=["vector_dump"]
             )
-            return cast(
-                List[Optional[bytes]],
-                [
-                    self.decode_vector(r["_source"]["vector_dump"])
-                    if r["found"]
-                    else None
-                    for r in records["docs"]
-                ],
-            )
+            return [
+                self.decode_vector(r["_source"]["vector_dump"]) if r["found"] else None
+                for r in records["docs"]
+            ]
 
     def build_document(self, text_input: str, vector: bytes) -> Dict[str, Any]:
         """Build the Elasticsearch document for storing a single embedding"""

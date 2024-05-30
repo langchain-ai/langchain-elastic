@@ -2,9 +2,9 @@ from langchain_elasticsearch import __all__
 
 EXPECTED_ALL = [
     "ElasticsearchCache",
-    "ElasticsearchEmbeddingsCache",
     "ElasticsearchChatMessageHistory",
     "ElasticsearchEmbeddings",
+    "ElasticsearchEmbeddingsCache",
     "ElasticsearchRetriever",
     "ElasticsearchStore",
     # retrieval strategies

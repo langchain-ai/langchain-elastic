@@ -119,15 +119,13 @@ A caching layer for LLMs that uses Elasticsearch.
 Simple example:
 
 ```python
-from elasticsearch import Elasticsearch
 from langchain.globals import set_llm_cache
 
 from langchain_elasticsearch import ElasticsearchCache
 
-es_client = Elasticsearch(hosts="http://localhost:9200")
 set_llm_cache(
     ElasticsearchCache(
-        es_connection=es_client,
+        es_url="http://localhost:9200",
         index_name="llm-chat-cache",
         metadata={"project": "my_chatgpt_project"},
     )
@@ -153,7 +151,6 @@ The new cache class can be applied also to a pre-existing cache index:
 import json
 from typing import Any, Dict, List
 
-from elasticsearch import Elasticsearch
 from langchain.globals import set_llm_cache
 from langchain_core.caches import RETURN_VAL_TYPE
 
@@ -185,9 +182,11 @@ class SearchableElasticsearchCache(ElasticsearchCache):
         ]
 
 
-es_client = Elasticsearch(hosts="http://localhost:9200")
 set_llm_cache(
-    SearchableElasticsearchCache(es_connection=es_client, index_name="llm-chat-cache")
+    SearchableElasticsearchCache(
+       es_url="http://localhost:9200", 
+       index_name="llm-chat-cache"
+    )
 )
 ```
 
@@ -198,29 +197,27 @@ please only make additive modifications, keeping the base mapping intact.
 
 Store and temporarily cache embeddings.
 
-Caching embeddings is obtained by using the [CacheBackedEmbeddings](https://python.langchain.com/docs/modules/data_connection/text_embedding/caching_embeddings),
-it can be instantiated  directly as an argument of the `CacheBackedEmbeddings` class or using `from_bytes_store` method.
+Caching embeddings is obtained by using the [CacheBackedEmbeddings](https://python.langchain.com/docs/modules/data_connection/text_embedding/caching_embeddings), it can be instantiated using `CacheBackedEmbeddings.from_bytes_store` method.
 
 ```python
-from elasticsearch import Elasticsearch
 from langchain.embeddings import CacheBackedEmbeddings
 from langchain_openai import OpenAIEmbeddings
 
 from langchain_elasticsearch import ElasticsearchEmbeddingsCache
 
-es_client = Elasticsearch(hosts="http://localhost:9200")
-
 underlying_embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
 store = ElasticsearchEmbeddingsCache(
-  es_connection=es_client,
-  index_name="llm-chat-cache",
-  metadata={"project": "my_chatgpt_project"},
-  namespace="my_chatgpt_project",
+    es_url="http://localhost:9200",
+    index_name="llm-chat-cache",
+    metadata={"project": "my_chatgpt_project"},
+    namespace="my_chatgpt_project",
 )
-cached_embeddings = CacheBackedEmbeddings(
- underlying_embeddings=underlying_embeddings, 
- document_embedding_store=store,
- query_embedding_store=store,
+
+embeddings = CacheBackedEmbeddings.from_bytes_store(
+    underlying_embeddings=OpenAIEmbeddings(),
+    document_embedding_cache=store,
+    query_embedding_cache=store,
 )
 ```
 

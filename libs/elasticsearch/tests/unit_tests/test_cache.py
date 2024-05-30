@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Any, Dict
+from unittest import mock
 from unittest.mock import ANY, MagicMock, patch
 
-import pytest
 from _pytest.fixtures import FixtureRequest
 from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
-from elasticsearch import NotFoundError, exceptions
+from elasticsearch import NotFoundError
 from langchain.embeddings.cache import _value_serializer
 from langchain_core.load import dumps
 from langchain_core.outputs import Generation
@@ -18,24 +18,29 @@ def serialize_encode_vector(vector: Any) -> str:
 
 
 def test_initialization_llm_cache(es_client_fx: MagicMock) -> None:
-    es_client_fx.ping.return_value = False
-    with pytest.raises(exceptions.ConnectionError):
-        ElasticsearchCache(es_connection=es_client_fx, index_name="test_index")
     es_client_fx.ping.return_value = True
     es_client_fx.indices.exists_alias.return_value = True
-    cache = ElasticsearchCache(es_connection=es_client_fx, index_name="test_index")
-    es_client_fx.indices.exists_alias.assert_called_with(name="test_index")
-    assert cache._is_alias
-    es_client_fx.indices.put_mapping.assert_called_with(
-        index="test_index", body=cache.mapping["mappings"]
-    )
-    es_client_fx.indices.exists_alias.return_value = False
-    es_client_fx.indices.exists.return_value = False
-    cache = ElasticsearchCache(es_connection=es_client_fx, index_name="test_index")
-    assert not cache._is_alias
-    es_client_fx.indices.create.assert_called_with(
-        index="test_index", body=cache.mapping
-    )
+    with mock.patch(
+        "langchain_elasticsearch.cache.create_elasticsearch_client",
+        return_value=es_client_fx,
+    ):
+        cache = ElasticsearchCache(
+            es_url="http://localhost:9200", index_name="test_index"
+        )
+        es_client_fx.indices.exists_alias.assert_called_with(name="test_index")
+        assert cache._is_alias
+        es_client_fx.indices.put_mapping.assert_called_with(
+            index="test_index", body=cache.mapping["mappings"]
+        )
+        es_client_fx.indices.exists_alias.return_value = False
+        es_client_fx.indices.exists.return_value = False
+        cache = ElasticsearchCache(
+            es_url="http://localhost:9200", index_name="test_index"
+        )
+        assert not cache._is_alias
+        es_client_fx.indices.create.assert_called_with(
+            index="test_index", body=cache.mapping
+        )
 
 
 def test_mapping_llm_cache(
@@ -148,39 +153,39 @@ def test_lookup_llm_cache(
 
 
 def test_key_generation_cache_store(
-    es_cache_store_fx: ElasticsearchEmbeddingsCache,
+    es_embeddings_cache_fx: ElasticsearchEmbeddingsCache,
 ) -> None:
-    key1 = es_cache_store_fx._key("test_text")
+    key1 = es_embeddings_cache_fx._key("test_text")
     assert key1 and isinstance(key1, str)
-    key2 = es_cache_store_fx._key("test_text2")
+    key2 = es_embeddings_cache_fx._key("test_text2")
     assert key2 and key1 != key2
-    es_cache_store_fx._namespace = "other"
-    key3 = es_cache_store_fx._key("test_text")
+    es_embeddings_cache_fx._namespace = "other"
+    key3 = es_embeddings_cache_fx._key("test_text")
     assert key3 and key1 != key3
-    es_cache_store_fx._namespace = None
-    key4 = es_cache_store_fx._key("test_text")
+    es_embeddings_cache_fx._namespace = None
+    key4 = es_embeddings_cache_fx._key("test_text")
     assert key4 and key1 != key4 and key3 != key4
 
 
 def test_build_document_cache_store(
-    es_cache_store_fx: ElasticsearchEmbeddingsCache,
+    es_embeddings_cache_fx: ElasticsearchEmbeddingsCache,
 ) -> None:
-    doc = es_cache_store_fx.build_document(
+    doc = es_embeddings_cache_fx.build_document(
         "test_text", _value_serializer([1.5, 2, 3.6])
     )
     assert doc["text_input"] == "test_text"
     assert doc["vector_dump"] == serialize_encode_vector([1.5, 2, 3.6])
     assert datetime.fromisoformat(str(doc["timestamp"]))
-    assert doc["metadata"] == es_cache_store_fx._metadata
+    assert doc["metadata"] == es_embeddings_cache_fx._metadata
 
 
 def test_mget_cache_store(
-    es_client_fx: MagicMock, es_cache_store_fx: ElasticsearchEmbeddingsCache
+    es_client_fx: MagicMock, es_embeddings_cache_fx: ElasticsearchEmbeddingsCache
 ) -> None:
     cache_keys = [
-        es_cache_store_fx._key("test_text1"),
-        es_cache_store_fx._key("test_text2"),
-        es_cache_store_fx._key("test_text3"),
+        es_embeddings_cache_fx._key("test_text1"),
+        es_embeddings_cache_fx._key("test_text2"),
+        es_embeddings_cache_fx._key("test_text3"),
     ]
     docs = {
         "docs": [
@@ -199,10 +204,10 @@ def test_mget_cache_store(
             },
         ]
     }
-    es_cache_store_fx._is_alias = False
+    es_embeddings_cache_fx._is_alias = False
     es_client_fx.mget.return_value = docs
-    assert es_cache_store_fx.mget([]) == []
-    assert es_cache_store_fx.mget(["test_text1", "test_text2", "test_text3"]) == [
+    assert es_embeddings_cache_fx.mget([]) == []
+    assert es_embeddings_cache_fx.mget(["test_text1", "test_text2", "test_text3"]) == [
         None,
         _value_serializer([1.5, 2, 3.6]),
         _value_serializer([5, 6, 7.1]),
@@ -210,10 +215,10 @@ def test_mget_cache_store(
     es_client_fx.mget.assert_called_with(
         index="test_index", ids=cache_keys, source_includes=["vector_dump"]
     )
-    es_cache_store_fx._is_alias = True
+    es_embeddings_cache_fx._is_alias = True
     es_client_fx.search.return_value = {"hits": {"total": {"value": 0}, "hits": []}}
-    assert es_cache_store_fx.mget([]) == []
-    assert es_cache_store_fx.mget(["test_text1", "test_text2", "test_text3"]) == [
+    assert es_embeddings_cache_fx.mget([]) == []
+    assert es_embeddings_cache_fx.mget(["test_text1", "test_text2", "test_text3"]) == [
         None,
         None,
         None,
@@ -230,14 +235,14 @@ def test_mget_cache_store(
         "hits": {"total": {"value": 3}, "hits": [d for d in docs["docs"] if d["found"]]}
     }
     es_client_fx.search.return_value = resp
-    assert es_cache_store_fx.mget(["test_text1", "test_text2", "test_text3"]) == [
+    assert es_embeddings_cache_fx.mget(["test_text1", "test_text2", "test_text3"]) == [
         None,
         _value_serializer([1.5, 2, 3.6]),
         _value_serializer([5, 6, 7.1]),
     ]
 
 
-def test_deduplicate_hits(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> None:
+def test_deduplicate_hits(es_embeddings_cache_fx: ElasticsearchEmbeddingsCache) -> None:
     hits = [
         {
             "_id": "1",
@@ -262,7 +267,7 @@ def test_deduplicate_hits(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> No
         },
     ]
 
-    result = es_cache_store_fx._deduplicate_hits(hits)
+    result = es_embeddings_cache_fx._deduplicate_hits(hits)
 
     assert len(result) == 2
     assert result["1"] == _value_serializer([4, 5, 6])
@@ -270,11 +275,11 @@ def test_deduplicate_hits(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> No
 
 
 def test_mget_duplicate_keys_cache_store(
-    es_client_fx: MagicMock, es_cache_store_fx: ElasticsearchEmbeddingsCache
+    es_client_fx: MagicMock, es_embeddings_cache_fx: ElasticsearchEmbeddingsCache
 ) -> None:
     cache_keys = [
-        es_cache_store_fx._key("test_text1"),
-        es_cache_store_fx._key("test_text2"),
+        es_embeddings_cache_fx._key("test_text1"),
+        es_embeddings_cache_fx._key("test_text2"),
     ]
 
     resp = {
@@ -312,9 +317,9 @@ def test_mget_duplicate_keys_cache_store(
         }
     }
 
-    es_cache_store_fx._is_alias = True
+    es_embeddings_cache_fx._is_alias = True
     es_client_fx.search.return_value = resp
-    assert es_cache_store_fx.mget(["test_text1", "test_text2"]) == [
+    assert es_embeddings_cache_fx.mget(["test_text1", "test_text2"]) == [
         _value_serializer([2, 6, 7.1]),
         _value_serializer([1.5, 2, 3.6]),
     ]
@@ -333,7 +338,7 @@ def _del_timestamp(doc: Dict[str, Any]) -> Dict[str, Any]:
     return doc
 
 
-def test_mset_cache_store(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> None:
+def test_mset_cache_store(es_embeddings_cache_fx: ElasticsearchEmbeddingsCache) -> None:
     input = [
         ("test_text1", _value_serializer([1.5, 2, 3.6])),
         ("test_text2", _value_serializer([5, 6, 7.1])),
@@ -341,18 +346,18 @@ def test_mset_cache_store(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> No
     actions = [
         {
             "_op_type": "index",
-            "_id": es_cache_store_fx._key(k),
-            "_source": es_cache_store_fx.build_document(k, v),
+            "_id": es_embeddings_cache_fx._key(k),
+            "_source": es_embeddings_cache_fx.build_document(k, v),
         }
         for k, v in input
     ]
-    es_cache_store_fx._is_alias = False
+    es_embeddings_cache_fx._is_alias = False
     with patch("elasticsearch.helpers.bulk") as bulk_mock:
-        es_cache_store_fx.mset([])
+        es_embeddings_cache_fx.mset([])
         bulk_mock.assert_called_once()
-        es_cache_store_fx.mset(input)
+        es_embeddings_cache_fx.mset(input)
         bulk_mock.assert_called_with(
-            client=es_cache_store_fx._es_client,
+            client=es_embeddings_cache_fx._es_client,
             actions=ANY,
             index="test_index",
             require_alias=False,
@@ -363,16 +368,20 @@ def test_mset_cache_store(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> No
         ]
 
 
-def test_mdelete_cache_store(es_cache_store_fx: ElasticsearchEmbeddingsCache) -> None:
+def test_mdelete_cache_store(
+    es_embeddings_cache_fx: ElasticsearchEmbeddingsCache,
+) -> None:
     input = ["test_text1", "test_text2"]
-    actions = [{"_op_type": "delete", "_id": es_cache_store_fx._key(k)} for k in input]
-    es_cache_store_fx._is_alias = False
+    actions = [
+        {"_op_type": "delete", "_id": es_embeddings_cache_fx._key(k)} for k in input
+    ]
+    es_embeddings_cache_fx._is_alias = False
     with patch("elasticsearch.helpers.bulk") as bulk_mock:
-        es_cache_store_fx.mdelete([])
+        es_embeddings_cache_fx.mdelete([])
         bulk_mock.assert_called_once()
-        es_cache_store_fx.mdelete(input)
+        es_embeddings_cache_fx.mdelete(input)
         bulk_mock.assert_called_with(
-            client=es_cache_store_fx._es_client,
+            client=es_embeddings_cache_fx._es_client,
             actions=ANY,
             index="test_index",
             require_alias=False,

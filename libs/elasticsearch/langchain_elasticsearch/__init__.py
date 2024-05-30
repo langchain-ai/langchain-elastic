@@ -24,9 +24,9 @@ from langchain_elasticsearch.vectorstores import (
 
 __all__ = [
     "ElasticsearchCache",
-    "ElasticsearchEmbeddingsCache",
     "ElasticsearchChatMessageHistory",
     "ElasticsearchEmbeddings",
+    "ElasticsearchEmbeddingsCache",
     "ElasticsearchRetriever",
     "ElasticsearchStore",
     # retrieval strategies
