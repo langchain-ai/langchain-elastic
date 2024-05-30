@@ -119,15 +119,13 @@ A caching layer for LLMs that uses Elasticsearch.
 Simple example:
 
 ```python
-from elasticsearch import Elasticsearch
 from langchain.globals import set_llm_cache
 
 from langchain_elasticsearch import ElasticsearchCache
 
-es_client = Elasticsearch(hosts="http://localhost:9200")
 set_llm_cache(
     ElasticsearchCache(
-        es_connection=es_client,
+        es_url="http://localhost:9200",
         index_name="llm-chat-cache",
         metadata={"project": "my_chatgpt_project"},
     )
@@ -153,7 +151,6 @@ The new cache class can be applied also to a pre-existing cache index:
 import json
 from typing import Any, Dict, List
 
-from elasticsearch import Elasticsearch
 from langchain.globals import set_llm_cache
 from langchain_core.caches import RETURN_VAL_TYPE
 
@@ -185,11 +182,65 @@ class SearchableElasticsearchCache(ElasticsearchCache):
         ]
 
 
-es_client = Elasticsearch(hosts="http://localhost:9200")
 set_llm_cache(
-    SearchableElasticsearchCache(es_connection=es_client, index_name="llm-chat-cache")
+    SearchableElasticsearchCache(
+       es_url="http://localhost:9200", 
+       index_name="llm-chat-cache"
+    )
 )
 ```
 
 When overriding the mapping and the document building, 
 please only make additive modifications, keeping the base mapping intact.
+
+###  ElasticsearchEmbeddingsCache
+
+Store and temporarily cache embeddings.
+
+Caching embeddings is obtained by using the [CacheBackedEmbeddings](https://python.langchain.com/docs/modules/data_connection/text_embedding/caching_embeddings), it can be instantiated using `CacheBackedEmbeddings.from_bytes_store` method.
+
+```python
+from langchain.embeddings import CacheBackedEmbeddings
+from langchain_openai import OpenAIEmbeddings
+
+from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+
+underlying_embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
+store = ElasticsearchEmbeddingsCache(
+    es_url="http://localhost:9200",
+    index_name="llm-chat-cache",
+    metadata={"project": "my_chatgpt_project"},
+    namespace="my_chatgpt_project",
+)
+
+embeddings = CacheBackedEmbeddings.from_bytes_store(
+    underlying_embeddings=OpenAIEmbeddings(),
+    document_embedding_cache=store,
+    query_embedding_cache=store,
+)
+```
+
+Similarly to the chat cache, one can subclass `ElasticsearchEmbeddingsCache` in order to index vectors for search.
+
+```python
+from typing import Any, Dict, List
+from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+
+class SearchableElasticsearchStore(ElasticsearchEmbeddingsCache):
+    @property
+    def mapping(self) -> Dict[str, Any]:
+        mapping = super().mapping
+        mapping["mappings"]["properties"]["vector"] = {
+            "type": "dense_vector",
+            "dims": 1536,
+            "index": True,
+            "similarity": "dot_product",
+        }
+        return mapping
+
+    def build_document(self, llm_input: str, vector: List[float]) -> Dict[str, Any]:
+        body = super().build_document(llm_input, vector)
+        body["vector"] = vector
+        return body
+```

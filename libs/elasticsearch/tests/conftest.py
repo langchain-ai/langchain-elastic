@@ -1,4 +1,5 @@
 from typing import Generator
+from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
@@ -8,7 +9,7 @@ from langchain_community.chat_models.fake import FakeMessagesListChatModel
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
-from langchain_elasticsearch import ElasticsearchCache
+from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache
 
 
 @pytest.fixture
@@ -19,14 +20,35 @@ def es_client_fx() -> Generator[MagicMock, None, None]:
 
 
 @pytest.fixture
+def es_embeddings_cache_fx(
+    es_client_fx: MagicMock,
+) -> Generator[ElasticsearchEmbeddingsCache, None, None]:
+    with mock.patch(
+        "langchain_elasticsearch.cache.create_elasticsearch_client",
+        return_value=es_client_fx,
+    ):
+        yield ElasticsearchEmbeddingsCache(
+            es_url="http://localhost:9200",
+            index_name="test_index",
+            store_input=True,
+            namespace="test",
+            metadata={"project": "test_project"},
+        )
+
+
+@pytest.fixture
 def es_cache_fx(es_client_fx: MagicMock) -> Generator[ElasticsearchCache, None, None]:
-    yield ElasticsearchCache(
-        es_connection=es_client_fx,
-        index_name="test_index",
-        store_input=True,
-        store_input_params=True,
-        metadata={"project": "test_project"},
-    )
+    with mock.patch(
+        "langchain_elasticsearch.cache.create_elasticsearch_client",
+        return_value=es_client_fx,
+    ):
+        yield ElasticsearchCache(
+            es_url="http://localhost:30096",
+            index_name="test_index",
+            store_input=True,
+            store_input_params=True,
+            metadata={"project": "test_project"},
+        )
 
 
 @pytest.fixture

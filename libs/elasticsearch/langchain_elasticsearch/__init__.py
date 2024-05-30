@@ -7,7 +7,10 @@ from elasticsearch.helpers.vectorstore import (
     SparseVectorStrategy,
 )
 
-from langchain_elasticsearch.cache import ElasticsearchCache
+from langchain_elasticsearch.cache import (
+    ElasticsearchCache,
+    ElasticsearchEmbeddingsCache,
+)
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
 from langchain_elasticsearch.embeddings import ElasticsearchEmbeddings
 from langchain_elasticsearch.retrievers import ElasticsearchRetriever
@@ -23,6 +26,7 @@ __all__ = [
     "ElasticsearchCache",
     "ElasticsearchChatMessageHistory",
     "ElasticsearchEmbeddings",
+    "ElasticsearchEmbeddingsCache",
     "ElasticsearchRetriever",
     "ElasticsearchStore",
     # retrieval strategies

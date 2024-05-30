@@ -4,6 +4,7 @@ EXPECTED_ALL = [
     "ElasticsearchCache",
     "ElasticsearchChatMessageHistory",
     "ElasticsearchEmbeddings",
+    "ElasticsearchEmbeddingsCache",
     "ElasticsearchRetriever",
     "ElasticsearchStore",
     # retrieval strategies

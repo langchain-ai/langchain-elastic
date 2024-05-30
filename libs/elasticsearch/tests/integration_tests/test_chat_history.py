@@ -8,11 +8,7 @@ from langchain_core.messages import message_to_dict
 
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
 
-from ._test_utilities import (
-    clear_test_indices,
-    create_es_client,
-    read_env,
-)
+from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 """
 cd tests/integration_tests
