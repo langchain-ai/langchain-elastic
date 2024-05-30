@@ -27,14 +27,13 @@ def es_embeddings_cache_fx(
         "langchain_elasticsearch.cache.create_elasticsearch_client",
         return_value=es_client_fx,
     ):
-        cache = ElasticsearchEmbeddingsCache(
+        yield ElasticsearchEmbeddingsCache(
             es_url="http://localhost:9200",
             index_name="test_index",
             store_input=True,
             namespace="test",
             metadata={"project": "test_project"},
         )
-        yield cache
 
 
 @pytest.fixture
@@ -43,14 +42,13 @@ def es_cache_fx(es_client_fx: MagicMock) -> Generator[ElasticsearchCache, None, 
         "langchain_elasticsearch.cache.create_elasticsearch_client",
         return_value=es_client_fx,
     ):
-        cache = ElasticsearchCache(
+        yield ElasticsearchCache(
             es_url="http://localhost:30096",
             index_name="test_index",
             store_input=True,
             store_input_params=True,
             metadata={"project": "test_project"},
         )
-        yield cache
 
 
 @pytest.fixture
