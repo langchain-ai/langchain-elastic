@@ -16,7 +16,6 @@ from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsC
 def es_client_fx() -> Generator[MagicMock, None, None]:
     client_mock = MagicMock(spec=Elasticsearch)
     client_mock.indices = MagicMock(spec=IndicesClient)
-    client_mock.delete_by_query = MagicMock()
     yield client_mock()
 
 
