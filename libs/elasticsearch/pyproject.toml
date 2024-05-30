@@ -92,3 +92,4 @@ markers = [
   "requires: mark tests as requiring a specific library",
   "asyncio: mark tests as requiring asyncio",
 ]
+asyncio_mode = "auto"
