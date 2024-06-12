@@ -7,3 +7,5 @@ This repository contains 1 package with Elasticsearch integrations with LangChai
     - [ElasticsearchRetriever](https://python.langchain.com/docs/integrations/retrievers/elasticsearch_retriever/)
     - [ElasticsearchEmbeddings](https://python.langchain.com/docs/integrations/text_embedding/elasticsearch/)
     - [ElasticsearchChatMessageHistory](https://python.langchain.com/docs/integrations/memory/elasticsearch_chat_message_history/)
+    - [ElasticsearchCache](https://python.langchain.com/docs/integrations/llm_caching/#elasticsearch-cache)
+    - [ElasticsearchEmbeddingsCache](https://python.langchain.com/docs/integrations/stores/elasticsearch/)
