@@ -704,7 +704,7 @@ class ElasticsearchStore(VectorStore):
         .. code-block:: python
 
             [Document(metadata={'bar': 'baz'}, page_content='thud')]
-            
+
     **Advanced Uses:**
 
     ElasticsearchStore by default uses the ApproxRetrievalStrategy, which uses the
@@ -745,7 +745,7 @@ class ElasticsearchStore(VectorStore):
                 distance_strategy="DOT_PRODUCT"
             )
 
-    """ # noqa: E501
+    """  # noqa: E501
 
     def __init__(
         self,
