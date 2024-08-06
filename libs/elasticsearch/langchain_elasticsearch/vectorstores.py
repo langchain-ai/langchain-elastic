@@ -749,7 +749,7 @@ class ElasticsearchStore(VectorStore):
                 distance_strategy="DOT_PRODUCT"
             )
 
-    """  # noqa: E501
+    """
 
     def __init__(
         self,
