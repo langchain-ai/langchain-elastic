@@ -580,7 +580,9 @@ class ElasticsearchStore(VectorStore):
             from langchain_openai import OpenAIEmbeddings
 
             vector_store = ElasticsearchStore(
-                "langchain-demo", embedding=OpenAIEmbeddings(), es_url="http://localhost:9200"
+                index_name="langchain-demo",
+                embedding=OpenAIEmbeddings(),
+                es_url="http://localhost:9200",
             )
 
     If you want to use a cloud hosted Elasticsearch instance, you can pass in the
