@@ -541,42 +541,54 @@ def _hits_to_docs_scores(
 class ElasticsearchStore(VectorStore):
     """`Elasticsearch` vector store.
 
-    Example:
+     Setup:
+        Install ``langchain_elasticsearch`` and running the Elasticsearch docker container.
+
+        .. code-block:: bash
+
+            pip install -qU langchain_elasticsearch
+            docker run -p 9200:9200 \
+              -e "discovery.type=single-node" \
+              -e "xpack.security.enabled=false" \
+              -e "xpack.security.http.ssl.enabled=false" \
+              docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+
+    Key init args — indexing params:
+        index_name: str
+            Name of the index to create.
+        embedding: Embeddings
+            Embedding function to use.
+
+    Key init args — client params:
+        es_connection: Optional[Elasticsearch]
+            Pre-existing Elasticsearch connection.
+        es_url: Optional[str]
+            URL of the Elasticsearch instance to connect to.
+        es_cloud_id: Optional[str]
+            Cloud ID of the Elasticsearch instance to connect to.
+        es_user: Optional[str]
+            Username to use when connecting to Elasticsearch.
+        es_password: Optional[str]
+            Password to use when connecting to Elasticsearch.
+        es_api_key: Optional[str]
+            API key to use when connecting to Elasticsearch.
+
+    Instantiate:
         .. code-block:: python
 
-            from langchain_elasticsearch.vectorstores import ElasticsearchStore
+            from langchain_elasticsearch import ElasticsearchStore
             from langchain_openai import OpenAIEmbeddings
 
-            store = ElasticsearchStore(
-                embedding=OpenAIEmbeddings(),
+            vector_store = ElasticsearchStore(
                 index_name="langchain-demo",
-                es_url="http://localhost:9200"
+                embedding=OpenAIEmbeddings(),
+                es_url="http://localhost:9200",
             )
-
-    Args:
-        index_name: Name of the Elasticsearch index to create.
-        es_url: URL of the Elasticsearch instance to connect to.
-        cloud_id: Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Username to use when connecting to Elasticsearch.
-        es_password: Password to use when connecting to Elasticsearch.
-        es_api_key: API key to use when connecting to Elasticsearch.
-        es_connection: Optional pre-existing Elasticsearch connection.
-        vector_query_field: Optional. Name of the field to store
-                            the embedding vectors in.
-        query_field: Optional. Name of the field to store the texts in.
-        strategy: Optional. Retrieval strategy to use when searching the index.
-                 Defaults to ApproxRetrievalStrategy. Can be one of
-                 ExactRetrievalStrategy, ApproxRetrievalStrategy,
-                 or SparseRetrievalStrategy.
-        distance_strategy: Optional. Distance strategy to use when
-                            searching the index.
-                            Defaults to COSINE. Can be one of COSINE,
-                            EUCLIDEAN_DISTANCE, MAX_INNER_PRODUCT or DOT_PRODUCT.
 
     If you want to use a cloud hosted Elasticsearch instance, you can pass in the
     cloud_id argument instead of the es_url argument.
 
-    Example:
+    Instantiate from cloud:
         .. code-block:: python
 
             from langchain_elasticsearch.vectorstores import ElasticsearchStore
@@ -593,7 +605,7 @@ class ElasticsearchStore(VectorStore):
     You can also connect to an existing Elasticsearch instance by passing in a
     pre-existing Elasticsearch connection via the es_connection argument.
 
-    Example:
+    Instantiate from existing connection:
         .. code-block:: python
 
             from langchain_elasticsearch.vectorstores import ElasticsearchStore
@@ -609,6 +621,98 @@ class ElasticsearchStore(VectorStore):
                 es_connection=es_connection
             )
 
+    Add Documents:
+        .. code-block:: python
+
+            from langchain_core.documents import Document
+
+            document_1 = Document(page_content="foo", metadata={"baz": "bar"})
+            document_2 = Document(page_content="thud", metadata={"bar": "baz"})
+            document_3 = Document(page_content="i will be deleted :(")
+
+            documents = [document_1, document_2, document_3]
+            ids = ["1", "2", "3"]
+            vector_store.add_documents(documents=documents, ids=ids)
+
+    Delete Documents:
+        .. code-block:: python
+
+            vector_store.delete(ids=["3"])
+
+    Search:
+        .. code-block:: python
+
+            results = vector_store.similarity_search(query="thud",k=1)
+            for doc in results:
+                print(f"* {doc.page_content} [{doc.metadata}]")
+
+        .. code-block:: python
+
+            * thud [{'bar': 'baz'}]
+
+    Search with filter:
+        .. code-block:: python
+
+            results = vector_store.similarity_search(query="thud",k=1,filter=[{"term": {"metadata.bar.keyword": "baz"}}])
+            for doc in results:
+                print(f"* {doc.page_content} [{doc.metadata}]")
+
+        .. code-block:: python
+
+            * thud [{'bar': 'baz'}]
+
+    Search with score:
+        .. code-block:: python
+
+            results = vector_store.similarity_search_with_score(query="qux",k=1)
+            for doc, score in results:
+                print(f"* [SIM={score:3f}] {doc.page_content} [{doc.metadata}]")
+
+        .. code-block:: python
+
+            * [SIM=0.916092] foo [{'baz': 'bar'}]
+
+    Async:
+        .. code-block:: python
+
+            # add documents
+            # await vector_store.aadd_documents(documents=documents, ids=ids)
+
+            # delete documents
+            # await vector_store.adelete(ids=["3"])
+
+            # search
+            # results = vector_store.asimilarity_search(query="thud",k=1)
+
+            # search with score
+            results = await vector_store.asimilarity_search_with_score(query="qux",k=1)
+            for doc,score in results:
+                print(f"* [SIM={score:3f}] {doc.page_content} [{doc.metadata}]")
+
+        .. code-block:: python
+
+            * [SIM=0.916092] foo [{'baz': 'bar'}]
+
+    Use as Retriever:
+
+        .. code-block:: bash
+
+            pip install "elasticsearch[vectorstore_mmr]"
+
+        .. code-block:: python
+
+            retriever = vector_store.as_retriever(
+                search_type="mmr",
+                search_kwargs={"k": 1, "fetch_k": 2, "lambda_mult": 0.5},
+            )
+            retriever.invoke("thud")
+
+        .. code-block:: python
+
+            [Document(metadata={'bar': 'baz'}, page_content='thud')]
+
+    **Advanced Uses:**
+
     ElasticsearchStore by default uses the ApproxRetrievalStrategy, which uses the
     HNSW algorithm to perform approximate nearest neighbor search. This is the
     fastest and most memory efficient algorithm.
@@ -616,7 +720,7 @@ class ElasticsearchStore(VectorStore):
     If you want to use the Brute force / Exact strategy for searching vectors, you
     can pass in the ExactRetrievalStrategy to the ElasticsearchStore constructor.
 
-    Example:
+    Use ExactRetrievalStrategy:
         .. code-block:: python
 
             from langchain_elasticsearch.vectorstores import ElasticsearchStore
@@ -633,7 +737,7 @@ class ElasticsearchStore(VectorStore):
     when creating the index. The default is cosine similarity, but you can also
     use dot product or euclidean distance.
 
-    Example:
+    Use dot product similarity:
         .. code-block:: python
 
             from langchain_elasticsearch.vectorstores import ElasticsearchStore
@@ -647,7 +751,7 @@ class ElasticsearchStore(VectorStore):
                 distance_strategy="DOT_PRODUCT"
             )
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
