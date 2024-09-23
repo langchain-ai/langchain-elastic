@@ -129,18 +129,3 @@ class ElasticsearchRetriever(BaseRetriever):
         field = self.content_field[hit["_index"]]
         content = hit["_source"].pop(field)
         return Document(page_content=content, metadata=hit)
-
-    async def _aget_relevant_documents(
-        self,
-        query: str,
-        *,
-        run_manager: AsyncCallbackManagerForRetrieverRun,
-        **kwargs: Any,
-    ) -> Coroutine[Any, Any, List[Document]]:
-        return await run_in_executor(
-            None,
-            self._get_relevant_documents,
-            query,
-            **kwargs,
-            run_manager=run_manager.get_sync(),
-        )
