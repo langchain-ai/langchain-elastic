@@ -2,7 +2,6 @@ import logging
 from typing import (
     Any,
     Callable,
-    Coroutine,
     Dict,
     List,
     Mapping,
@@ -14,12 +13,10 @@ from typing import (
 
 from elasticsearch import Elasticsearch
 from langchain_core.callbacks import (
-    AsyncCallbackManagerForRetrieverRun,
     CallbackManagerForRetrieverRun,
 )
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
-from langchain_core.runnables.config import run_in_executor
 
 from langchain_elasticsearch._utilities import with_user_agent_header
 from langchain_elasticsearch.client import create_elasticsearch_client
