@@ -1,8 +1,20 @@
 import logging
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+)
 
 from elasticsearch import Elasticsearch
-from langchain_core.callbacks import CallbackManagerForRetrieverRun
+from langchain_core.callbacks import (
+    CallbackManagerForRetrieverRun,
+)
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
@@ -28,6 +40,8 @@ class ElasticsearchRetriever(BaseRetriever):
             multiple indices are queried, specify a dict {index_name: field_name} here.
         document_mapper: Function to map Elasticsearch hits to LangChain Documents.
     """
+
+    _expects_other_args = True
 
     es_client: Elasticsearch
     index_name: Union[str, Sequence[str]]
@@ -94,12 +108,12 @@ class ElasticsearchRetriever(BaseRetriever):
         )
 
     def _get_relevant_documents(
-        self, query: str, *, run_manager: CallbackManagerForRetrieverRun
+        self, query: str, *, run_manager: CallbackManagerForRetrieverRun, **kwargs: Any
     ) -> List[Document]:
         if not self.es_client or not self.document_mapper:
             raise ValueError("faulty configuration")  # should not happen
 
-        body = self.body_func(query)
+        body = self.body_func(query, **kwargs)
         results = self.es_client.search(index=self.index_name, body=body)
         return [self.document_mapper(hit) for hit in results["hits"]["hits"]]
 
