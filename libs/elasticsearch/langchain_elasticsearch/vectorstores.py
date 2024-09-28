@@ -558,6 +558,12 @@ class ElasticsearchStore(VectorStore):
             Name of the index to create.
         embedding: Embeddings
             Embedding function to use.
+        custom_index_settings: Optional[Dict[str, Any]]
+            A dictionary of custom settings for the index.
+            This can include configurations like the number of shards, number of replicas,
+            analysis settings, and other index-specific settings. If not provided, default
+            settings will be used. Note that if the same setting is provided by both the user
+            and the strategy, will raise an error.
 
     Key init args — client params:
         es_connection: Optional[Elasticsearch]
@@ -572,6 +578,8 @@ class ElasticsearchStore(VectorStore):
             Password to use when connecting to Elasticsearch.
         es_api_key: Optional[str]
             API key to use when connecting to Elasticsearch.
+        es_params: Optional[Dict[str, Any]]
+            Additional parameters for the Elasticsearch client.
 
     Instantiate:
         .. code-block:: python
@@ -778,6 +786,7 @@ class ElasticsearchStore(VectorStore):
             BaseRetrievalStrategy, RetrievalStrategy
         ] = ApproxRetrievalStrategy(),
         es_params: Optional[Dict[str, Any]] = None,
+        custom_index_settings: Optional[Dict[str, Any]] = None,
     ):
         if isinstance(strategy, BaseRetrievalStrategy):
             strategy = _convert_retrieval_strategy(
@@ -806,6 +815,7 @@ class ElasticsearchStore(VectorStore):
             text_field=query_field,
             vector_field=vector_query_field,
             user_agent=user_agent("langchain-py-vs"),
+            custom_index_settings=custom_index_settings,
         )
 
         self.embedding = embedding
