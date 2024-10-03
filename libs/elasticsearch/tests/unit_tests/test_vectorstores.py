@@ -6,6 +6,12 @@ from unittest.mock import Mock
 
 import pytest
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers.vectorstore import (
+    AsyncBM25Strategy,
+    AsyncDenseVectorScriptScoreStrategy,
+    AsyncDenseVectorStrategy,
+    AsyncSparseVectorStrategy,
+)
 from langchain_core.documents import Document
 
 from langchain_elasticsearch.embeddings import Embeddings, EmbeddingServiceAdapter
@@ -155,35 +161,49 @@ class TestHitsToDocsScores:
 
 class TestConvertStrategy:
     def test_dense_approx(self) -> None:
-        actual = _convert_retrieval_strategy(
+        actual_sync, actual_async = _convert_retrieval_strategy(
             ApproxRetrievalStrategy(query_model_id="my model", hybrid=True, rrf=False),
             distance=DistanceStrategy.DOT_PRODUCT,
         )
-        assert isinstance(actual, DenseVectorStrategy)
-        assert actual.distance == DistanceMetric.DOT_PRODUCT
-        assert actual.model_id == "my model"
-        assert actual.hybrid is True
-        assert actual.rrf is False
+        assert isinstance(actual_sync, DenseVectorStrategy)
+        assert actual_sync.distance == DistanceMetric.DOT_PRODUCT
+        assert actual_sync.model_id == "my model"
+        assert actual_sync.hybrid is True
+        assert actual_sync.rrf is False
+        assert isinstance(actual_async, AsyncDenseVectorStrategy)
+        assert actual_async.distance == DistanceMetric.DOT_PRODUCT
+        assert actual_async.model_id == "my model"
+        assert actual_async.hybrid is True
+        assert actual_async.rrf is False
 
     def test_dense_exact(self) -> None:
-        actual = _convert_retrieval_strategy(
+        actual_sync, actual_async = _convert_retrieval_strategy(
             ExactRetrievalStrategy(), distance=DistanceStrategy.EUCLIDEAN_DISTANCE
         )
-        assert isinstance(actual, DenseVectorScriptScoreStrategy)
-        assert actual.distance == DistanceMetric.EUCLIDEAN_DISTANCE
+        assert isinstance(actual_sync, DenseVectorScriptScoreStrategy)
+        assert actual_sync.distance == DistanceMetric.EUCLIDEAN_DISTANCE
+        assert isinstance(actual_async, AsyncDenseVectorScriptScoreStrategy)
+        assert actual_async.distance == DistanceMetric.EUCLIDEAN_DISTANCE
 
     def test_sparse(self) -> None:
-        actual = _convert_retrieval_strategy(
+        actual_sync, actual_async = _convert_retrieval_strategy(
             SparseRetrievalStrategy(model_id="my model ID")
         )
-        assert isinstance(actual, SparseVectorStrategy)
-        assert actual.model_id == "my model ID"
+        assert isinstance(actual_sync, SparseVectorStrategy)
+        assert actual_sync.model_id == "my model ID"
+        assert isinstance(actual_async, AsyncSparseVectorStrategy)
+        assert actual_async.model_id == "my model ID"
 
     def test_bm25(self) -> None:
-        actual = _convert_retrieval_strategy(BM25RetrievalStrategy(k1=1.7, b=5.4))
-        assert isinstance(actual, BM25Strategy)
-        assert actual.k1 == 1.7
-        assert actual.b == 5.4
+        actual_sync, actual_async = _convert_retrieval_strategy(
+            BM25RetrievalStrategy(k1=1.7, b=5.4)
+        )
+        assert isinstance(actual_sync, BM25Strategy)
+        assert actual_sync.k1 == 1.7
+        assert actual_sync.b == 5.4
+        assert isinstance(actual_async, AsyncBM25Strategy)
+        assert actual_async.k1 == 1.7
+        assert actual_async.b == 5.4
 
 
 class TestVectorStore:

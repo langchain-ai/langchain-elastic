@@ -1,9 +1,26 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
-from elasticsearch import Elasticsearch
+from elasticsearch import AsyncElasticsearch, Elasticsearch
 from elasticsearch.helpers.vectorstore import (
+    AsyncBM25Strategy,
+    AsyncDenseVectorScriptScoreStrategy,
+    AsyncDenseVectorStrategy,
+    AsyncRetrievalStrategy,
+    AsyncSparseVectorStrategy,
+    AsyncVectorStore,
     BM25Strategy,
     DenseVectorScriptScoreStrategy,
     DenseVectorStrategy,
@@ -22,7 +39,10 @@ from langchain_elasticsearch._utilities import (
     model_must_be_deployed,
     user_agent,
 )
-from langchain_elasticsearch.client import create_elasticsearch_client
+from langchain_elasticsearch.client import (
+    create_elasticsearch_async_client,
+    create_elasticsearch_client,
+)
 from langchain_elasticsearch.embeddings import EmbeddingServiceAdapter
 
 logger = logging.getLogger(__name__)
@@ -470,13 +490,13 @@ class BM25RetrievalStrategy(BaseRetrievalStrategy):
 def _convert_retrieval_strategy(
     langchain_strategy: BaseRetrievalStrategy,
     distance: Optional[DistanceStrategy] = None,
-) -> RetrievalStrategy:
+) -> Tuple[RetrievalStrategy, AsyncRetrievalStrategy]:
     if isinstance(langchain_strategy, ApproxRetrievalStrategy):
         if distance is None:
             raise ValueError(
                 "ApproxRetrievalStrategy requires a distance strategy to be provided."
             )
-        return DenseVectorStrategy(
+        params = dict(
             distance=DistanceMetric[distance],
             model_id=langchain_strategy.query_model_id,
             hybrid=(
@@ -486,21 +506,41 @@ def _convert_retrieval_strategy(
             ),
             rrf=False if langchain_strategy.rrf is None else langchain_strategy.rrf,
         )
+        return DenseVectorStrategy(**params), AsyncDenseVectorStrategy(**params)
     elif isinstance(langchain_strategy, ExactRetrievalStrategy):
         if distance is None:
             raise ValueError(
                 "ExactRetrievalStrategy requires a distance strategy to be provided."
             )
-        return DenseVectorScriptScoreStrategy(distance=DistanceMetric[distance])
+        return DenseVectorScriptScoreStrategy(
+            distance=DistanceMetric[distance]
+        ), AsyncDenseVectorScriptScoreStrategy(distance=DistanceMetric[distance])
     elif isinstance(langchain_strategy, SparseRetrievalStrategy):
-        return SparseVectorStrategy(langchain_strategy.model_id)
+        return SparseVectorStrategy(
+            langchain_strategy.model_id
+        ), AsyncSparseVectorStrategy(langchain_strategy.model_id)
     elif isinstance(langchain_strategy, BM25RetrievalStrategy):
-        return BM25Strategy(k1=langchain_strategy.k1, b=langchain_strategy.b)
+        return BM25Strategy(
+            k1=langchain_strategy.k1, b=langchain_strategy.b
+        ), AsyncBM25Strategy(k1=langchain_strategy.k1, b=langchain_strategy.b)
     else:
         raise TypeError(
             f"Strategy {langchain_strategy} not supported. To provide a "
             f"custom strategy, please subclass {RetrievalStrategy}."
         )
+
+
+_sync_to_async_strategy_map: Dict[
+    Type[RetrievalStrategy], Type[AsyncRetrievalStrategy]
+] = {
+    SparseVectorStrategy: AsyncSparseVectorStrategy,
+    DenseVectorStrategy: AsyncDenseVectorStrategy,
+    DenseVectorScriptScoreStrategy: AsyncDenseVectorScriptScoreStrategy,
+    BM25Strategy: AsyncBM25Strategy,
+}
+_async_to_sync_strategy_map: Dict[
+    Type[AsyncRetrievalStrategy], Type[RetrievalStrategy]
+] = {v: k for k, v in _sync_to_async_strategy_map.items()}
 
 
 def _hits_to_docs_scores(
@@ -775,21 +815,47 @@ class ElasticsearchStore(VectorStore):
             ]
         ] = None,
         strategy: Union[
-            BaseRetrievalStrategy, RetrievalStrategy
+            BaseRetrievalStrategy, RetrievalStrategy, AsyncRetrievalStrategy
         ] = ApproxRetrievalStrategy(),
         es_params: Optional[Dict[str, Any]] = None,
     ):
+        async_strategy = strategy
         if isinstance(strategy, BaseRetrievalStrategy):
-            strategy = _convert_retrieval_strategy(
+            strategy, async_strategy = _convert_retrieval_strategy(
                 strategy, distance=distance_strategy or DistanceStrategy.COSINE
             )
+        elif isinstance(strategy, RetrievalStrategy):
+            try:
+                async_strategy = _sync_to_async_strategy_map.get(type(strategy))
+            except KeyError:
+                raise TypeError(
+                    f"Cannot find a proper async counterpart "
+                    f"for retrieval strategy {strategy}"
+                )
+        elif isinstance(strategy, AsyncRetrievalStrategy):
+            try:
+                strategy = _async_to_sync_strategy_map.get(type(strategy))
+            except KeyError:
+                raise TypeError(
+                    f"Cannot find a proper sync counterpart "
+                    f"for the async retrieval strategy {strategy}"
+                )
 
         embedding_service = None
         if embedding:
             embedding_service = EmbeddingServiceAdapter(embedding)
 
+        es_async_connection = None
         if not es_connection:
             es_connection = create_elasticsearch_client(
+                url=es_url,
+                cloud_id=es_cloud_id,
+                api_key=es_api_key,
+                username=es_user,
+                password=es_password,
+                params=es_params,
+            )
+            es_async_connection = create_elasticsearch_async_client(
                 url=es_url,
                 cloud_id=es_cloud_id,
                 api_key=es_api_key,
@@ -808,6 +874,18 @@ class ElasticsearchStore(VectorStore):
             user_agent=user_agent("langchain-py-vs"),
         )
 
+        self._async_store = None
+        if es_async_connection is not None:
+            self._async_store = AsyncVectorStore(
+                client=es_async_connection,
+                index=index_name,
+                retrieval_strategy=async_strategy,
+                embedding_service=embedding_service,
+                text_field=query_field,
+                vector_field=vector_query_field,
+                user_agent=user_agent("langchain-py-vs"),
+            )
+
         self.embedding = embedding
         self.client = self._store.client
         self._embedding_service = embedding_service
@@ -816,6 +894,8 @@ class ElasticsearchStore(VectorStore):
 
     def close(self) -> None:
         self._store.close()
+        if self._async_store is not None:
+            self._async_store.close()
 
     @property
     def embeddings(self) -> Optional[Embeddings]:
