@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict, Optional
 
 from elasticsearch import AsyncElasticsearch, Elasticsearch
@@ -69,6 +70,6 @@ def create_elasticsearch_async_client(
 
     es_client = AsyncElasticsearch(**connection_params)
 
-    es_client.info()  # test connection
+    asyncio.run(es_client.info())  # test connection
 
     return es_client

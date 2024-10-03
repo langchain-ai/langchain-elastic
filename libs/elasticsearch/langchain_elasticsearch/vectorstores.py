@@ -499,17 +499,21 @@ def _convert_retrieval_strategy(
             raise ValueError(
                 "ApproxRetrievalStrategy requires a distance strategy to be provided."
             )
-        params = dict(
+        hybrid = (
+            False if langchain_strategy.hybrid is None else langchain_strategy.hybrid
+        )
+        rrf = False if langchain_strategy.rrf is None else langchain_strategy.rrf
+        return DenseVectorStrategy(
             distance=DistanceMetric[distance],
             model_id=langchain_strategy.query_model_id,
-            hybrid=(
-                False
-                if langchain_strategy.hybrid is None
-                else langchain_strategy.hybrid
-            ),
-            rrf=False if langchain_strategy.rrf is None else langchain_strategy.rrf,
+            hybrid=hybrid,
+            rrf=rrf,
+        ), AsyncDenseVectorStrategy(
+            distance=DistanceMetric[distance],
+            model_id=langchain_strategy.query_model_id,
+            hybrid=hybrid,
+            rrf=rrf,
         )
-        return DenseVectorStrategy(**params), AsyncDenseVectorStrategy(**params)
     elif isinstance(langchain_strategy, ExactRetrievalStrategy):
         if distance is None:
             raise ValueError(
@@ -533,7 +537,7 @@ def _convert_retrieval_strategy(
         )
 
 
-# FIXME this maps must be kept updated with new strategy classes in Elasticsearch library
+# FIXME these must be kept updated with new strategy classes in Elasticsearch library
 _sync_to_async_strategy_map: Dict[
     Type[RetrievalStrategy], Type[AsyncRetrievalStrategy]
 ] = {
@@ -823,14 +827,16 @@ class ElasticsearchStore(VectorStore):
         ] = ApproxRetrievalStrategy(),
         es_params: Optional[Dict[str, Any]] = None,
     ):
-        async_strategy = strategy
+        async_strategy = None
         if isinstance(strategy, BaseRetrievalStrategy):
             strategy, async_strategy = _convert_retrieval_strategy(
                 strategy, distance=distance_strategy or DistanceStrategy.COSINE
             )
         elif isinstance(strategy, RetrievalStrategy):
             try:
-                async_strategy = _sync_to_async_strategy_map.get(type(strategy))
+                async_strategy = _sync_to_async_strategy_map[type(strategy)](
+                    **vars(strategy)
+                )
             except KeyError:
                 raise TypeError(
                     f"Cannot find a proper async counterpart "
@@ -838,7 +844,7 @@ class ElasticsearchStore(VectorStore):
                 )
         elif isinstance(strategy, AsyncRetrievalStrategy):
             try:
-                strategy = _async_to_sync_strategy_map.get(type(strategy))
+                strategy = _async_to_sync_strategy_map[type(strategy)](**vars(strategy))
             except KeyError:
                 raise TypeError(
                     f"Cannot find a proper sync counterpart "
@@ -887,7 +893,8 @@ class ElasticsearchStore(VectorStore):
             self._async_store = AsyncVectorStore(
                 client=es_async_connection,
                 index=index_name,
-                retrieval_strategy=async_strategy,
+                # async_strategy should always be defined at this point
+                retrieval_strategy=async_strategy or AsyncDenseVectorStrategy(),
                 embedding_service=async_embedding_service,
                 text_field=query_field,
                 vector_field=vector_query_field,
@@ -903,8 +910,10 @@ class ElasticsearchStore(VectorStore):
 
     def close(self) -> None:
         self._store.close()
+
+    async def aclose(self) -> None:
         if self._async_store is not None:
-            self._async_store.close()
+            await self._async_store.close()
 
     @property
     def embeddings(self) -> Optional[Embeddings]:
