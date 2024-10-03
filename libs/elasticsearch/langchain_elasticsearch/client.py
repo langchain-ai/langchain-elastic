@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, Dict, Optional
 
 from elasticsearch import AsyncElasticsearch, Elasticsearch
@@ -48,11 +47,8 @@ def create_elasticsearch_client(
     connection_params = _create_client_params(
         url, cloud_id, api_key, username, password, params
     )
-
     es_client = Elasticsearch(**connection_params)
-
     es_client.info()  # test connection
-
     return es_client
 
 
@@ -67,9 +63,6 @@ def create_elasticsearch_async_client(
     connection_params = _create_client_params(
         url, cloud_id, api_key, username, password, params
     )
-
     es_client = AsyncElasticsearch(**connection_params)
-
-    asyncio.run(es_client.info())  # test connection
-
+    # here we skip testing connection, assuming the sync client was created before
     return es_client
