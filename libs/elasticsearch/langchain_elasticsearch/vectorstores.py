@@ -32,6 +32,7 @@ from elasticsearch.helpers.vectorstore import VectorStore as EVectorStore
 from langchain_core._api.deprecation import deprecated
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
+from langchain_core.runnables import run_in_executor
 from langchain_core.vectorstores import VectorStore
 
 from langchain_elasticsearch._utilities import (
@@ -1211,6 +1212,55 @@ class ElasticsearchStore(VectorStore):
             doc_builder=doc_builder,
         )
 
+    async def asimilarity_search_with_score(
+        self,
+        query: str,
+        k: int = 4,
+        filter: Optional[List[dict]] = None,
+        *,
+        custom_query: Optional[
+            Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
+        ] = None,
+        doc_builder: Optional[Callable[[Dict], Document]] = None,
+        **kwargs: Any,
+    ) -> List[Tuple[Document, float]]:
+        """Return Elasticsearch documents most similar to query, along with scores.
+
+        Args:
+            query: Text to look up documents similar to.
+            k: Number of Documents to return. Defaults to 4.
+            filter: Array of Elasticsearch filter clauses to apply to the query.
+
+        Returns:
+            List of Documents most similar to the query and score for each
+        """
+        if self._async_store is not None:
+            if (
+                isinstance(
+                    self._async_store.retrieval_strategy, AsyncDenseVectorStrategy
+                )
+                and self._async_store.retrieval_strategy.hybrid
+            ):
+                raise ValueError("scores are currently not supported in hybrid mode")
+
+            hits = await self._async_store.search(
+                query=query, k=k, filter=filter, custom_query=custom_query
+            )
+            return _hits_to_docs_scores(
+                hits=hits,
+                content_field=self.query_field,
+                doc_builder=doc_builder,
+            )
+        else:
+            return await super().asimilarity_search_with_score(
+                query=query,
+                k=k,
+                filter=filter,
+                custom_query=custom_query,
+                doc_builder=doc_builder,
+                **kwargs,
+            )
+
     def similarity_search_by_vector_with_relevance_scores(
         self,
         embedding: List[float],
@@ -1251,6 +1301,61 @@ class ElasticsearchStore(VectorStore):
             content_field=self.query_field,
             doc_builder=doc_builder,
         )
+
+    async def asimilarity_search_by_vector_with_relevance_scores(
+        self,
+        embedding: List[float],
+        k: int = 4,
+        filter: Optional[List[Dict]] = None,
+        *,
+        custom_query: Optional[
+            Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
+        ] = None,
+        doc_builder: Optional[Callable[[Dict], Document]] = None,
+        **kwargs: Any,
+    ) -> List[Tuple[Document, float]]:
+        """Return Elasticsearch documents most similar to query, along with scores.
+
+        Args:
+            embedding: Embedding to look up documents similar to.
+            k: Number of Documents to return. Defaults to 4.
+            filter: Array of Elasticsearch filter clauses to apply to the query.
+
+        Returns:
+            List of Documents most similar to the embedding and score for each
+        """
+        if self._async_store is not None:
+            if (
+                isinstance(
+                    self._async_store.retrieval_strategy, AsyncDenseVectorStrategy
+                )
+                and self._async_store.retrieval_strategy.hybrid
+            ):
+                raise ValueError("scores are currently not supported in hybrid mode")
+
+            hits = await self._async_store.search(
+                query=None,
+                query_vector=embedding,
+                k=k,
+                filter=filter,
+                custom_query=custom_query,
+            )
+            return _hits_to_docs_scores(
+                hits=hits,
+                content_field=self.query_field,
+                doc_builder=doc_builder,
+            )
+        else:
+            return await run_in_executor(
+                None,
+                self.similarity_search_by_vector_with_relevance_scores,
+                embedding=embedding,
+                k=k,
+                filter=filter,
+                custom_query=custom_query,
+                doc_builder=doc_builder,
+                **kwargs,
+            )
 
     def delete(
         self,

@@ -65,4 +65,5 @@ def create_elasticsearch_async_client(
     )
     es_client = AsyncElasticsearch(**connection_params)
     # here we skip testing connection, assuming the sync client was created before
+    # so that we do not have to run an async method
     return es_client
