@@ -366,7 +366,6 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
 
-    @pytest.mark.asyncio
     async def test_asimilarity_search(
         self, store: ElasticsearchStore, static_hits: List[Dict]
     ) -> None:
@@ -424,7 +423,6 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
 
-    @pytest.mark.asyncio
     async def test_asimilarity_search_by_vector_with_relevance_scores(
         self, store: ElasticsearchStore, static_hits: List[Dict]
     ) -> None:
@@ -457,7 +455,6 @@ class TestVectorStore:
             refresh_indices=True,
         )
 
-    @pytest.mark.asyncio
     async def test_adelete(self, store: ElasticsearchStore) -> None:
         store._async_store.delete = AsyncMock(return_value=True)  # type: ignore
         actual = await store.adelete(
@@ -503,7 +500,6 @@ class TestVectorStore:
             bulk_kwargs={"x": "y"},
         )
 
-    @pytest.mark.asyncio
     async def test_aadd_texts(self, store: ElasticsearchStore) -> None:
         store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
         actual = await store.aadd_texts(
@@ -572,7 +568,6 @@ class TestVectorStore:
             bulk_kwargs={"x": "y"},
         )
 
-    @pytest.mark.asyncio
     async def test_aadd_embeddings(self, store: ElasticsearchStore) -> None:
         store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
         actual = await store.aadd_embeddings(
@@ -635,7 +630,6 @@ class TestVectorStore:
             custom_query=None,
         )
 
-    @pytest.mark.asyncio
     async def test_amax_marginal_relevance_search(
         self,
         hybrid_store: ElasticsearchStore,
@@ -675,7 +669,6 @@ class TestVectorStore:
         with pytest.raises(ValueError):
             hybrid_store.similarity_search_by_vector_with_relevance_scores([1, 2, 3])
 
-    @pytest.mark.asyncio
     async def test_aelasticsearch_hybrid_scores_guard(
         self, hybrid_store: ElasticsearchStore
     ) -> None:
