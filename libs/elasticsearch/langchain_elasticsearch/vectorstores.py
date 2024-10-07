@@ -13,7 +13,7 @@ from typing import (
     Union,
 )
 
-from elasticsearch import Elasticsearch
+from elasticsearch import AsyncElasticsearch, Elasticsearch
 from elasticsearch.helpers.vectorstore import (
     AsyncBM25Strategy,
     AsyncDenseVectorScriptScoreStrategy,
@@ -611,6 +611,8 @@ class ElasticsearchStore(VectorStore):
     Key init args — client params:
         es_connection: Optional[Elasticsearch]
             Pre-existing Elasticsearch connection.
+        es_async_connection: Optional[AsyncElasticsearch]
+            Pre-existing Elasticsearch async connection.
         es_url: Optional[str]
             URL of the Elasticsearch instance to connect to.
         es_cloud_id: Optional[str]
@@ -621,6 +623,9 @@ class ElasticsearchStore(VectorStore):
             Password to use when connecting to Elasticsearch.
         es_api_key: Optional[str]
             API key to use when connecting to Elasticsearch.
+        es_use_async: bool
+            True if async IO methods will be called in an event loop.
+            Default to false, implicitly true when an es_async_connection is set.
 
     Instantiate:
         .. code-block:: python
@@ -808,11 +813,13 @@ class ElasticsearchStore(VectorStore):
         *,
         embedding: Optional[Embeddings] = None,
         es_connection: Optional[Elasticsearch] = None,
+        es_async_connection: Optional[AsyncElasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
+        es_use_async: bool = False,
         vector_query_field: str = "vector",
         query_field: str = "text",
         distance_strategy: Optional[
@@ -828,12 +835,14 @@ class ElasticsearchStore(VectorStore):
         ] = ApproxRetrievalStrategy(),
         es_params: Optional[Dict[str, Any]] = None,
     ):
+        if es_async_connection is not None:
+            es_use_async = True
         async_strategy = None
         if isinstance(strategy, BaseRetrievalStrategy):
             strategy, async_strategy = _convert_retrieval_strategy(
                 strategy, distance=distance_strategy or DistanceStrategy.COSINE
             )
-        elif isinstance(strategy, RetrievalStrategy):
+        elif isinstance(strategy, RetrievalStrategy) and es_use_async:
             try:
                 async_strategy = _sync_to_async_strategy_map[type(strategy)](
                     **vars(strategy)
@@ -856,7 +865,6 @@ class ElasticsearchStore(VectorStore):
         if embedding:
             embedding_service = EmbeddingServiceAdapter(embedding)
 
-        es_async_connection = None
         if not es_connection:
             es_connection = create_elasticsearch_client(
                 url=es_url,
@@ -866,6 +874,7 @@ class ElasticsearchStore(VectorStore):
                 password=es_password,
                 params=es_params,
             )
+        if not es_async_connection and es_use_async:
             es_async_connection = create_elasticsearch_async_client(
                 url=es_url,
                 cloud_id=es_cloud_id,
@@ -887,7 +896,9 @@ class ElasticsearchStore(VectorStore):
 
         self._async_store = None
         self._async_embedding_service = None
-        if es_async_connection is not None:
+        # es_async_connection and es_use_async should
+        # always have the same truth value at this point
+        if es_async_connection is not None and es_use_async:
             async_embedding_service = None
             if embedding:
                 async_embedding_service = AsyncEmbeddingServiceAdapter(embedding)
