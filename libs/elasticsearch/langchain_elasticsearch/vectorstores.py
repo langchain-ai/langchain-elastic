@@ -1375,6 +1375,31 @@ class ElasticsearchStore(VectorStore):
 
         return self._store.delete(ids=ids, refresh_indices=refresh_indices or False)
 
+    async def adelete(
+        self,
+        ids: Optional[List[str]] = None,
+        refresh_indices: Optional[bool] = True,
+        **kwargs: Any,
+    ) -> Optional[bool]:
+        """Delete documents from the Elasticsearch index.
+
+        Args:
+            ids: List of ids of documents to delete.
+            refresh_indices: Whether to refresh the index
+                            after deleting documents. Defaults to True.
+        """
+        if self._async_store is not None:
+            if ids is None:
+                raise ValueError("please specify some IDs")
+
+            return await self._async_store.delete(
+                ids=ids, refresh_indices=refresh_indices or False
+            )
+        else:
+            return await super().adelete(
+                ids=ids, refresh_indices=refresh_indices, **kwargs
+            )
+
     def add_texts(
         self,
         texts: Iterable[str],
@@ -1410,6 +1435,53 @@ class ElasticsearchStore(VectorStore):
             create_index_if_not_exists=create_index_if_not_exists,
             bulk_kwargs=bulk_kwargs,
         )
+
+    async def aadd_texts(
+        self,
+        texts: Iterable[str],
+        metadatas: Optional[List[Dict[Any, Any]]] = None,
+        ids: Optional[List[str]] = None,
+        refresh_indices: bool = True,
+        create_index_if_not_exists: bool = True,
+        bulk_kwargs: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Run more texts through the embeddings and add to the store.
+
+        Args:
+            texts: Iterable of strings to add to the store.
+            metadatas: Optional list of metadatas associated with the texts.
+            ids: Optional list of ids to associate with the texts.
+            refresh_indices: Whether to refresh the Elasticsearch indices
+                            after adding the texts.
+            create_index_if_not_exists: Whether to create the Elasticsearch
+                                        index if it doesn't already exist.
+            *bulk_kwargs: Additional arguments to pass to Elasticsearch bulk.
+                - chunk_size: Optional. Number of texts to add to the
+                    index at a time. Defaults to 500.
+
+        Returns:
+            List of ids from adding the texts into the store.
+        """
+        if self._async_store is not None:
+            return await self._async_store.add_texts(
+                texts=list(texts),
+                metadatas=metadatas,
+                ids=ids,
+                refresh_indices=refresh_indices,
+                create_index_if_not_exists=create_index_if_not_exists,
+                bulk_kwargs=bulk_kwargs,
+            )
+        else:
+            return await super().aadd_texts(
+                texts=list(texts),
+                metadatas=metadatas,
+                ids=ids,
+                refresh_indices=refresh_indices,
+                create_index_if_not_exists=create_index_if_not_exists,
+                bulk_kwargs=bulk_kwargs,
+                **kwargs,
+            )
 
     def add_embeddings(
         self,
@@ -1449,6 +1521,58 @@ class ElasticsearchStore(VectorStore):
             create_index_if_not_exists=create_index_if_not_exists,
             bulk_kwargs=bulk_kwargs,
         )
+
+    async def aadd_embeddings(
+        self,
+        text_embeddings: Iterable[Tuple[str, List[float]]],
+        metadatas: Optional[List[dict]] = None,
+        ids: Optional[List[str]] = None,
+        refresh_indices: bool = True,
+        create_index_if_not_exists: bool = True,
+        bulk_kwargs: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Add the given texts and embeddings to the store.
+
+        Args:
+            text_embeddings: Iterable pairs of string and embedding to
+                add to the store.
+            metadatas: Optional list of metadatas associated with the texts.
+            ids: Optional list of unique IDs.
+            refresh_indices: Whether to refresh the Elasticsearch indices
+                            after adding the texts.
+            create_index_if_not_exists: Whether to create the Elasticsearch
+                                        index if it doesn't already exist.
+            *bulk_kwargs: Additional arguments to pass to Elasticsearch bulk.
+                - chunk_size: Optional. Number of texts to add to the
+                    index at a time. Defaults to 500.
+
+        Returns:
+            List of ids from adding the texts into the store.
+        """
+        if self._async_store is not None:
+            texts, embeddings = zip(*text_embeddings)
+            return await self._async_store.add_texts(
+                texts=list(texts),
+                metadatas=metadatas,
+                vectors=list(embeddings),
+                ids=ids,
+                refresh_indices=refresh_indices,
+                create_index_if_not_exists=create_index_if_not_exists,
+                bulk_kwargs=bulk_kwargs,
+            )
+        else:
+            return await run_in_executor(
+                None,
+                self.add_embeddings,
+                text_embeddings=text_embeddings,
+                metadatas=metadatas,
+                ids=ids,
+                refresh_indices=refresh_indices,
+                create_index_if_not_exists=create_index_if_not_exists,
+                bulk_kwargs=bulk_kwargs,
+                **kwargs,
+            )
 
     @classmethod
     def from_texts(
@@ -1513,6 +1637,68 @@ class ElasticsearchStore(VectorStore):
         return elasticsearchStore
 
     @classmethod
+    async def afrom_texts(
+        cls,
+        texts: List[str],
+        embedding: Optional[Embeddings] = None,
+        metadatas: Optional[List[Dict[str, Any]]] = None,
+        bulk_kwargs: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> "ElasticsearchStore":
+        """Construct ElasticsearchStore wrapper from raw documents.
+
+        Example:
+            .. code-block:: python
+
+                from langchain_elasticsearch.vectorstores import ElasticsearchStore
+                from langchain_openai import OpenAIEmbeddings
+
+                db = ElasticsearchStore.from_texts(
+                    texts,
+                    // embeddings optional if using
+                    // a strategy that doesn't require inference
+                    embeddings,
+                    index_name="langchain-demo",
+                    es_url="http://localhost:9200"
+                )
+
+        Args:
+            texts: List of texts to add to the Elasticsearch index.
+            embedding: Embedding function to use to embed the texts.
+            metadatas: Optional list of metadatas associated with the texts.
+            index_name: Name of the Elasticsearch index to create.
+            es_url: URL of the Elasticsearch instance to connect to.
+            cloud_id: Cloud ID of the Elasticsearch instance to connect to.
+            es_user: Username to use when connecting to Elasticsearch.
+            es_password: Password to use when connecting to Elasticsearch.
+            es_api_key: API key to use when connecting to Elasticsearch.
+            es_connection: Optional pre-existing Elasticsearch connection.
+            vector_query_field: Optional. Name of the field to
+                                store the embedding vectors in.
+            query_field: Optional. Name of the field to store the texts in.
+            distance_strategy: Optional. Name of the distance
+                                strategy to use. Defaults to "COSINE".
+                                can be one of "COSINE",
+                                "EUCLIDEAN_DISTANCE", "DOT_PRODUCT",
+                                "MAX_INNER_PRODUCT".
+            bulk_kwargs: Optional. Additional arguments to pass to
+                        Elasticsearch bulk.
+        """
+
+        index_name = kwargs.get("index_name")
+        if index_name is None:
+            raise ValueError("Please provide an index_name.")
+
+        elasticsearchStore = ElasticsearchStore(embedding=embedding, **kwargs)
+
+        # Encode the provided texts and add them to the newly created index.
+        await elasticsearchStore.aadd_texts(
+            texts=texts, metadatas=metadatas, bulk_kwargs=bulk_kwargs
+        )
+
+        return elasticsearchStore
+
+    @classmethod
     def from_documents(
         cls,
         documents: List[Document],
@@ -1563,6 +1749,60 @@ class ElasticsearchStore(VectorStore):
 
         # Encode the provided texts and add them to the newly created index.
         elasticsearchStore.add_documents(documents, bulk_kwargs=bulk_kwargs)
+
+        return elasticsearchStore
+
+    @classmethod
+    async def afrom_documents(
+        cls,
+        documents: List[Document],
+        embedding: Optional[Embeddings] = None,
+        bulk_kwargs: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> "ElasticsearchStore":
+        """Construct ElasticsearchStore wrapper from documents.
+
+        Example:
+            .. code-block:: python
+
+                from langchain_elasticsearch.vectorstores import ElasticsearchStore
+                from langchain_openai import OpenAIEmbeddings
+
+                db = ElasticsearchStore.from_documents(
+                    texts,
+                    embeddings,
+                    index_name="langchain-demo",
+                    es_url="http://localhost:9200"
+                )
+
+        Args:
+            texts: List of texts to add to the Elasticsearch index.
+            embedding: Embedding function to use to embed the texts.
+                      Do not provide if using a strategy
+                      that doesn't require inference.
+            metadatas: Optional list of metadatas associated with the texts.
+            index_name: Name of the Elasticsearch index to create.
+            es_url: URL of the Elasticsearch instance to connect to.
+            cloud_id: Cloud ID of the Elasticsearch instance to connect to.
+            es_user: Username to use when connecting to Elasticsearch.
+            es_password: Password to use when connecting to Elasticsearch.
+            es_api_key: API key to use when connecting to Elasticsearch.
+            es_connection: Optional pre-existing Elasticsearch connection.
+            vector_query_field: Optional. Name of the field
+                                to store the embedding vectors in.
+            query_field: Optional. Name of the field to store the texts in.
+            bulk_kwargs: Optional. Additional arguments to pass to
+                        Elasticsearch bulk.
+        """
+
+        index_name = kwargs.get("index_name")
+        if index_name is None:
+            raise ValueError("Please provide an index_name.")
+
+        elasticsearchStore = ElasticsearchStore(embedding=embedding, **kwargs)
+
+        # Encode the provided texts and add them to the newly created index.
+        await elasticsearchStore.aadd_documents(documents, bulk_kwargs=bulk_kwargs)
 
         return elasticsearchStore
 
