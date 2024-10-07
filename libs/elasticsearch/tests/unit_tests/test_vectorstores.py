@@ -301,6 +301,33 @@ class TestVectorStore:
         assert store._async_embedding_service is None
         assert isinstance(store._store.retrieval_strategy, BM25Strategy)
         assert store._store.retrieval_strategy.k1 == 20
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_async_connection=async_client,
+            strategy=DenseVectorStrategy(hybrid=True, rrf=True),
+        )
+        assert isinstance(
+            store._async_store.retrieval_strategy,  # type: ignore
+            AsyncDenseVectorStrategy,
+        )
+        assert store._async_store.retrieval_strategy.hybrid  # type: ignore
+        assert store._async_store.retrieval_strategy.rrf  # type: ignore
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_async_connection=async_client,
+            strategy=DenseVectorScriptScoreStrategy(
+                distance=DistanceMetric.DOT_PRODUCT
+            ),
+        )
+        assert isinstance(
+            store._async_store.retrieval_strategy,  # type: ignore
+            AsyncDenseVectorScriptScoreStrategy,
+        )
+        assert (
+            store._async_store.retrieval_strategy.distance == DistanceMetric.DOT_PRODUCT  # type: ignore
+        )
 
     def test_similarity_search(
         self, store: ElasticsearchStore, static_hits: List[Dict]
