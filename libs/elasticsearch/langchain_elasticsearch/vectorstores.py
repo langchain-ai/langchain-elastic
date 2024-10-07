@@ -835,6 +835,12 @@ class ElasticsearchStore(VectorStore):
         ] = ApproxRetrievalStrategy(),
         es_params: Optional[Dict[str, Any]] = None,
     ):
+        if es_connection and es_use_async:
+            es_use_async = False
+            logger.warning(
+                "It is not possible to use Async IO if only an Elasticsearch"
+                " sync client is set, and not its async equivalent."
+            )
         if es_async_connection is not None:
             es_use_async = True
         async_strategy = None

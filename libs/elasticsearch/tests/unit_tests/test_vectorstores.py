@@ -2,10 +2,10 @@
 
 import re
 from typing import Any, Dict, Generator, List, Optional
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
-from elasticsearch import Elasticsearch
+from elasticsearch import AsyncElasticsearch, Elasticsearch
 from elasticsearch.helpers.vectorstore import (
     AsyncBM25Strategy,
     AsyncDenseVectorScriptScoreStrategy,
@@ -14,7 +14,7 @@ from elasticsearch.helpers.vectorstore import (
 )
 from langchain_core.documents import Document
 
-from langchain_elasticsearch.embeddings import Embeddings, EmbeddingServiceAdapter
+from langchain_elasticsearch.embeddings import Embeddings, EmbeddingServiceAdapter, AsyncEmbeddingServiceAdapter
 from langchain_elasticsearch.vectorstores import (
     ApproxRetrievalStrategy,
     BM25RetrievalStrategy,
@@ -214,7 +214,14 @@ class TestVectorStore:
     @pytest.fixture
     def store(self) -> Generator[ElasticsearchStore, None, None]:
         client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
-        store = ElasticsearchStore(index_name="test_index", es_connection=client)
+        async_client = AsyncElasticsearch(
+            hosts=["http://dummy:9200"]
+        )  # never connected to
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_async_connection=async_client,
+        )
         try:
             yield store
         finally:
@@ -225,11 +232,15 @@ class TestVectorStore:
         self, embeddings: Embeddings
     ) -> Generator[ElasticsearchStore, None, None]:
         client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
+        async_client = AsyncElasticsearch(
+            hosts=["http://dummy:9200"]
+        )  # never connected to
         store = ElasticsearchStore(
             index_name="test_index",
             embedding=embeddings,
             strategy=ApproxRetrievalStrategy(hybrid=True),
             es_connection=client,
+            es_async_connection=async_client,
         )
         try:
             yield store
@@ -291,6 +302,44 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
 
+    @pytest.mark.asyncio
+    async def test_asimilarity_search(
+        self, store: ElasticsearchStore, static_hits: List[Dict]
+    ) -> None:
+        store._async_store.search = AsyncMock(return_value=static_hits)  # type: ignore
+        actual1 = await store.asimilarity_search(
+            query="test",
+            k=7,
+            fetch_k=34,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+        assert actual1 == [Document("test")]
+        store._async_store.search.assert_called_with(  # type: ignore
+            query="test",
+            k=7,
+            num_candidates=34,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+
+        store._async_store.search = AsyncMock(return_value=static_hits)  # type: ignore
+
+        actual2 = await store.asimilarity_search_with_score(
+            query="test",
+            k=7,
+            fetch_k=34,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+        assert actual2 == [(Document("test"), 1)]
+        store._async_store.search.assert_called_with(  # type: ignore
+            query="test",
+            k=7,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+
     def test_similarity_search_by_vector_with_relevance_scores(
         self, store: ElasticsearchStore, static_hits: List[Dict]
     ) -> None:
@@ -311,6 +360,27 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
 
+    @pytest.mark.asyncio
+    async def test_asimilarity_search_by_vector_with_relevance_scores(
+        self, store: ElasticsearchStore, static_hits: List[Dict]
+    ) -> None:
+        store._async_store.search = AsyncMock(return_value=static_hits)  # type: ignore
+        actual = await store.asimilarity_search_by_vector_with_relevance_scores(
+            embedding=[1, 2, 3],
+            k=7,
+            fetch_k=34,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+        assert actual == [(Document("test"), 1)]
+        store._async_store.search.assert_called_with(  # type: ignore
+            query=None,
+            query_vector=[1, 2, 3],
+            k=7,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+
     def test_delete(self, store: ElasticsearchStore) -> None:
         store._store.delete = Mock(return_value=True)  # type: ignore[assignment]
         actual = store.delete(
@@ -319,6 +389,19 @@ class TestVectorStore:
         )
         assert actual is True
         store._store.delete.assert_called_with(
+            ids=["10", "20"],
+            refresh_indices=True,
+        )
+
+    @pytest.mark.asyncio
+    async def test_adelete(self, store: ElasticsearchStore) -> None:
+        store._async_store.delete = AsyncMock(return_value=True)  # type: ignore
+        actual = await store.adelete(
+            ids=["10", "20"],
+            refresh_indices=True,
+        )
+        assert actual is True
+        store._async_store.delete.assert_called_with(  # type: ignore
             ids=["10", "20"],
             refresh_indices=True,
         )
@@ -348,6 +431,40 @@ class TestVectorStore:
             bulk_kwargs={"x": "y"},
         )
         store._store.add_texts.assert_called_with(
+            texts=["t1", "t2"],
+            metadatas=[{1: 2}, {3: 4}],
+            ids=["10", "20"],
+            refresh_indices=False,
+            create_index_if_not_exists=False,
+            bulk_kwargs={"x": "y"},
+        )
+
+    @pytest.mark.asyncio
+    async def test_aadd_texts(self, store: ElasticsearchStore) -> None:
+        store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
+        actual = await store.aadd_texts(
+            texts=["t1", "t2"],
+        )
+        assert actual == ["10", "20"]
+        store._async_store.add_texts.assert_called_with(  # type: ignore
+            texts=["t1", "t2"],
+            metadatas=None,
+            ids=None,
+            refresh_indices=True,
+            create_index_if_not_exists=True,
+            bulk_kwargs=None,
+        )
+
+        store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
+        await store.aadd_texts(
+            texts=["t1", "t2"],
+            metadatas=[{1: 2}, {3: 4}],
+            ids=["10", "20"],
+            refresh_indices=False,
+            create_index_if_not_exists=False,
+            bulk_kwargs={"x": "y"},
+        )
+        store._async_store.add_texts.assert_called_with(  # type: ignore
             texts=["t1", "t2"],
             metadatas=[{1: 2}, {3: 4}],
             ids=["10", "20"],
@@ -391,6 +508,42 @@ class TestVectorStore:
             bulk_kwargs={"x": "y"},
         )
 
+    @pytest.mark.asyncio
+    async def test_aadd_embeddings(self, store: ElasticsearchStore) -> None:
+        store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
+        actual = await store.aadd_embeddings(
+            text_embeddings=[("t1", [1, 2, 3]), ("t2", [4, 5, 6])],
+        )
+        assert actual == ["10", "20"]
+        store._async_store.add_texts.assert_called_with(  # type: ignore
+            texts=["t1", "t2"],
+            metadatas=None,
+            vectors=[[1, 2, 3], [4, 5, 6]],
+            ids=None,
+            refresh_indices=True,
+            create_index_if_not_exists=True,
+            bulk_kwargs=None,
+        )
+
+        store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
+        await store.aadd_embeddings(
+            text_embeddings=[("t1", [1, 2, 3]), ("t2", [4, 5, 6])],
+            metadatas=[{1: 2}, {3: 4}],
+            ids=["10", "20"],
+            refresh_indices=False,
+            create_index_if_not_exists=False,
+            bulk_kwargs={"x": "y"},
+        )
+        store._async_store.add_texts.assert_called_with(  # type: ignore
+            texts=["t1", "t2"],
+            metadatas=[{1: 2}, {3: 4}],
+            vectors=[[1, 2, 3], [4, 5, 6]],
+            ids=["10", "20"],
+            refresh_indices=False,
+            create_index_if_not_exists=False,
+            bulk_kwargs={"x": "y"},
+        )
+
     def test_max_marginal_relevance_search(
         self,
         hybrid_store: ElasticsearchStore,
@@ -418,6 +571,34 @@ class TestVectorStore:
             custom_query=None,
         )
 
+    @pytest.mark.asyncio
+    async def test_amax_marginal_relevance_search(
+        self,
+        hybrid_store: ElasticsearchStore,
+        embeddings: Embeddings,
+        static_hits: List[Dict],
+    ) -> None:
+        hybrid_store._async_store.max_marginal_relevance_search = AsyncMock(  # type: ignore
+            return_value=static_hits
+        )
+        actual = await hybrid_store.amax_marginal_relevance_search(
+            query="qqq",
+            k=8,
+            fetch_k=19,
+            lambda_mult=0.3,
+        )
+        assert actual == [Document("test")]
+        hybrid_store._async_store.max_marginal_relevance_search.assert_called_with(  # type: ignore
+            embedding_service=AsyncEmbeddingServiceAdapter(embeddings),
+            query="qqq",
+            vector_field="vector",
+            k=8,
+            num_candidates=19,
+            lambda_mult=0.3,
+            fields=None,
+            custom_query=None,
+        )
+
     def test_elasticsearch_hybrid_scores_guard(
         self, hybrid_store: ElasticsearchStore
     ) -> None:
@@ -429,3 +610,18 @@ class TestVectorStore:
 
         with pytest.raises(ValueError):
             hybrid_store.similarity_search_by_vector_with_relevance_scores([1, 2, 3])
+
+    @pytest.mark.asyncio
+    async def test_aelasticsearch_hybrid_scores_guard(
+        self, hybrid_store: ElasticsearchStore
+    ) -> None:
+        """Ensure an error is raised when search with score in hybrid mode
+        because in this case Elasticsearch does not return any score.
+        """
+        with pytest.raises(ValueError):
+            await hybrid_store.asimilarity_search_with_score("foo")
+
+        with pytest.raises(ValueError):
+            await hybrid_store.asimilarity_search_by_vector_with_relevance_scores(
+                [1, 2, 3]
+            )
