@@ -851,7 +851,7 @@ class ElasticsearchStore(VectorStore):
         elif isinstance(strategy, RetrievalStrategy) and es_use_async:
             try:
                 async_strategy = _sync_to_async_strategy_map[type(strategy)](
-                    **vars(strategy)
+                    **{k: v for k, v in vars(strategy).items() if not k.startswith("_")}
                 )
             except KeyError:
                 raise TypeError(
@@ -860,7 +860,9 @@ class ElasticsearchStore(VectorStore):
                 )
         elif isinstance(strategy, AsyncRetrievalStrategy):
             try:
-                strategy = _async_to_sync_strategy_map[type(strategy)](**vars(strategy))
+                strategy = _async_to_sync_strategy_map[type(strategy)](
+                    **{k: v for k, v in vars(strategy).items() if not k.startswith("_")}
+                )
             except KeyError:
                 raise TypeError(
                     f"Cannot find a proper sync counterpart "

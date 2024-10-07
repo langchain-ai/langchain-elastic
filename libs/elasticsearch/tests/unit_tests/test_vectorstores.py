@@ -11,10 +11,15 @@ from elasticsearch.helpers.vectorstore import (
     AsyncDenseVectorScriptScoreStrategy,
     AsyncDenseVectorStrategy,
     AsyncSparseVectorStrategy,
+    AsyncVectorStore,
 )
 from langchain_core.documents import Document
 
-from langchain_elasticsearch.embeddings import Embeddings, EmbeddingServiceAdapter, AsyncEmbeddingServiceAdapter
+from langchain_elasticsearch.embeddings import (
+    AsyncEmbeddingServiceAdapter,
+    Embeddings,
+    EmbeddingServiceAdapter,
+)
 from langchain_elasticsearch.vectorstores import (
     ApproxRetrievalStrategy,
     BM25RetrievalStrategy,
@@ -264,6 +269,38 @@ class TestVectorStore:
             re.match(r"^langchain-py-vs/\d+\.\d+\.\d+(?:rc\d+)?(?:\.dev\d+)?$", agent)
             is not None
         ), f"The string '{agent}' does not match the expected pattern."
+
+    def test_initialization(
+        self, hybrid_store: ElasticsearchStore, embeddings: Embeddings
+    ) -> None:
+        assert isinstance(
+            hybrid_store._async_embedding_service, AsyncEmbeddingServiceAdapter
+        )
+        client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
+        async_client = AsyncElasticsearch(
+            hosts=["http://dummy:9200"]
+        )  # never connected to
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_async_connection=async_client,
+            strategy=SparseVectorStrategy(model_id="model_1"),
+        )
+        assert isinstance(store._async_store, AsyncVectorStore)
+        assert isinstance(
+            store._async_store.retrieval_strategy, AsyncSparseVectorStrategy
+        )  # type: ignore
+        assert store._async_store.retrieval_strategy.model_id == "model_1"  # type: ignore
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_use_async=True,
+            strategy=AsyncBM25Strategy(k1=20),
+        )
+        assert store._async_store is None
+        assert store._async_embedding_service is None
+        assert isinstance(store._store.retrieval_strategy, BM25Strategy)
+        assert store._store.retrieval_strategy.k1 == 20
 
     def test_similarity_search(
         self, store: ElasticsearchStore, static_hits: List[Dict]
