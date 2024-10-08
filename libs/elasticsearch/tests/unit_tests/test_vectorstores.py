@@ -294,7 +294,7 @@ class TestVectorStore:
         store = ElasticsearchStore(
             index_name="test_index",
             es_connection=client,
-            es_use_async=True,
+            es_use_async_client=True,
             strategy=AsyncBM25Strategy(k1=20),
         )
         assert store._async_store is None
@@ -328,6 +328,11 @@ class TestVectorStore:
         assert (
             store._async_store.retrieval_strategy.distance == DistanceMetric.DOT_PRODUCT  # type: ignore
         )
+        with pytest.raises(ValueError):
+            ElasticsearchStore(
+                index_name="test_index",
+                es_async_connection=async_client,
+            )
 
     def test_similarity_search(
         self, store: ElasticsearchStore, static_hits: List[Dict]
@@ -669,7 +674,7 @@ class TestVectorStore:
         with pytest.raises(ValueError):
             hybrid_store.similarity_search_by_vector_with_relevance_scores([1, 2, 3])
 
-    async def test_aelasticsearch_hybrid_scores_guard(
+    async def test_elasticsearch_hybrid_scores_guard_async(
         self, hybrid_store: ElasticsearchStore
     ) -> None:
         """Ensure an error is raised when search with score in hybrid mode
