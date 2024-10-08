@@ -1,9 +1,26 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
-from elasticsearch import Elasticsearch
+from elasticsearch import AsyncElasticsearch, Elasticsearch
 from elasticsearch.helpers.vectorstore import (
+    AsyncBM25Strategy,
+    AsyncDenseVectorScriptScoreStrategy,
+    AsyncDenseVectorStrategy,
+    AsyncRetrievalStrategy,
+    AsyncSparseVectorStrategy,
+    AsyncVectorStore,
     BM25Strategy,
     DenseVectorScriptScoreStrategy,
     DenseVectorStrategy,
@@ -15,6 +32,7 @@ from elasticsearch.helpers.vectorstore import VectorStore as EVectorStore
 from langchain_core._api.deprecation import deprecated
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
+from langchain_core.runnables import run_in_executor
 from langchain_core.vectorstores import VectorStore
 
 from langchain_elasticsearch._utilities import (
@@ -22,8 +40,14 @@ from langchain_elasticsearch._utilities import (
     model_must_be_deployed,
     user_agent,
 )
-from langchain_elasticsearch.client import create_elasticsearch_client
-from langchain_elasticsearch.embeddings import EmbeddingServiceAdapter
+from langchain_elasticsearch.client import (
+    create_elasticsearch_async_client,
+    create_elasticsearch_client,
+)
+from langchain_elasticsearch.embeddings import (
+    AsyncEmbeddingServiceAdapter,
+    EmbeddingServiceAdapter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -470,37 +494,62 @@ class BM25RetrievalStrategy(BaseRetrievalStrategy):
 def _convert_retrieval_strategy(
     langchain_strategy: BaseRetrievalStrategy,
     distance: Optional[DistanceStrategy] = None,
-) -> RetrievalStrategy:
+) -> Tuple[RetrievalStrategy, AsyncRetrievalStrategy]:
     if isinstance(langchain_strategy, ApproxRetrievalStrategy):
         if distance is None:
             raise ValueError(
                 "ApproxRetrievalStrategy requires a distance strategy to be provided."
             )
+        hybrid = (
+            False if langchain_strategy.hybrid is None else langchain_strategy.hybrid
+        )
+        rrf = False if langchain_strategy.rrf is None else langchain_strategy.rrf
         return DenseVectorStrategy(
             distance=DistanceMetric[distance],
             model_id=langchain_strategy.query_model_id,
-            hybrid=(
-                False
-                if langchain_strategy.hybrid is None
-                else langchain_strategy.hybrid
-            ),
-            rrf=False if langchain_strategy.rrf is None else langchain_strategy.rrf,
+            hybrid=hybrid,
+            rrf=rrf,
+        ), AsyncDenseVectorStrategy(
+            distance=DistanceMetric[distance],
+            model_id=langchain_strategy.query_model_id,
+            hybrid=hybrid,
+            rrf=rrf,
         )
     elif isinstance(langchain_strategy, ExactRetrievalStrategy):
         if distance is None:
             raise ValueError(
                 "ExactRetrievalStrategy requires a distance strategy to be provided."
             )
-        return DenseVectorScriptScoreStrategy(distance=DistanceMetric[distance])
+        return DenseVectorScriptScoreStrategy(
+            distance=DistanceMetric[distance]
+        ), AsyncDenseVectorScriptScoreStrategy(distance=DistanceMetric[distance])
     elif isinstance(langchain_strategy, SparseRetrievalStrategy):
-        return SparseVectorStrategy(langchain_strategy.model_id)
+        return SparseVectorStrategy(
+            langchain_strategy.model_id
+        ), AsyncSparseVectorStrategy(langchain_strategy.model_id)
     elif isinstance(langchain_strategy, BM25RetrievalStrategy):
-        return BM25Strategy(k1=langchain_strategy.k1, b=langchain_strategy.b)
+        return BM25Strategy(
+            k1=langchain_strategy.k1, b=langchain_strategy.b
+        ), AsyncBM25Strategy(k1=langchain_strategy.k1, b=langchain_strategy.b)
     else:
         raise TypeError(
             f"Strategy {langchain_strategy} not supported. To provide a "
             f"custom strategy, please subclass {RetrievalStrategy}."
         )
+
+
+# FIXME these must be kept updated with new strategy classes in Elasticsearch library
+_sync_to_async_strategy_map: Dict[
+    Type[RetrievalStrategy], Type[AsyncRetrievalStrategy]
+] = {
+    SparseVectorStrategy: AsyncSparseVectorStrategy,
+    DenseVectorStrategy: AsyncDenseVectorStrategy,
+    DenseVectorScriptScoreStrategy: AsyncDenseVectorScriptScoreStrategy,
+    BM25Strategy: AsyncBM25Strategy,
+}
+_async_to_sync_strategy_map: Dict[
+    Type[AsyncRetrievalStrategy], Type[RetrievalStrategy]
+] = {v: k for k, v in _sync_to_async_strategy_map.items()}
 
 
 def _hits_to_docs_scores(
@@ -562,6 +611,9 @@ class ElasticsearchStore(VectorStore):
     Key init args — client params:
         es_connection: Optional[Elasticsearch]
             Pre-existing Elasticsearch connection.
+        es_async_connection: Optional[AsyncElasticsearch]
+            Pre-existing Elasticsearch async connection.
+            Must be set together with an es_connection or url / cloud ID.
         es_url: Optional[str]
             URL of the Elasticsearch instance to connect to.
         es_cloud_id: Optional[str]
@@ -572,6 +624,10 @@ class ElasticsearchStore(VectorStore):
             Password to use when connecting to Elasticsearch.
         es_api_key: Optional[str]
             API key to use when connecting to Elasticsearch.
+        es_use_async_client: bool
+            True for calling Async IO methods in an event loop with an async 
+            Elasticsearch client.
+            Default to false, implicitly true when an es_async_connection is set.
 
     Instantiate:
         .. code-block:: python
@@ -759,11 +815,13 @@ class ElasticsearchStore(VectorStore):
         *,
         embedding: Optional[Embeddings] = None,
         es_connection: Optional[Elasticsearch] = None,
+        es_async_connection: Optional[AsyncElasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
+        es_use_async_client: bool = False,
         vector_query_field: str = "vector",
         query_field: str = "text",
         distance_strategy: Optional[
@@ -775,14 +833,48 @@ class ElasticsearchStore(VectorStore):
             ]
         ] = None,
         strategy: Union[
-            BaseRetrievalStrategy, RetrievalStrategy
+            BaseRetrievalStrategy, RetrievalStrategy, AsyncRetrievalStrategy
         ] = ApproxRetrievalStrategy(),
         es_params: Optional[Dict[str, Any]] = None,
     ):
+        if es_connection and es_use_async_client:
+            es_use_async_client = False
+            logger.warning(
+                "It is not possible to use Async IO if only an Elasticsearch"
+                " sync client is set, and not its async equivalent."
+            )
+        if not es_connection and not (es_url or es_cloud_id) and es_async_connection:
+            raise ValueError(
+                "It is not possible to provide only an Async IO client"
+                "for Elasticsearch"
+            )
+        if es_async_connection is not None:
+            es_use_async_client = True
+        async_strategy = None
         if isinstance(strategy, BaseRetrievalStrategy):
-            strategy = _convert_retrieval_strategy(
+            strategy, async_strategy = _convert_retrieval_strategy(
                 strategy, distance=distance_strategy or DistanceStrategy.COSINE
             )
+        elif isinstance(strategy, RetrievalStrategy) and es_use_async_client:
+            try:
+                async_strategy = _sync_to_async_strategy_map[type(strategy)](
+                    **{k: v for k, v in vars(strategy).items() if not k.startswith("_")}
+                )
+            except KeyError:
+                raise TypeError(
+                    f"Cannot find a proper async counterpart "
+                    f"for retrieval strategy {strategy}"
+                )
+        elif isinstance(strategy, AsyncRetrievalStrategy):
+            try:
+                strategy = _async_to_sync_strategy_map[type(strategy)](
+                    **{k: v for k, v in vars(strategy).items() if not k.startswith("_")}
+                )
+            except KeyError:
+                raise TypeError(
+                    f"Cannot find a proper sync counterpart "
+                    f"for the async retrieval strategy {strategy}"
+                )
 
         embedding_service = None
         if embedding:
@@ -790,6 +882,15 @@ class ElasticsearchStore(VectorStore):
 
         if not es_connection:
             es_connection = create_elasticsearch_client(
+                url=es_url,
+                cloud_id=es_cloud_id,
+                api_key=es_api_key,
+                username=es_user,
+                password=es_password,
+                params=es_params,
+            )
+        if not es_async_connection and es_use_async_client:
+            es_async_connection = create_elasticsearch_async_client(
                 url=es_url,
                 cloud_id=es_cloud_id,
                 api_key=es_api_key,
@@ -808,6 +909,26 @@ class ElasticsearchStore(VectorStore):
             user_agent=user_agent("langchain-py-vs"),
         )
 
+        self._async_store = None
+        self._async_embedding_service = None
+        # es_async_connection and es_use_async_client should
+        # always have the same truth value at this point
+        if es_async_connection is not None and es_use_async_client:
+            async_embedding_service = None
+            if embedding:
+                async_embedding_service = AsyncEmbeddingServiceAdapter(embedding)
+            self._async_store = AsyncVectorStore(
+                client=es_async_connection,
+                index=index_name,
+                # async_strategy should always be defined at this point
+                retrieval_strategy=async_strategy or AsyncDenseVectorStrategy(),
+                embedding_service=async_embedding_service,
+                text_field=query_field,
+                vector_field=vector_query_field,
+                user_agent=user_agent("langchain-py-vs"),
+            )
+            self._async_embedding_service = async_embedding_service
+
         self.embedding = embedding
         self.client = self._store.client
         self._embedding_service = embedding_service
@@ -816,6 +937,10 @@ class ElasticsearchStore(VectorStore):
 
     def close(self) -> None:
         self._store.close()
+
+    async def aclose(self) -> None:
+        if self._async_store is not None:
+            await self._async_store.close()
 
     @property
     def embeddings(self) -> Optional[Embeddings]:
@@ -879,6 +1004,56 @@ class ElasticsearchStore(VectorStore):
         )
         return [doc for doc, _score in docs]
 
+    async def asimilarity_search(
+        self,
+        query: str,
+        k: int = 4,
+        fetch_k: int = 50,
+        filter: Optional[List[dict]] = None,
+        *,
+        custom_query: Optional[
+            Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
+        ] = None,
+        doc_builder: Optional[Callable[[Dict], Document]] = None,
+        **kwargs: Any,
+    ) -> List[Document]:
+        """Return Elasticsearch documents most similar to query.
+
+        Args:
+            query: Text to look up documents similar to.
+            k: Number of Documents to return. Defaults to 4.
+            fetch_k (int): Number of Documents to fetch to pass to knn num_candidates.
+            filter: Array of Elasticsearch filter clauses to apply to the query.
+
+        Returns:
+            List of Documents most similar to the query,
+            in descending order of similarity.
+        """
+        if self._async_store is not None:
+            hits = await self._async_store.search(
+                query=query,
+                k=k,
+                num_candidates=fetch_k,
+                filter=filter,
+                custom_query=custom_query,
+            )
+            docs = _hits_to_docs_scores(
+                hits=hits,
+                content_field=self.query_field,
+                doc_builder=doc_builder,
+            )
+            return [doc for doc, _score in docs]
+        else:
+            return await super().asimilarity_search(
+                query=query,
+                k=k,
+                fetch_k=fetch_k,
+                filter=filter,
+                custom_query=custom_query,
+                doc_builder=doc_builder,
+                **kwargs,
+            )
+
     def max_marginal_relevance_search(
         self,
         query: str,
@@ -937,6 +1112,76 @@ class ElasticsearchStore(VectorStore):
 
         return [doc for doc, _score in docs_scores]
 
+    async def amax_marginal_relevance_search(
+        self,
+        query: str,
+        k: int = 4,
+        fetch_k: int = 20,
+        lambda_mult: float = 0.5,
+        fields: Optional[List[str]] = None,
+        *,
+        custom_query: Optional[
+            Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
+        ] = None,
+        doc_builder: Optional[Callable[[Dict], Document]] = None,
+        **kwargs: Any,
+    ) -> List[Document]:
+        """Return docs selected using the maximal marginal relevance.
+
+        Maximal marginal relevance optimizes for similarity to query AND diversity
+            among selected documents.
+
+        Args:
+            query (str): Text to look up documents similar to.
+            k (int): Number of Documents to return. Defaults to 4.
+            fetch_k (int): Number of Documents to fetch to pass to MMR algorithm.
+            lambda_mult (float): Number between 0 and 1 that determines the degree
+                of diversity among the results with 0 corresponding
+                to maximum diversity and 1 to minimum diversity.
+                Defaults to 0.5.
+            fields: Other fields to get from elasticsearch source. These fields
+                will be added to the document metadata.
+
+        Returns:
+            List[Document]: A list of Documents selected by maximal marginal relevance.
+        """
+        if self._async_store is not None:
+            if self._async_embedding_service is None:
+                raise ValueError(
+                    "maximal marginal relevance search requires an embedding service."
+                )
+
+            hits = await self._async_store.max_marginal_relevance_search(
+                embedding_service=self._async_embedding_service,
+                query=query,
+                vector_field=self.vector_query_field,
+                k=k,
+                num_candidates=fetch_k,
+                lambda_mult=lambda_mult,
+                fields=fields,
+                custom_query=custom_query,
+            )
+
+            docs_scores = _hits_to_docs_scores(
+                hits=hits,
+                content_field=self.query_field,
+                fields=fields,
+                doc_builder=doc_builder,
+            )
+
+            return [doc for doc, _score in docs_scores]
+        else:
+            return await super().amax_marginal_relevance_search(
+                query=query,
+                k=k,
+                fetch_k=fetch_k,
+                lambda_mult=lambda_mult,
+                fields=fields,
+                custom_query=custom_query,
+                doc_builder=doc_builder,
+                **kwargs,
+            )
+
     @staticmethod
     def _identity_fn(score: float) -> float:
         return score
@@ -993,6 +1238,55 @@ class ElasticsearchStore(VectorStore):
             doc_builder=doc_builder,
         )
 
+    async def asimilarity_search_with_score(
+        self,
+        query: str,
+        k: int = 4,
+        filter: Optional[List[dict]] = None,
+        *,
+        custom_query: Optional[
+            Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
+        ] = None,
+        doc_builder: Optional[Callable[[Dict], Document]] = None,
+        **kwargs: Any,
+    ) -> List[Tuple[Document, float]]:
+        """Return Elasticsearch documents most similar to query, along with scores.
+
+        Args:
+            query: Text to look up documents similar to.
+            k: Number of Documents to return. Defaults to 4.
+            filter: Array of Elasticsearch filter clauses to apply to the query.
+
+        Returns:
+            List of Documents most similar to the query and score for each
+        """
+        if self._async_store is not None:
+            if (
+                isinstance(
+                    self._async_store.retrieval_strategy, AsyncDenseVectorStrategy
+                )
+                and self._async_store.retrieval_strategy.hybrid
+            ):
+                raise ValueError("scores are currently not supported in hybrid mode")
+
+            hits = await self._async_store.search(
+                query=query, k=k, filter=filter, custom_query=custom_query
+            )
+            return _hits_to_docs_scores(
+                hits=hits,
+                content_field=self.query_field,
+                doc_builder=doc_builder,
+            )
+        else:
+            return await super().asimilarity_search_with_score(
+                query=query,
+                k=k,
+                filter=filter,
+                custom_query=custom_query,
+                doc_builder=doc_builder,
+                **kwargs,
+            )
+
     def similarity_search_by_vector_with_relevance_scores(
         self,
         embedding: List[float],
@@ -1034,6 +1328,61 @@ class ElasticsearchStore(VectorStore):
             doc_builder=doc_builder,
         )
 
+    async def asimilarity_search_by_vector_with_relevance_scores(
+        self,
+        embedding: List[float],
+        k: int = 4,
+        filter: Optional[List[Dict]] = None,
+        *,
+        custom_query: Optional[
+            Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
+        ] = None,
+        doc_builder: Optional[Callable[[Dict], Document]] = None,
+        **kwargs: Any,
+    ) -> List[Tuple[Document, float]]:
+        """Return Elasticsearch documents most similar to query, along with scores.
+
+        Args:
+            embedding: Embedding to look up documents similar to.
+            k: Number of Documents to return. Defaults to 4.
+            filter: Array of Elasticsearch filter clauses to apply to the query.
+
+        Returns:
+            List of Documents most similar to the embedding and score for each
+        """
+        if self._async_store is not None:
+            if (
+                isinstance(
+                    self._async_store.retrieval_strategy, AsyncDenseVectorStrategy
+                )
+                and self._async_store.retrieval_strategy.hybrid
+            ):
+                raise ValueError("scores are currently not supported in hybrid mode")
+
+            hits = await self._async_store.search(
+                query=None,
+                query_vector=embedding,
+                k=k,
+                filter=filter,
+                custom_query=custom_query,
+            )
+            return _hits_to_docs_scores(
+                hits=hits,
+                content_field=self.query_field,
+                doc_builder=doc_builder,
+            )
+        else:
+            return await run_in_executor(
+                None,
+                self.similarity_search_by_vector_with_relevance_scores,
+                embedding=embedding,
+                k=k,
+                filter=filter,
+                custom_query=custom_query,
+                doc_builder=doc_builder,
+                **kwargs,
+            )
+
     def delete(
         self,
         ids: Optional[List[str]] = None,
@@ -1051,6 +1400,31 @@ class ElasticsearchStore(VectorStore):
             raise ValueError("please specify some IDs")
 
         return self._store.delete(ids=ids, refresh_indices=refresh_indices or False)
+
+    async def adelete(
+        self,
+        ids: Optional[List[str]] = None,
+        refresh_indices: Optional[bool] = True,
+        **kwargs: Any,
+    ) -> Optional[bool]:
+        """Delete documents from the Elasticsearch index.
+
+        Args:
+            ids: List of ids of documents to delete.
+            refresh_indices: Whether to refresh the index
+                            after deleting documents. Defaults to True.
+        """
+        if self._async_store is not None:
+            if ids is None:
+                raise ValueError("please specify some IDs")
+
+            return await self._async_store.delete(
+                ids=ids, refresh_indices=refresh_indices or False
+            )
+        else:
+            return await super().adelete(
+                ids=ids, refresh_indices=refresh_indices, **kwargs
+            )
 
     def add_texts(
         self,
@@ -1087,6 +1461,53 @@ class ElasticsearchStore(VectorStore):
             create_index_if_not_exists=create_index_if_not_exists,
             bulk_kwargs=bulk_kwargs,
         )
+
+    async def aadd_texts(
+        self,
+        texts: Iterable[str],
+        metadatas: Optional[List[Dict[Any, Any]]] = None,
+        ids: Optional[List[str]] = None,
+        refresh_indices: bool = True,
+        create_index_if_not_exists: bool = True,
+        bulk_kwargs: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Run more texts through the embeddings and add to the store.
+
+        Args:
+            texts: Iterable of strings to add to the store.
+            metadatas: Optional list of metadatas associated with the texts.
+            ids: Optional list of ids to associate with the texts.
+            refresh_indices: Whether to refresh the Elasticsearch indices
+                            after adding the texts.
+            create_index_if_not_exists: Whether to create the Elasticsearch
+                                        index if it doesn't already exist.
+            *bulk_kwargs: Additional arguments to pass to Elasticsearch bulk.
+                - chunk_size: Optional. Number of texts to add to the
+                    index at a time. Defaults to 500.
+
+        Returns:
+            List of ids from adding the texts into the store.
+        """
+        if self._async_store is not None:
+            return await self._async_store.add_texts(
+                texts=list(texts),
+                metadatas=metadatas,
+                ids=ids,
+                refresh_indices=refresh_indices,
+                create_index_if_not_exists=create_index_if_not_exists,
+                bulk_kwargs=bulk_kwargs,
+            )
+        else:
+            return await super().aadd_texts(
+                texts=list(texts),
+                metadatas=metadatas,
+                ids=ids,
+                refresh_indices=refresh_indices,
+                create_index_if_not_exists=create_index_if_not_exists,
+                bulk_kwargs=bulk_kwargs,
+                **kwargs,
+            )
 
     def add_embeddings(
         self,
@@ -1126,6 +1547,58 @@ class ElasticsearchStore(VectorStore):
             create_index_if_not_exists=create_index_if_not_exists,
             bulk_kwargs=bulk_kwargs,
         )
+
+    async def aadd_embeddings(
+        self,
+        text_embeddings: Iterable[Tuple[str, List[float]]],
+        metadatas: Optional[List[dict]] = None,
+        ids: Optional[List[str]] = None,
+        refresh_indices: bool = True,
+        create_index_if_not_exists: bool = True,
+        bulk_kwargs: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Add the given texts and embeddings to the store.
+
+        Args:
+            text_embeddings: Iterable pairs of string and embedding to
+                add to the store.
+            metadatas: Optional list of metadatas associated with the texts.
+            ids: Optional list of unique IDs.
+            refresh_indices: Whether to refresh the Elasticsearch indices
+                            after adding the texts.
+            create_index_if_not_exists: Whether to create the Elasticsearch
+                                        index if it doesn't already exist.
+            *bulk_kwargs: Additional arguments to pass to Elasticsearch bulk.
+                - chunk_size: Optional. Number of texts to add to the
+                    index at a time. Defaults to 500.
+
+        Returns:
+            List of ids from adding the texts into the store.
+        """
+        if self._async_store is not None:
+            texts, embeddings = zip(*text_embeddings)
+            return await self._async_store.add_texts(
+                texts=list(texts),
+                metadatas=metadatas,
+                vectors=list(embeddings),
+                ids=ids,
+                refresh_indices=refresh_indices,
+                create_index_if_not_exists=create_index_if_not_exists,
+                bulk_kwargs=bulk_kwargs,
+            )
+        else:
+            return await run_in_executor(
+                None,
+                self.add_embeddings,
+                text_embeddings=text_embeddings,
+                metadatas=metadatas,
+                ids=ids,
+                refresh_indices=refresh_indices,
+                create_index_if_not_exists=create_index_if_not_exists,
+                bulk_kwargs=bulk_kwargs,
+                **kwargs,
+            )
 
     @classmethod
     def from_texts(
@@ -1190,6 +1663,68 @@ class ElasticsearchStore(VectorStore):
         return elasticsearchStore
 
     @classmethod
+    async def afrom_texts(
+        cls,
+        texts: List[str],
+        embedding: Optional[Embeddings] = None,
+        metadatas: Optional[List[Dict[str, Any]]] = None,
+        bulk_kwargs: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> "ElasticsearchStore":
+        """Construct ElasticsearchStore wrapper from raw documents.
+
+        Example:
+            .. code-block:: python
+
+                from langchain_elasticsearch.vectorstores import ElasticsearchStore
+                from langchain_openai import OpenAIEmbeddings
+
+                db = ElasticsearchStore.from_texts(
+                    texts,
+                    // embeddings optional if using
+                    // a strategy that doesn't require inference
+                    embeddings,
+                    index_name="langchain-demo",
+                    es_url="http://localhost:9200"
+                )
+
+        Args:
+            texts: List of texts to add to the Elasticsearch index.
+            embedding: Embedding function to use to embed the texts.
+            metadatas: Optional list of metadatas associated with the texts.
+            index_name: Name of the Elasticsearch index to create.
+            es_url: URL of the Elasticsearch instance to connect to.
+            cloud_id: Cloud ID of the Elasticsearch instance to connect to.
+            es_user: Username to use when connecting to Elasticsearch.
+            es_password: Password to use when connecting to Elasticsearch.
+            es_api_key: API key to use when connecting to Elasticsearch.
+            es_connection: Optional pre-existing Elasticsearch connection.
+            vector_query_field: Optional. Name of the field to
+                                store the embedding vectors in.
+            query_field: Optional. Name of the field to store the texts in.
+            distance_strategy: Optional. Name of the distance
+                                strategy to use. Defaults to "COSINE".
+                                can be one of "COSINE",
+                                "EUCLIDEAN_DISTANCE", "DOT_PRODUCT",
+                                "MAX_INNER_PRODUCT".
+            bulk_kwargs: Optional. Additional arguments to pass to
+                        Elasticsearch bulk.
+        """
+
+        index_name = kwargs.get("index_name")
+        if index_name is None:
+            raise ValueError("Please provide an index_name.")
+
+        elasticsearchStore = ElasticsearchStore(embedding=embedding, **kwargs)
+
+        # Encode the provided texts and add them to the newly created index.
+        await elasticsearchStore.aadd_texts(
+            texts=texts, metadatas=metadatas, bulk_kwargs=bulk_kwargs
+        )
+
+        return elasticsearchStore
+
+    @classmethod
     def from_documents(
         cls,
         documents: List[Document],
@@ -1240,6 +1775,60 @@ class ElasticsearchStore(VectorStore):
 
         # Encode the provided texts and add them to the newly created index.
         elasticsearchStore.add_documents(documents, bulk_kwargs=bulk_kwargs)
+
+        return elasticsearchStore
+
+    @classmethod
+    async def afrom_documents(
+        cls,
+        documents: List[Document],
+        embedding: Optional[Embeddings] = None,
+        bulk_kwargs: Optional[Dict] = None,
+        **kwargs: Any,
+    ) -> "ElasticsearchStore":
+        """Construct ElasticsearchStore wrapper from documents.
+
+        Example:
+            .. code-block:: python
+
+                from langchain_elasticsearch.vectorstores import ElasticsearchStore
+                from langchain_openai import OpenAIEmbeddings
+
+                db = ElasticsearchStore.from_documents(
+                    texts,
+                    embeddings,
+                    index_name="langchain-demo",
+                    es_url="http://localhost:9200"
+                )
+
+        Args:
+            texts: List of texts to add to the Elasticsearch index.
+            embedding: Embedding function to use to embed the texts.
+                      Do not provide if using a strategy
+                      that doesn't require inference.
+            metadatas: Optional list of metadatas associated with the texts.
+            index_name: Name of the Elasticsearch index to create.
+            es_url: URL of the Elasticsearch instance to connect to.
+            cloud_id: Cloud ID of the Elasticsearch instance to connect to.
+            es_user: Username to use when connecting to Elasticsearch.
+            es_password: Password to use when connecting to Elasticsearch.
+            es_api_key: API key to use when connecting to Elasticsearch.
+            es_connection: Optional pre-existing Elasticsearch connection.
+            vector_query_field: Optional. Name of the field
+                                to store the embedding vectors in.
+            query_field: Optional. Name of the field to store the texts in.
+            bulk_kwargs: Optional. Additional arguments to pass to
+                        Elasticsearch bulk.
+        """
+
+        index_name = kwargs.get("index_name")
+        if index_name is None:
+            raise ValueError("Please provide an index_name.")
+
+        elasticsearchStore = ElasticsearchStore(embedding=embedding, **kwargs)
+
+        # Encode the provided texts and add them to the newly created index.
+        await elasticsearchStore.aadd_documents(documents, bulk_kwargs=bulk_kwargs)
 
         return elasticsearchStore
 

@@ -31,6 +31,7 @@ class TestElasticsearch:
     def es_params(self) -> Iterator[dict]:
         params = read_env()
         es = create_es_client(params)
+        params["es_use_async_client"] = True
 
         yield params
 
@@ -112,6 +113,46 @@ class TestElasticsearch:
 
         docsearch.close()
 
+    async def test_search_with_relevance_threshold_async(
+        self, es_params: dict, index_name: str
+    ) -> None:
+        """Test to make sure the relevance threshold is respected."""
+        texts = ["foo", "bar", "baz"]
+        metadatas = [{"page": str(i)} for i in range(len(texts))]
+        embeddings = ConsistentFakeEmbeddings()
+
+        docsearch = await ElasticsearchStore.afrom_texts(
+            index_name=index_name,
+            texts=texts,
+            embedding=embeddings,
+            metadatas=metadatas,
+            **es_params,
+        )
+
+        # Find a good threshold for testing
+        query_string = "foo"
+        top3 = await docsearch.asimilarity_search_with_relevance_scores(
+            query=query_string, k=3
+        )
+        similarity_of_second_ranked = top3[1][1]
+        assert len(top3) == 3
+
+        # Test threshold
+        retriever = docsearch.as_retriever(
+            search_type="similarity_score_threshold",
+            search_kwargs={"score_threshold": similarity_of_second_ranked},
+        )
+        output = await retriever.aget_relevant_documents(query=query_string)
+
+        assert output == [
+            top3[0][0],
+            top3[1][0],
+            # third ranked is out
+        ]
+
+        docsearch.close()
+        await docsearch.aclose()
+
     def test_search_by_vector_with_relevance_threshold(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -152,6 +193,47 @@ class TestElasticsearch:
 
         docsearch.close()
 
+    async def test_search_by_vector_with_relevance_threshold_async(
+        self, es_params: dict, index_name: str
+    ) -> None:
+        """Test to make sure the relevance threshold is respected."""
+        texts = ["foo", "bar", "baz"]
+        metadatas = [{"page": str(i)} for i in range(len(texts))]
+        embeddings = ConsistentFakeEmbeddings()
+
+        docsearch = await ElasticsearchStore.afrom_texts(
+            index_name=index_name,
+            texts=texts,
+            embedding=embeddings,
+            metadatas=metadatas,
+            **es_params,
+        )
+
+        # Find a good threshold for testing
+        query_string = "foo"
+        embedded_query = await embeddings.aembed_query(query_string)
+        top3 = await docsearch.asimilarity_search_by_vector_with_relevance_scores(
+            embedding=embedded_query, k=3
+        )
+        similarity_of_second_ranked = top3[1][1]
+        assert len(top3) == 3
+
+        # Test threshold
+        retriever = docsearch.as_retriever(
+            search_type="similarity_score_threshold",
+            search_kwargs={"score_threshold": similarity_of_second_ranked},
+        )
+        output = await retriever.aget_relevant_documents(query=query_string)
+
+        assert output == [
+            top3[0][0],
+            top3[1][0],
+            # third ranked is out
+        ]
+
+        docsearch.close()
+        await docsearch.aclose()
+
     # Also tested in elasticsearch.helpers.vectorstore
 
     def test_similarity_search_without_metadata(
@@ -188,7 +270,7 @@ class TestElasticsearch:
     ) -> None:
         """Test end to end construction and search without metadata."""
         texts = ["foo", "bar", "baz"]
-        docsearch = ElasticsearchStore.from_texts(
+        docsearch = await ElasticsearchStore.afrom_texts(
             texts,
             FakeEmbeddings(),
             **es_params,
@@ -196,6 +278,7 @@ class TestElasticsearch:
         )
         output = await docsearch.asimilarity_search("foo", k=1)
         assert output == [Document(page_content="foo")]
+        await docsearch.aclose()
 
     def test_add_embeddings(self, es_params: dict, index_name: str) -> None:
         """
@@ -222,6 +305,35 @@ class TestElasticsearch:
         docsearch.add_embeddings(list(zip(text_input, embedding_vectors)), metadatas)
         output = docsearch.similarity_search("foo1", k=1)
         assert output == [Document(page_content="foo3", metadata={"page": 2})]
+
+    async def test_add_embeddings_async(self, es_params: dict, index_name: str) -> None:
+        """
+        Test add_embeddings, which accepts pre-built embeddings instead of
+         using inference for the texts.
+        This allows you to separate the embeddings text and the page_content
+         for better proximity between user's question and embedded text.
+        For example, your embedding text can be a question, whereas page_content
+         is the answer.
+        """
+        embeddings = ConsistentFakeEmbeddings()
+        text_input = ["foo1", "foo2", "foo3"]
+        metadatas = [{"page": i} for i in range(len(text_input))]
+
+        """In real use case, embedding_input can be questions for each text"""
+        embedding_input = ["foo2", "foo3", "foo1"]
+        embedding_vectors = await embeddings.aembed_documents(embedding_input)
+
+        docsearch = ElasticsearchStore(
+            embedding=embeddings,
+            **es_params,
+            index_name=index_name,
+        )
+        await docsearch.aadd_embeddings(
+            list(zip(text_input, embedding_vectors)), metadatas
+        )
+        output = await docsearch.asimilarity_search("foo1", k=1)
+        assert output == [Document(page_content="foo3", metadata={"page": 2})]
+        await docsearch.aclose()
 
     def test_similarity_search_with_metadata(
         self, es_params: dict, index_name: str
@@ -279,6 +391,43 @@ class TestElasticsearch:
         )
         assert output == [Document(page_content="foo", metadata={"page": 1})]
 
+    async def test_similarity_search_with_filter_async(
+        self, es_params: dict, index_name: str
+    ) -> None:
+        """Test end to end construction and search with metadata."""
+        texts = ["foo", "foo", "foo"]
+        metadatas = [{"page": i} for i in range(len(texts))]
+        docsearch = await ElasticsearchStore.afrom_texts(
+            texts,
+            FakeEmbeddings(),
+            metadatas=metadatas,
+            **es_params,
+            index_name=index_name,
+        )
+
+        def assert_query(
+            query_body: Dict[str, Any], query: Optional[str]
+        ) -> Dict[str, Any]:
+            assert query_body == {
+                "knn": {
+                    "field": "vector",
+                    "filter": [{"term": {"metadata.page": "1"}}],
+                    "k": 3,
+                    "num_candidates": 50,
+                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                }
+            }
+            return query_body
+
+        output = await docsearch.asimilarity_search(
+            query="foo",
+            k=3,
+            filter=[{"term": {"metadata.page": "1"}}],
+            custom_query=assert_query,
+        )
+        assert output == [Document(page_content="foo", metadata={"page": 1})]
+        await docsearch.aclose()
+
     def test_similarity_search_with_doc_builder(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -307,6 +456,36 @@ class TestElasticsearch:
         assert output[0].page_content == "Mock content!"
         assert output[0].metadata["page_number"] == -1
         assert output[0].metadata["original_filename"] == "Mock filename!"
+
+    async def test_similarity_search_with_doc_builder_async(
+        self, es_params: dict, index_name: str
+    ) -> None:
+        texts = ["foo", "foo", "foo"]
+        metadatas = [{"page": i} for i in range(len(texts))]
+        docsearch = await ElasticsearchStore.afrom_texts(
+            texts,
+            FakeEmbeddings(),
+            metadatas=metadatas,
+            **es_params,
+            index_name=index_name,
+        )
+
+        def custom_document_builder(_: Dict) -> Document:
+            return Document(
+                page_content="Mock content!",
+                metadata={
+                    "page_number": -1,
+                    "original_filename": "Mock filename!",
+                },
+            )
+
+        output = await docsearch.asimilarity_search(
+            query="foo", k=1, doc_builder=custom_document_builder
+        )
+        assert output[0].page_content == "Mock content!"
+        assert output[0].metadata["page_number"] == -1
+        assert output[0].metadata["original_filename"] == "Mock filename!"
+        await docsearch.aclose()
 
     def test_similarity_search_exact_search(
         self, es_params: dict, index_name: str
@@ -508,6 +687,49 @@ class TestElasticsearch:
         # if fetch_k < k, then the output will be less than k
         mmr_output = docsearch.max_marginal_relevance_search(texts[0], k=3, fetch_k=2)
         assert len(mmr_output) == 2
+
+    async def test_max_marginal_relevance_search_async(
+        self, es_params: dict, index_name: str
+    ) -> None:
+        """Test max marginal relevance search."""
+        texts = ["foo", "bar", "baz"]
+        docsearch = await ElasticsearchStore.afrom_texts(
+            texts,
+            FakeEmbeddings(),
+            **es_params,
+            index_name=index_name,
+            strategy=ElasticsearchStore.ExactRetrievalStrategy(),
+        )
+
+        mmr_output = await docsearch.amax_marginal_relevance_search(
+            texts[0], k=3, fetch_k=3
+        )
+        sim_output = await docsearch.asimilarity_search(texts[0], k=3)
+        assert mmr_output == sim_output
+
+        mmr_output = await docsearch.amax_marginal_relevance_search(
+            texts[0], k=2, fetch_k=3
+        )
+        assert len(mmr_output) == 2
+        assert mmr_output[0].page_content == texts[0]
+        assert mmr_output[1].page_content == texts[1]
+
+        mmr_output = await docsearch.amax_marginal_relevance_search(
+            texts[0],
+            k=2,
+            fetch_k=3,
+            lambda_mult=0.1,  # more diversity
+        )
+        assert len(mmr_output) == 2
+        assert mmr_output[0].page_content == texts[0]
+        assert mmr_output[1].page_content == texts[2]
+
+        # if fetch_k < k, then the output will be less than k
+        mmr_output = await docsearch.amax_marginal_relevance_search(
+            texts[0], k=3, fetch_k=2
+        )
+        assert len(mmr_output) == 2
+        await docsearch.aclose()
 
     def test_similarity_search_approx_with_hybrid_search(
         self, es_params: dict, index_name: str
@@ -902,3 +1124,37 @@ class TestElasticsearch:
         docsearch.delete([ids[3]])
         output = docsearch.similarity_search("gni", k=10)
         assert len(output) == 0
+
+    async def test_elasticsearch_delete_ids_async(
+        self, es_params: dict, index_name: str
+    ) -> None:
+        """Test delete methods from vector store."""
+        texts = ["foo", "bar", "baz", "gni"]
+        metadatas = [{"page": i} for i in range(len(texts))]
+        docsearch = ElasticsearchStore(
+            embedding=ConsistentFakeEmbeddings(),
+            **es_params,
+            index_name=index_name,
+        )
+
+        ids = await docsearch.aadd_texts(texts, metadatas)
+        output = await docsearch.asimilarity_search("foo", k=10)
+        assert len(output) == 4
+
+        await docsearch.adelete(ids[1:3])
+        output = await docsearch.asimilarity_search("foo", k=10)
+        assert len(output) == 2
+
+        await docsearch.adelete(["not-existing"])
+        output = await docsearch.asimilarity_search("foo", k=10)
+        assert len(output) == 2
+
+        await docsearch.adelete([ids[0]])
+        output = await docsearch.asimilarity_search("foo", k=10)
+        assert len(output) == 1
+
+        await docsearch.adelete([ids[3]])
+        output = await docsearch.asimilarity_search("gni", k=10)
+        assert len(output) == 0
+
+        await docsearch.aclose()

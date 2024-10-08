@@ -2,13 +2,24 @@
 
 import re
 from typing import Any, Dict, Generator, List, Optional
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
-from elasticsearch import Elasticsearch
+from elasticsearch import AsyncElasticsearch, Elasticsearch
+from elasticsearch.helpers.vectorstore import (
+    AsyncBM25Strategy,
+    AsyncDenseVectorScriptScoreStrategy,
+    AsyncDenseVectorStrategy,
+    AsyncSparseVectorStrategy,
+    AsyncVectorStore,
+)
 from langchain_core.documents import Document
 
-from langchain_elasticsearch.embeddings import Embeddings, EmbeddingServiceAdapter
+from langchain_elasticsearch.embeddings import (
+    AsyncEmbeddingServiceAdapter,
+    Embeddings,
+    EmbeddingServiceAdapter,
+)
 from langchain_elasticsearch.vectorstores import (
     ApproxRetrievalStrategy,
     BM25RetrievalStrategy,
@@ -155,35 +166,49 @@ class TestHitsToDocsScores:
 
 class TestConvertStrategy:
     def test_dense_approx(self) -> None:
-        actual = _convert_retrieval_strategy(
+        actual_sync, actual_async = _convert_retrieval_strategy(
             ApproxRetrievalStrategy(query_model_id="my model", hybrid=True, rrf=False),
             distance=DistanceStrategy.DOT_PRODUCT,
         )
-        assert isinstance(actual, DenseVectorStrategy)
-        assert actual.distance == DistanceMetric.DOT_PRODUCT
-        assert actual.model_id == "my model"
-        assert actual.hybrid is True
-        assert actual.rrf is False
+        assert isinstance(actual_sync, DenseVectorStrategy)
+        assert actual_sync.distance == DistanceMetric.DOT_PRODUCT
+        assert actual_sync.model_id == "my model"
+        assert actual_sync.hybrid is True
+        assert actual_sync.rrf is False
+        assert isinstance(actual_async, AsyncDenseVectorStrategy)
+        assert actual_async.distance == DistanceMetric.DOT_PRODUCT
+        assert actual_async.model_id == "my model"
+        assert actual_async.hybrid is True
+        assert actual_async.rrf is False
 
     def test_dense_exact(self) -> None:
-        actual = _convert_retrieval_strategy(
+        actual_sync, actual_async = _convert_retrieval_strategy(
             ExactRetrievalStrategy(), distance=DistanceStrategy.EUCLIDEAN_DISTANCE
         )
-        assert isinstance(actual, DenseVectorScriptScoreStrategy)
-        assert actual.distance == DistanceMetric.EUCLIDEAN_DISTANCE
+        assert isinstance(actual_sync, DenseVectorScriptScoreStrategy)
+        assert actual_sync.distance == DistanceMetric.EUCLIDEAN_DISTANCE
+        assert isinstance(actual_async, AsyncDenseVectorScriptScoreStrategy)
+        assert actual_async.distance == DistanceMetric.EUCLIDEAN_DISTANCE
 
     def test_sparse(self) -> None:
-        actual = _convert_retrieval_strategy(
+        actual_sync, actual_async = _convert_retrieval_strategy(
             SparseRetrievalStrategy(model_id="my model ID")
         )
-        assert isinstance(actual, SparseVectorStrategy)
-        assert actual.model_id == "my model ID"
+        assert isinstance(actual_sync, SparseVectorStrategy)
+        assert actual_sync.model_id == "my model ID"
+        assert isinstance(actual_async, AsyncSparseVectorStrategy)
+        assert actual_async.model_id == "my model ID"
 
     def test_bm25(self) -> None:
-        actual = _convert_retrieval_strategy(BM25RetrievalStrategy(k1=1.7, b=5.4))
-        assert isinstance(actual, BM25Strategy)
-        assert actual.k1 == 1.7
-        assert actual.b == 5.4
+        actual_sync, actual_async = _convert_retrieval_strategy(
+            BM25RetrievalStrategy(k1=1.7, b=5.4)
+        )
+        assert isinstance(actual_sync, BM25Strategy)
+        assert actual_sync.k1 == 1.7
+        assert actual_sync.b == 5.4
+        assert isinstance(actual_async, AsyncBM25Strategy)
+        assert actual_async.k1 == 1.7
+        assert actual_async.b == 5.4
 
 
 class TestVectorStore:
@@ -194,7 +219,14 @@ class TestVectorStore:
     @pytest.fixture
     def store(self) -> Generator[ElasticsearchStore, None, None]:
         client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
-        store = ElasticsearchStore(index_name="test_index", es_connection=client)
+        async_client = AsyncElasticsearch(
+            hosts=["http://dummy:9200"]
+        )  # never connected to
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_async_connection=async_client,
+        )
         try:
             yield store
         finally:
@@ -205,11 +237,15 @@ class TestVectorStore:
         self, embeddings: Embeddings
     ) -> Generator[ElasticsearchStore, None, None]:
         client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
+        async_client = AsyncElasticsearch(
+            hosts=["http://dummy:9200"]
+        )  # never connected to
         store = ElasticsearchStore(
             index_name="test_index",
             embedding=embeddings,
             strategy=ApproxRetrievalStrategy(hybrid=True),
             es_connection=client,
+            es_async_connection=async_client,
         )
         try:
             yield store
@@ -233,6 +269,70 @@ class TestVectorStore:
             re.match(r"^langchain-py-vs/\d+\.\d+\.\d+(?:rc\d+)?(?:\.dev\d+)?$", agent)
             is not None
         ), f"The string '{agent}' does not match the expected pattern."
+
+    def test_initialization(
+        self, hybrid_store: ElasticsearchStore, embeddings: Embeddings
+    ) -> None:
+        assert isinstance(
+            hybrid_store._async_embedding_service, AsyncEmbeddingServiceAdapter
+        )
+        client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
+        async_client = AsyncElasticsearch(
+            hosts=["http://dummy:9200"]
+        )  # never connected to
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_async_connection=async_client,
+            strategy=SparseVectorStrategy(model_id="model_1"),
+        )
+        assert isinstance(store._async_store, AsyncVectorStore)
+        assert isinstance(
+            store._async_store.retrieval_strategy, AsyncSparseVectorStrategy
+        )  # type: ignore
+        assert store._async_store.retrieval_strategy.model_id == "model_1"  # type: ignore
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_use_async_client=True,
+            strategy=AsyncBM25Strategy(k1=20),
+        )
+        assert store._async_store is None
+        assert store._async_embedding_service is None
+        assert isinstance(store._store.retrieval_strategy, BM25Strategy)
+        assert store._store.retrieval_strategy.k1 == 20
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_async_connection=async_client,
+            strategy=DenseVectorStrategy(hybrid=True, rrf=True),
+        )
+        assert isinstance(
+            store._async_store.retrieval_strategy,  # type: ignore
+            AsyncDenseVectorStrategy,
+        )
+        assert store._async_store.retrieval_strategy.hybrid  # type: ignore
+        assert store._async_store.retrieval_strategy.rrf  # type: ignore
+        store = ElasticsearchStore(
+            index_name="test_index",
+            es_connection=client,
+            es_async_connection=async_client,
+            strategy=DenseVectorScriptScoreStrategy(
+                distance=DistanceMetric.DOT_PRODUCT
+            ),
+        )
+        assert isinstance(
+            store._async_store.retrieval_strategy,  # type: ignore
+            AsyncDenseVectorScriptScoreStrategy,
+        )
+        assert (
+            store._async_store.retrieval_strategy.distance == DistanceMetric.DOT_PRODUCT  # type: ignore
+        )
+        with pytest.raises(ValueError):
+            ElasticsearchStore(
+                index_name="test_index",
+                es_async_connection=async_client,
+            )
 
     def test_similarity_search(
         self, store: ElasticsearchStore, static_hits: List[Dict]
@@ -271,6 +371,43 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
 
+    async def test_asimilarity_search(
+        self, store: ElasticsearchStore, static_hits: List[Dict]
+    ) -> None:
+        store._async_store.search = AsyncMock(return_value=static_hits)  # type: ignore
+        actual1 = await store.asimilarity_search(
+            query="test",
+            k=7,
+            fetch_k=34,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+        assert actual1 == [Document("test")]
+        store._async_store.search.assert_called_with(  # type: ignore
+            query="test",
+            k=7,
+            num_candidates=34,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+
+        store._async_store.search = AsyncMock(return_value=static_hits)  # type: ignore
+
+        actual2 = await store.asimilarity_search_with_score(
+            query="test",
+            k=7,
+            fetch_k=34,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+        assert actual2 == [(Document("test"), 1)]
+        store._async_store.search.assert_called_with(  # type: ignore
+            query="test",
+            k=7,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+
     def test_similarity_search_by_vector_with_relevance_scores(
         self, store: ElasticsearchStore, static_hits: List[Dict]
     ) -> None:
@@ -291,6 +428,26 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
 
+    async def test_asimilarity_search_by_vector_with_relevance_scores(
+        self, store: ElasticsearchStore, static_hits: List[Dict]
+    ) -> None:
+        store._async_store.search = AsyncMock(return_value=static_hits)  # type: ignore
+        actual = await store.asimilarity_search_by_vector_with_relevance_scores(
+            embedding=[1, 2, 3],
+            k=7,
+            fetch_k=34,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+        assert actual == [(Document("test"), 1)]
+        store._async_store.search.assert_called_with(  # type: ignore
+            query=None,
+            query_vector=[1, 2, 3],
+            k=7,
+            filter=[{"f": 1}],
+            custom_query=self.dummy_custom_query,
+        )
+
     def test_delete(self, store: ElasticsearchStore) -> None:
         store._store.delete = Mock(return_value=True)  # type: ignore[assignment]
         actual = store.delete(
@@ -299,6 +456,18 @@ class TestVectorStore:
         )
         assert actual is True
         store._store.delete.assert_called_with(
+            ids=["10", "20"],
+            refresh_indices=True,
+        )
+
+    async def test_adelete(self, store: ElasticsearchStore) -> None:
+        store._async_store.delete = AsyncMock(return_value=True)  # type: ignore
+        actual = await store.adelete(
+            ids=["10", "20"],
+            refresh_indices=True,
+        )
+        assert actual is True
+        store._async_store.delete.assert_called_with(  # type: ignore
             ids=["10", "20"],
             refresh_indices=True,
         )
@@ -328,6 +497,39 @@ class TestVectorStore:
             bulk_kwargs={"x": "y"},
         )
         store._store.add_texts.assert_called_with(
+            texts=["t1", "t2"],
+            metadatas=[{1: 2}, {3: 4}],
+            ids=["10", "20"],
+            refresh_indices=False,
+            create_index_if_not_exists=False,
+            bulk_kwargs={"x": "y"},
+        )
+
+    async def test_aadd_texts(self, store: ElasticsearchStore) -> None:
+        store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
+        actual = await store.aadd_texts(
+            texts=["t1", "t2"],
+        )
+        assert actual == ["10", "20"]
+        store._async_store.add_texts.assert_called_with(  # type: ignore
+            texts=["t1", "t2"],
+            metadatas=None,
+            ids=None,
+            refresh_indices=True,
+            create_index_if_not_exists=True,
+            bulk_kwargs=None,
+        )
+
+        store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
+        await store.aadd_texts(
+            texts=["t1", "t2"],
+            metadatas=[{1: 2}, {3: 4}],
+            ids=["10", "20"],
+            refresh_indices=False,
+            create_index_if_not_exists=False,
+            bulk_kwargs={"x": "y"},
+        )
+        store._async_store.add_texts.assert_called_with(  # type: ignore
             texts=["t1", "t2"],
             metadatas=[{1: 2}, {3: 4}],
             ids=["10", "20"],
@@ -371,6 +573,41 @@ class TestVectorStore:
             bulk_kwargs={"x": "y"},
         )
 
+    async def test_aadd_embeddings(self, store: ElasticsearchStore) -> None:
+        store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
+        actual = await store.aadd_embeddings(
+            text_embeddings=[("t1", [1, 2, 3]), ("t2", [4, 5, 6])],
+        )
+        assert actual == ["10", "20"]
+        store._async_store.add_texts.assert_called_with(  # type: ignore
+            texts=["t1", "t2"],
+            metadatas=None,
+            vectors=[[1, 2, 3], [4, 5, 6]],
+            ids=None,
+            refresh_indices=True,
+            create_index_if_not_exists=True,
+            bulk_kwargs=None,
+        )
+
+        store._async_store.add_texts = AsyncMock(return_value=["10", "20"])  # type: ignore
+        await store.aadd_embeddings(
+            text_embeddings=[("t1", [1, 2, 3]), ("t2", [4, 5, 6])],
+            metadatas=[{1: 2}, {3: 4}],
+            ids=["10", "20"],
+            refresh_indices=False,
+            create_index_if_not_exists=False,
+            bulk_kwargs={"x": "y"},
+        )
+        store._async_store.add_texts.assert_called_with(  # type: ignore
+            texts=["t1", "t2"],
+            metadatas=[{1: 2}, {3: 4}],
+            vectors=[[1, 2, 3], [4, 5, 6]],
+            ids=["10", "20"],
+            refresh_indices=False,
+            create_index_if_not_exists=False,
+            bulk_kwargs={"x": "y"},
+        )
+
     def test_max_marginal_relevance_search(
         self,
         hybrid_store: ElasticsearchStore,
@@ -398,6 +635,33 @@ class TestVectorStore:
             custom_query=None,
         )
 
+    async def test_amax_marginal_relevance_search(
+        self,
+        hybrid_store: ElasticsearchStore,
+        embeddings: Embeddings,
+        static_hits: List[Dict],
+    ) -> None:
+        hybrid_store._async_store.max_marginal_relevance_search = AsyncMock(  # type: ignore
+            return_value=static_hits
+        )
+        actual = await hybrid_store.amax_marginal_relevance_search(
+            query="qqq",
+            k=8,
+            fetch_k=19,
+            lambda_mult=0.3,
+        )
+        assert actual == [Document("test")]
+        hybrid_store._async_store.max_marginal_relevance_search.assert_called_with(  # type: ignore
+            embedding_service=AsyncEmbeddingServiceAdapter(embeddings),
+            query="qqq",
+            vector_field="vector",
+            k=8,
+            num_candidates=19,
+            lambda_mult=0.3,
+            fields=None,
+            custom_query=None,
+        )
+
     def test_elasticsearch_hybrid_scores_guard(
         self, hybrid_store: ElasticsearchStore
     ) -> None:
@@ -409,3 +673,17 @@ class TestVectorStore:
 
         with pytest.raises(ValueError):
             hybrid_store.similarity_search_by_vector_with_relevance_scores([1, 2, 3])
+
+    async def test_elasticsearch_hybrid_scores_guard_async(
+        self, hybrid_store: ElasticsearchStore
+    ) -> None:
+        """Ensure an error is raised when search with score in hybrid mode
+        because in this case Elasticsearch does not return any score.
+        """
+        with pytest.raises(ValueError):
+            await hybrid_store.asimilarity_search_with_score("foo")
+
+        with pytest.raises(ValueError):
+            await hybrid_store.asimilarity_search_by_vector_with_relevance_scores(
+                [1, 2, 3]
+            )
