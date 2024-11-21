@@ -237,7 +237,7 @@ class TestVectorStore:
     async def test_similarity_search(
         self, store: AsyncElasticsearchStore, static_hits: List[Dict]
     ) -> None:
-        store._store.asearch = AsyncMock(return_value=static_hits)  # type: ignore[assignment]
+        store._store.search = AsyncMock(return_value=static_hits)  # type: ignore[assignment]
         actual1 = await store.asimilarity_search(
             query="test",
             k=7,
@@ -246,7 +246,7 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
         assert actual1 == [Document("test")]
-        store._store.asearch.assert_awaited_with(
+        store._store.search.assert_awaited_with(
             query="test",
             k=7,
             num_candidates=34,
@@ -264,7 +264,7 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
         assert actual2 == [(Document("test"), 1)]
-        store._store.asearch.assert_awaited_with(
+        store._store.search.assert_awaited_with(
             query="test",
             k=7,
             filter=[{"f": 1}],
@@ -275,7 +275,7 @@ class TestVectorStore:
     async def test_similarity_search_by_vector_with_relevance_scores(
         self, store: AsyncElasticsearchStore, static_hits: List[Dict]
     ) -> None:
-        store._store.asearch = AsyncMock(return_value=static_hits)  # type: ignore[assignment]
+        store._store.search = AsyncMock(return_value=static_hits)  # type: ignore[assignment]
         actual = await store.asimilarity_search_by_vector_with_relevance_scores(
             embedding=[1, 2, 3],
             k=7,
@@ -284,7 +284,7 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
         assert actual == [(Document("test"), 1)]
-        store._store.asearch.assert_awaited_with(
+        store._store.search.assert_awaited_with(
             query=None,
             query_vector=[1, 2, 3],
             k=7,
