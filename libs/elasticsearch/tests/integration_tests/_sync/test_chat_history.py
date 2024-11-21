@@ -4,9 +4,10 @@ from typing import Iterator
 
 import pytest
 from langchain.memory import ConversationBufferMemory
-from langchain_core.messages import message_to_dict
+from langchain_core.messages import AIMessage, HumanMessage, message_to_dict
 
-from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
+from langchain_elasticsearch.chat_history import \
+    ElasticsearchChatMessageHistory
 
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
@@ -31,6 +32,7 @@ class TestElasticsearch:
         yield params
 
         clear_test_indices(es)
+        es.close()
 
     @pytest.fixture(scope="function")
     def index_name(self) -> str:
@@ -51,11 +53,15 @@ class TestElasticsearch:
         )
 
         # add some messages
-        memory.chat_memory.add_ai_message("This is me, the AI")
-        memory.chat_memory.add_user_message("This is me, the human")
+        memory.chat_memory.add_messages(
+            [
+                AIMessage("This is me, the AI"),
+                HumanMessage("This is me, the human"),
+            ]
+        )
 
         # get the message history from the memory store and turn it into a json
-        messages = memory.chat_memory.messages
+        messages = memory.chat_memory.get_messages()
         messages_json = json.dumps([message_to_dict(msg) for msg in messages])
 
         assert "This is me, the AI" in messages_json
@@ -64,4 +70,4 @@ class TestElasticsearch:
         # remove the record from Elasticsearch, so the next test run won't pick it up
         memory.chat_memory.clear()
 
-        assert memory.chat_memory.messages == []
+        assert memory.chat_memory.get_messages() == []

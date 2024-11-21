@@ -5,27 +5,21 @@ from typing import Any, Dict, Generator, List, Optional
 from unittest.mock import Mock
 
 import pytest
-from elasticsearch import Elasticsearch
 from langchain_core.documents import Document
 
-from langchain_elasticsearch.embeddings import Embeddings, EmbeddingServiceAdapter
+from elasticsearch import Elasticsearch
+from langchain_elasticsearch._sync.vectorstores import \
+    _convert_retrieval_strategy
+from langchain_elasticsearch._utilities import _hits_to_docs_scores
+from langchain_elasticsearch.embeddings import (Embeddings,
+                                                EmbeddingServiceAdapter)
 from langchain_elasticsearch.vectorstores import (
-    ApproxRetrievalStrategy,
-    BM25RetrievalStrategy,
-    BM25Strategy,
-    DenseVectorScriptScoreStrategy,
-    DenseVectorStrategy,
-    DistanceMetric,
-    DistanceStrategy,
-    ElasticsearchStore,
-    ExactRetrievalStrategy,
-    SparseRetrievalStrategy,
-    SparseVectorStrategy,
-    _convert_retrieval_strategy,
-    _hits_to_docs_scores,
-)
+    ApproxRetrievalStrategy, BM25RetrievalStrategy, BM25Strategy,
+    DenseVectorScriptScoreStrategy, DenseVectorStrategy, DistanceMetric,
+    DistanceStrategy, ElasticsearchStore, ExactRetrievalStrategy,
+    SparseRetrievalStrategy, SparseVectorStrategy)
 
-from ..fake_embeddings import ConsistentFakeEmbeddings
+from ...fake_embeddings import ConsistentFakeEmbeddings
 
 
 class TestHitsToDocsScores:
@@ -234,6 +228,7 @@ class TestVectorStore:
             is not None
         ), f"The string '{agent}' does not match the expected pattern."
 
+    @pytest.mark.sync
     def test_similarity_search(
         self, store: ElasticsearchStore, static_hits: List[Dict]
     ) -> None:
@@ -271,6 +266,7 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
 
+    @pytest.mark.sync
     def test_similarity_search_by_vector_with_relevance_scores(
         self, store: ElasticsearchStore, static_hits: List[Dict]
     ) -> None:
@@ -291,6 +287,7 @@ class TestVectorStore:
             custom_query=self.dummy_custom_query,
         )
 
+    @pytest.mark.sync
     def test_delete(self, store: ElasticsearchStore) -> None:
         store._store.delete = Mock(return_value=True)  # type: ignore[assignment]
         actual = store.delete(
@@ -303,6 +300,7 @@ class TestVectorStore:
             refresh_indices=True,
         )
 
+    @pytest.mark.sync
     def test_add_texts(self, store: ElasticsearchStore) -> None:
         store._store.add_texts = Mock(return_value=["10", "20"])  # type: ignore[assignment]
         actual = store.add_texts(
@@ -336,6 +334,7 @@ class TestVectorStore:
             bulk_kwargs={"x": "y"},
         )
 
+    @pytest.mark.sync
     def test_add_embeddings(self, store: ElasticsearchStore) -> None:
         store._store.add_texts = Mock(return_value=["10", "20"])  # type: ignore[assignment]
         actual = store.add_embeddings(
@@ -371,6 +370,7 @@ class TestVectorStore:
             bulk_kwargs={"x": "y"},
         )
 
+    @pytest.mark.sync
     def test_max_marginal_relevance_search(
         self,
         hybrid_store: ElasticsearchStore,
@@ -398,6 +398,7 @@ class TestVectorStore:
             custom_query=None,
         )
 
+    @pytest.mark.sync
     def test_elasticsearch_hybrid_scores_guard(
         self, hybrid_store: ElasticsearchStore
     ) -> None:

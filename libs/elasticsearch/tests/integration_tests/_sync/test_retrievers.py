@@ -6,9 +6,9 @@ import uuid
 from typing import Any, Dict
 
 import pytest
-from elasticsearch import Elasticsearch
 from langchain_core.documents import Document
 
+from elasticsearch import Elasticsearch
 from langchain_elasticsearch.retrievers import ElasticsearchRetriever
 
 from ._test_utilities import requests_saving_es_client
@@ -38,13 +38,16 @@ def index_test_data(es_client: Elasticsearch, index_name: str, field_name: str) 
 class TestElasticsearchRetriever:
     @pytest.fixture(scope="function")
     def es_client(self) -> Any:
-        return requests_saving_es_client()
+        client = requests_saving_es_client()
+        yield client
+        client.close()
 
     @pytest.fixture(scope="function")
     def index_name(self) -> str:
         """Return the index name."""
         return f"test_{uuid.uuid4().hex}"
 
+    @pytest.mark.sync
     def test_user_agent_header(self, es_client: Elasticsearch, index_name: str) -> None:
         """Test that the user agent header is set correctly."""
 
@@ -76,6 +79,7 @@ class TestElasticsearchRetriever:
             is not None
         ), f"The string '{user_agent}' does not match the expected pattern."
 
+    @pytest.mark.sync
     def test_init_url(self, index_name: str) -> None:
         """Test end-to-end indexing and search."""
 
@@ -109,6 +113,7 @@ class TestElasticsearchRetriever:
             assert text_field not in r.metadata["_source"]
             assert "another_field" in r.metadata["_source"]
 
+    @pytest.mark.sync
     def test_init_client(self, es_client: Elasticsearch, index_name: str) -> None:
         """Test end-to-end indexing and search."""
 
@@ -134,6 +139,7 @@ class TestElasticsearchRetriever:
             assert text_field not in r.metadata["_source"]
             assert "another_field" in r.metadata["_source"]
 
+    @pytest.mark.sync
     def test_multiple_index_and_content_fields(
         self, es_client: Elasticsearch, index_name: str
     ) -> None:
@@ -174,6 +180,7 @@ class TestElasticsearchRetriever:
             ("foo baz", index_name_2),
         ]
 
+    @pytest.mark.sync
     def test_custom_mapper(self, es_client: Elasticsearch, index_name: str) -> None:
         """Test custom document maper"""
 
@@ -199,6 +206,7 @@ class TestElasticsearchRetriever:
         assert [r.page_content for r in result] == ["3", "1", "5"]
         assert [r.metadata for r in result] == [meta, meta, meta]
 
+    @pytest.mark.sync
     def test_fail_content_field_and_mapper(self, es_client: Elasticsearch) -> None:
         """Raise exception if both content_field and document_mapper are specified."""
 
@@ -211,6 +219,7 @@ class TestElasticsearchRetriever:
                 es_client=es_client,
             )
 
+    @pytest.mark.sync
     def test_fail_neither_content_field_nor_mapper(
         self, es_client: Elasticsearch
     ) -> None:
