@@ -11,8 +11,7 @@ from langchain_core.load import dumps
 from langchain_core.outputs import Generation
 
 from elasticsearch import NotFoundError
-from langchain_elasticsearch import (ElasticsearchCache,
-                                     ElasticsearchEmbeddingsCache)
+from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache
 
 
 def serialize_encode_vector(vector: Any) -> str:

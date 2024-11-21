@@ -23,7 +23,13 @@ from langchain_elasticsearch._utilities import (
 )
 from langchain_elasticsearch.client import create_async_elasticsearch_client
 from langchain_elasticsearch.embeddings import AsyncEmbeddingServiceAdapter
-from langchain_elasticsearch._utilities import BaseRetrievalStrategy, BM25RetrievalStrategy, ApproxRetrievalStrategy, ExactRetrievalStrategy, SparseRetrievalStrategy
+from langchain_elasticsearch._utilities import (
+    BaseRetrievalStrategy,
+    BM25RetrievalStrategy,
+    ApproxRetrievalStrategy,
+    ExactRetrievalStrategy,
+    SparseRetrievalStrategy,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -576,7 +582,9 @@ class AsyncElasticsearchStore(VectorStore):
         if ids is None:
             raise ValueError("please specify some IDs")
 
-        return await self._store.delete(ids=ids, refresh_indices=refresh_indices or False)
+        return await self._store.delete(
+            ids=ids, refresh_indices=refresh_indices or False
+        )
 
     async def aadd_texts(
         self,

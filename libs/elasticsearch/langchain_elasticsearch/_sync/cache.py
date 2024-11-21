@@ -3,8 +3,17 @@ import hashlib
 import logging
 from datetime import datetime
 from functools import cached_property
-from typing import (TYPE_CHECKING, Any, Dict, Iterable, Iterator, List,
-                    Optional, Sequence, Tuple)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.load import dumps, loads

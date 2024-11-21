@@ -10,7 +10,12 @@ from langchain_community.chat_models.fake import FakeMessagesListChatModel
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
-from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache, AsyncElasticsearchCache, AsyncElasticsearchEmbeddingsCache
+from langchain_elasticsearch import (
+    ElasticsearchCache,
+    ElasticsearchEmbeddingsCache,
+    AsyncElasticsearchCache,
+    AsyncElasticsearchEmbeddingsCache,
+)
 
 
 @pytest.fixture
@@ -67,7 +72,9 @@ def async_es_embeddings_cache_fx(
 
 
 @pytest.fixture
-def es_cache_fx(es_client_fx: MagicMock) -> Generator[AsyncElasticsearchCache, None, None]:
+def es_cache_fx(
+    es_client_fx: MagicMock,
+) -> Generator[AsyncElasticsearchCache, None, None]:
     with mock.patch(
         "langchain_elasticsearch._sync.cache.create_elasticsearch_client",
         return_value=es_client_fx,
@@ -82,7 +89,9 @@ def es_cache_fx(es_client_fx: MagicMock) -> Generator[AsyncElasticsearchCache, N
 
 
 @pytest.fixture
-def async_es_cache_fx(async_es_client_fx: MagicMock) -> Generator[AsyncElasticsearchCache, None, None]:
+def async_es_cache_fx(
+    async_es_client_fx: MagicMock,
+) -> Generator[AsyncElasticsearchCache, None, None]:
     with mock.patch(
         "langchain_elasticsearch._async.cache.create_async_elasticsearch_client",
         return_value=async_es_client_fx,
@@ -94,6 +103,7 @@ def async_es_cache_fx(async_es_client_fx: MagicMock) -> Generator[AsyncElasticse
             store_input_params=True,
             metadata={"project": "test_project"},
         )
+
 
 @pytest.fixture
 def fake_chat_fx() -> Generator[BaseChatModel, None, None]:

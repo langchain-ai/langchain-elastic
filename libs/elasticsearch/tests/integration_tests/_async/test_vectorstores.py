@@ -184,7 +184,9 @@ class TestElasticsearch:
             **es_params,
             index_name=index_name,
         )
-        output = await docsearch.asimilarity_search("foo", k=1, custom_query=assert_query)
+        output = await docsearch.asimilarity_search(
+            "foo", k=1, custom_query=assert_query
+        )
         assert output == [Document(page_content="foo")]
 
     @pytest.mark.asyncio
@@ -210,7 +212,9 @@ class TestElasticsearch:
             **es_params,
             index_name=index_name,
         )
-        await docsearch.aadd_embeddings(list(zip(text_input, embedding_vectors)), metadatas)
+        await docsearch.aadd_embeddings(
+            list(zip(text_input, embedding_vectors)), metadatas
+        )
         output = await docsearch.asimilarity_search("foo1", k=1)
         assert output == [Document(page_content="foo3", metadata={"page": 2})]
 
@@ -347,7 +351,9 @@ class TestElasticsearch:
             assert query_body == expected_query
             return query_body
 
-        output = await docsearch.asimilarity_search("foo", k=1, custom_query=assert_query)
+        output = await docsearch.asimilarity_search(
+            "foo", k=1, custom_query=assert_query
+        )
         assert output == [Document(page_content="foo")]
 
     @pytest.mark.asyncio
@@ -451,7 +457,9 @@ class TestElasticsearch:
             }
             return query_body
 
-        output = await docsearch.asimilarity_search("foo", k=1, custom_query=assert_query)
+        output = await docsearch.asimilarity_search(
+            "foo", k=1, custom_query=assert_query
+        )
         assert output == [Document(page_content="foo")]
 
     @pytest.mark.asyncio
@@ -485,11 +493,15 @@ class TestElasticsearch:
             strategy=AsyncElasticsearchStore.ExactRetrievalStrategy(),
         )
 
-        mmr_output = await docsearch.amax_marginal_relevance_search(texts[0], k=3, fetch_k=3)
+        mmr_output = await docsearch.amax_marginal_relevance_search(
+            texts[0], k=3, fetch_k=3
+        )
         sim_output = await docsearch.asimilarity_search(texts[0], k=3)
         assert mmr_output == sim_output
 
-        mmr_output = await docsearch.amax_marginal_relevance_search(texts[0], k=2, fetch_k=3)
+        mmr_output = await docsearch.amax_marginal_relevance_search(
+            texts[0], k=2, fetch_k=3
+        )
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
         assert mmr_output[1].page_content == texts[1]
@@ -505,7 +517,9 @@ class TestElasticsearch:
         assert mmr_output[1].page_content == texts[2]
 
         # if fetch_k < k, then the output will be less than k
-        mmr_output = await docsearch.amax_marginal_relevance_search(texts[0], k=3, fetch_k=2)
+        mmr_output = await docsearch.amax_marginal_relevance_search(
+            texts[0], k=3, fetch_k=2
+        )
         assert len(mmr_output) == 2
 
     @pytest.mark.asyncio
@@ -543,7 +557,9 @@ class TestElasticsearch:
             }
             return query_body
 
-        output = await docsearch.asimilarity_search("foo", k=1, custom_query=assert_query)
+        output = await docsearch.asimilarity_search(
+            "foo", k=1, custom_query=assert_query
+        )
         assert output == [Document(page_content="foo")]
 
     @pytest.mark.asyncio
@@ -719,7 +735,9 @@ class TestElasticsearch:
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts, AsyncFakeEmbeddings(), **es_params, index_name=index_name
         )
-        output = await docsearch.asimilarity_search("foo", k=1, custom_query=my_custom_query)
+        output = await docsearch.asimilarity_search(
+            "foo", k=1, custom_query=my_custom_query
+        )
         assert output == [Document(page_content="bar")]
 
     @pytest.mark.asyncio
@@ -803,7 +821,9 @@ class TestElasticsearch:
             }
             return query_body
 
-        output = await docsearch.asimilarity_search("foo", k=1, custom_query=assert_query)
+        output = await docsearch.asimilarity_search(
+            "foo", k=1, custom_query=assert_query
+        )
         assert output == [Document(page_content="foo")]
 
     @pytest.mark.asyncio
@@ -883,7 +903,9 @@ class TestElasticsearch:
         ]
 
     @pytest.mark.asyncio
-    async def test_elasticsearch_delete_ids(self, es_params: dict, index_name: str) -> None:
+    async def test_elasticsearch_delete_ids(
+        self, es_params: dict, index_name: str
+    ) -> None:
         """Test delete methods from vector store."""
         texts = ["foo", "bar", "baz", "gni"]
         metadatas = [{"page": i} for i in range(len(texts))]

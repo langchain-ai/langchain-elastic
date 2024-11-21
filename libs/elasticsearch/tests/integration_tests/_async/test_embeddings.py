@@ -23,7 +23,9 @@ async def test_elasticsearch_embedding_documents() -> None:
     client = AsyncElasticsearch(hosts=[ES_URL])
     if not (await model_is_deployed(client, MODEL_ID)):
         await client.close()
-        pytest.skip(reason=f"{MODEL_ID} model is not deployed in ML Node, skipping test")
+        pytest.skip(
+            reason=f"{MODEL_ID} model is not deployed in ML Node, skipping test"
+        )
 
     documents = ["foo bar", "bar foo", "foo"]
     embedding = AsyncElasticsearchEmbeddings.from_es_connection(MODEL_ID, client)
@@ -41,7 +43,9 @@ async def test_elasticsearch_embedding_query() -> None:
     client = AsyncElasticsearch(hosts=[ES_URL])
     if not (await model_is_deployed(client, MODEL_ID)):
         await client.close()
-        pytest.skip(reason=f"{MODEL_ID} model is not deployed in ML Node, skipping test")
+        pytest.skip(
+            reason=f"{MODEL_ID} model is not deployed in ML Node, skipping test"
+        )
 
     document = "foo bar"
     embedding = AsyncElasticsearchEmbeddings.from_es_connection(MODEL_ID, client)

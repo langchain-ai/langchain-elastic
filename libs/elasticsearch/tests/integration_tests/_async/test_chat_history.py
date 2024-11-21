@@ -52,10 +52,12 @@ class TestElasticsearch:
         )
 
         # add some messages
-        await memory.chat_memory.aadd_messages([
-            AIMessage("This is me, the AI"),
-            HumanMessage("This is me, the human"),
-        ])
+        await memory.chat_memory.aadd_messages(
+            [
+                AIMessage("This is me, the AI"),
+                HumanMessage("This is me, the human"),
+            ]
+        )
 
         # get the message history from the memory store and turn it into a json
         messages = await memory.chat_memory.aget_messages()

@@ -177,7 +177,9 @@ class AsyncElasticsearchCache(BaseCache):
             body["llm_input"] = prompt
         return body
 
-    async def aupdate(self, prompt: str, llm_string: str, return_val: RETURN_VAL_TYPE) -> None:
+    async def aupdate(
+        self, prompt: str, llm_string: str, return_val: RETURN_VAL_TYPE
+    ) -> None:
         """Update based on prompt and llm_string."""
         body = self.build_document(prompt, llm_string, return_val)
         await self._es_client.index(

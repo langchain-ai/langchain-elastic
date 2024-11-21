@@ -1,28 +1,31 @@
 import logging
-from typing import (Any, Callable, Dict, Iterable, List, Literal, Optional,
-                    Tuple, Union)
+from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers.vectorstore import (BM25Strategy,
-                                               DenseVectorScriptScoreStrategy,
-                                               DenseVectorStrategy,
-                                               DistanceMetric,
-                                               RetrievalStrategy,
-                                               SparseVectorStrategy)
+from elasticsearch.helpers.vectorstore import (
+    BM25Strategy,
+    DenseVectorScriptScoreStrategy,
+    DenseVectorStrategy,
+    DistanceMetric,
+    RetrievalStrategy,
+    SparseVectorStrategy,
+)
 from elasticsearch.helpers.vectorstore import VectorStore as EVectorStore
-from langchain_elasticsearch._utilities import (ApproxRetrievalStrategy,
-                                                BaseRetrievalStrategy,
-                                                BM25RetrievalStrategy,
-                                                DistanceStrategy,
-                                                ExactRetrievalStrategy,
-                                                SparseRetrievalStrategy,
-                                                _hits_to_docs_scores,
-                                                model_must_be_deployed,
-                                                user_agent)
+from langchain_elasticsearch._utilities import (
+    ApproxRetrievalStrategy,
+    BaseRetrievalStrategy,
+    BM25RetrievalStrategy,
+    DistanceStrategy,
+    ExactRetrievalStrategy,
+    SparseRetrievalStrategy,
+    _hits_to_docs_scores,
+    model_must_be_deployed,
+    user_agent,
+)
 from langchain_elasticsearch.client import create_elasticsearch_client
 from langchain_elasticsearch.embeddings import EmbeddingServiceAdapter
 

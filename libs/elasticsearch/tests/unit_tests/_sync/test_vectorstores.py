@@ -8,16 +8,22 @@ import pytest
 from langchain_core.documents import Document
 
 from elasticsearch import Elasticsearch
-from langchain_elasticsearch._sync.vectorstores import \
-    _convert_retrieval_strategy
+from langchain_elasticsearch._sync.vectorstores import _convert_retrieval_strategy
 from langchain_elasticsearch._utilities import _hits_to_docs_scores
-from langchain_elasticsearch.embeddings import (Embeddings,
-                                                EmbeddingServiceAdapter)
+from langchain_elasticsearch.embeddings import Embeddings, EmbeddingServiceAdapter
 from langchain_elasticsearch.vectorstores import (
-    ApproxRetrievalStrategy, BM25RetrievalStrategy, BM25Strategy,
-    DenseVectorScriptScoreStrategy, DenseVectorStrategy, DistanceMetric,
-    DistanceStrategy, ElasticsearchStore, ExactRetrievalStrategy,
-    SparseRetrievalStrategy, SparseVectorStrategy)
+    ApproxRetrievalStrategy,
+    BM25RetrievalStrategy,
+    BM25Strategy,
+    DenseVectorScriptScoreStrategy,
+    DenseVectorStrategy,
+    DistanceMetric,
+    DistanceStrategy,
+    ElasticsearchStore,
+    ExactRetrievalStrategy,
+    SparseRetrievalStrategy,
+    SparseVectorStrategy,
+)
 
 from ...fake_embeddings import ConsistentFakeEmbeddings
 

@@ -414,4 +414,6 @@ class TestVectorStore:
             await hybrid_store.asimilarity_search_with_score("foo")
 
         with pytest.raises(ValueError):
-            await hybrid_store.asimilarity_search_by_vector_with_relevance_scores([1, 2, 3])
+            await hybrid_store.asimilarity_search_by_vector_with_relevance_scores(
+                [1, 2, 3]
+            )

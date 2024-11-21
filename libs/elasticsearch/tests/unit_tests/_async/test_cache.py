@@ -11,7 +11,10 @@ from langchain_core.load import dumps
 from langchain_core.outputs import Generation
 import pytest
 
-from langchain_elasticsearch import AsyncElasticsearchCache, AsyncElasticsearchEmbeddingsCache
+from langchain_elasticsearch import (
+    AsyncElasticsearchCache,
+    AsyncElasticsearchEmbeddingsCache,
+)
 
 
 def serialize_encode_vector(vector: Any) -> str:
@@ -34,7 +37,9 @@ async def test_initialization_llm_cache(async_es_client_fx: MagicMock) -> None:
                 es_url="http://localhost:9200", index_name="test_index"
             )
             assert await cache.is_alias()
-            async_es_client_fx.indices.exists_alias.assert_awaited_with(name="test_index")
+            async_es_client_fx.indices.exists_alias.assert_awaited_with(
+                name="test_index"
+            )
             async_es_client_fx.indices.put_mapping.assert_awaited_with(
                 index="test_index", body=cache.mapping["mappings"]
             )
@@ -248,7 +253,9 @@ def test_mget_cache_store(
     ]
 
 
-def test_deduplicate_hits(es_embeddings_cache_fx: AsyncElasticsearchEmbeddingsCache) -> None:
+def test_deduplicate_hits(
+    es_embeddings_cache_fx: AsyncElasticsearchEmbeddingsCache,
+) -> None:
     hits = [
         {
             "_id": "1",
@@ -344,7 +351,9 @@ def _del_timestamp(doc: Dict[str, Any]) -> Dict[str, Any]:
     return doc
 
 
-def test_mset_cache_store(es_embeddings_cache_fx: AsyncElasticsearchEmbeddingsCache) -> None:
+def test_mset_cache_store(
+    es_embeddings_cache_fx: AsyncElasticsearchEmbeddingsCache,
+) -> None:
     input = [
         ("test_text1", _value_serializer([1.5, 2, 3.6])),
         ("test_text2", _value_serializer([5, 6, 7.1])),

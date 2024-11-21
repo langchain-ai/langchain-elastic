@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document

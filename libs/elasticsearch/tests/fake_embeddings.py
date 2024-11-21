@@ -1,7 +1,11 @@
 """Fake Embedding class for testing purposes."""
+
 from typing import List
 
-from ._async.fake_embeddings import AsyncFakeEmbeddings as _AsyncFakeEmbeddings, AsyncConsistentFakeEmbeddings as _AsyncConsistentFakeEmbeddings
+from ._async.fake_embeddings import (
+    AsyncFakeEmbeddings as _AsyncFakeEmbeddings,
+    AsyncConsistentFakeEmbeddings as _AsyncConsistentFakeEmbeddings,
+)
 from ._sync.fake_embeddings import FakeEmbeddings, ConsistentFakeEmbeddings
 
 
@@ -10,7 +14,7 @@ from ._sync.fake_embeddings import FakeEmbeddings, ConsistentFakeEmbeddings
 class AsyncFakeEmbeddings(_AsyncFakeEmbeddings):
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         raise NotImplemented("This class is asynchronous, use aembed_documents()")
-        
+
     def embed_query(self, text: str) -> List[float]:
         raise NotImplemented("This class is asynchronous, use aembed_query()")
 
@@ -18,6 +22,6 @@ class AsyncFakeEmbeddings(_AsyncFakeEmbeddings):
 class AsyncConsistentFakeEmbeddings(_AsyncConsistentFakeEmbeddings):
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         raise NotImplemented("This class is asynchronous, use aembed_documents()")
-        
+
     def embed_query(self, text: str) -> List[float]:
         raise NotImplemented("This class is asynchronous, use aembed_query()")

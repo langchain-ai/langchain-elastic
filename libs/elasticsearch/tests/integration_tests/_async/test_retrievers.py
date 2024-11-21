@@ -24,7 +24,9 @@ To run against Elastic Cloud, set the following environment variables:
 """
 
 
-async def index_test_data(es_client: AsyncElasticsearch, index_name: str, field_name: str) -> None:
+async def index_test_data(
+    es_client: AsyncElasticsearch, index_name: str, field_name: str
+) -> None:
     docs = [(1, "foo bar"), (2, "bar"), (3, "foo"), (4, "baz"), (5, "foo baz")]
     for identifier, text in docs:
         await es_client.index(
@@ -48,7 +50,9 @@ class TestElasticsearchRetriever:
         return f"test_{uuid.uuid4().hex}"
 
     @pytest.mark.asyncio
-    async def test_user_agent_header(self, es_client: AsyncElasticsearch, index_name: str) -> None:
+    async def test_user_agent_header(
+        self, es_client: AsyncElasticsearch, index_name: str
+    ) -> None:
         """Test that the user agent header is set correctly."""
 
         retriever = AsyncElasticsearchRetriever(
@@ -110,7 +114,9 @@ class TestElasticsearchRetriever:
             assert "another_field" in r.metadata["_source"]
 
     @pytest.mark.asyncio
-    async def test_init_client(self, es_client: AsyncElasticsearch, index_name: str) -> None:
+    async def test_init_client(
+        self, es_client: AsyncElasticsearch, index_name: str
+    ) -> None:
         """Test end-to-end indexing and search."""
 
         text_field = "text"
@@ -177,7 +183,9 @@ class TestElasticsearchRetriever:
         ]
 
     @pytest.mark.asyncio
-    async def test_custom_mapper(self, es_client: AsyncElasticsearch, index_name: str) -> None:
+    async def test_custom_mapper(
+        self, es_client: AsyncElasticsearch, index_name: str
+    ) -> None:
         """Test custom document maper"""
 
         text_field = "text"
@@ -203,7 +211,9 @@ class TestElasticsearchRetriever:
         assert [r.metadata for r in result] == [meta, meta, meta]
 
     @pytest.mark.asyncio
-    async def test_fail_content_field_and_mapper(self, es_client: AsyncElasticsearch) -> None:
+    async def test_fail_content_field_and_mapper(
+        self, es_client: AsyncElasticsearch
+    ) -> None:
         """Raise exception if both content_field and document_mapper are specified."""
 
         with pytest.raises(ValueError):

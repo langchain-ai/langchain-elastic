@@ -6,8 +6,7 @@ import pytest
 from langchain.memory import ConversationBufferMemory
 from langchain_core.messages import AIMessage, HumanMessage, message_to_dict
 
-from langchain_elasticsearch.chat_history import \
-    ElasticsearchChatMessageHistory
+from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
 
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 

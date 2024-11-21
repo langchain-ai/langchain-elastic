@@ -6,7 +6,10 @@ from langchain.embeddings.cache import _value_serializer
 from langchain.globals import set_llm_cache
 from langchain_core.language_models import BaseChatModel
 
-from langchain_elasticsearch import AsyncElasticsearchCache, AsyncElasticsearchEmbeddingsCache
+from langchain_elasticsearch import (
+    AsyncElasticsearchCache,
+    AsyncElasticsearchEmbeddingsCache,
+)
 from ._test_utilities import (
     clear_test_indices,
     create_es_client,
@@ -23,7 +26,9 @@ async def es_env_fx() -> Union[dict, AsyncGenerator]:
     await es.indices.create(index="test_index1")
     await es.indices.create(index="test_index2")
     await es.indices.put_alias(index="test_index1", name="test_alias")
-    await es.indices.put_alias(index="test_index2", name="test_alias", is_write_index=True)
+    await es.indices.put_alias(
+        index="test_index2", name="test_alias", is_write_index=True
+    )
     yield params
     await es.options(ignore_status=404).indices.delete_alias(
         index="test_index1,test_index2", name="test_alias"
@@ -284,7 +289,9 @@ async def test_build_document_cache_store(es_env_fx: Dict) -> None:
     )
 
     await store.amset([("my little tests", _value_serializer([0.1, 2, 3]))])
-    record = (await store._es_client.search(index="test_alias"))["hits"]["hits"][0]["_source"]
+    record = (await store._es_client.search(index="test_alias"))["hits"]["hits"][0][
+        "_source"
+    ]
 
     assert record.get("metadata") == {"project": "test"}
     assert record.get("namespace") == "test"

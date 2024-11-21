@@ -1,6 +1,5 @@
 import logging
-from typing import (Any, Callable, Dict, List, Mapping, Optional, Sequence,
-                    Union, cast)
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union, cast
 
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document

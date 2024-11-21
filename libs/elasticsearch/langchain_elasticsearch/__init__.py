@@ -18,7 +18,10 @@ from langchain_elasticsearch.cache import (
     ElasticsearchCache,
     ElasticsearchEmbeddingsCache,
 )
-from langchain_elasticsearch.chat_history import AsyncElasticsearchChatMessageHistory, ElasticsearchChatMessageHistory
+from langchain_elasticsearch.chat_history import (
+    AsyncElasticsearchChatMessageHistory,
+    ElasticsearchChatMessageHistory,
+)
 from langchain_elasticsearch.embeddings import (
     AsyncElasticsearchEmbeddings,
     ElasticsearchEmbeddings,

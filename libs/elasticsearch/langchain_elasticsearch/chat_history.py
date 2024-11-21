@@ -2,8 +2,12 @@ from typing import List
 
 from langchain_core.messages import BaseMessage
 
-from langchain_elasticsearch._async.chat_history import AsyncElasticsearchChatMessageHistory as _AsyncElasticsearchChatMessageHistory
-from langchain_elasticsearch._sync.chat_history import ElasticsearchChatMessageHistory as _ElasticsearchChatMessageHistory
+from langchain_elasticsearch._async.chat_history import (
+    AsyncElasticsearchChatMessageHistory as _AsyncElasticsearchChatMessageHistory,
+)
+from langchain_elasticsearch._sync.chat_history import (
+    ElasticsearchChatMessageHistory as _ElasticsearchChatMessageHistory,
+)
 
 
 # add the messages property which is only in the sync version
