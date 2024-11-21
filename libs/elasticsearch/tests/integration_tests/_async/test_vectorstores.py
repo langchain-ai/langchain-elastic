@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from typing import Any, Dict, AsyncIterator, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
 import pytest
 from elasticsearch import NotFoundError

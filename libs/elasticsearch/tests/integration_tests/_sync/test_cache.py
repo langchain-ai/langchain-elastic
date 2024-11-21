@@ -1,11 +1,11 @@
 from typing import Dict, Generator, Union
 
 import pytest
+from elasticsearch.helpers import BulkIndexError
 from langchain.embeddings.cache import _value_serializer
 from langchain.globals import set_llm_cache
 from langchain_core.language_models import BaseChatModel
 
-from elasticsearch.helpers import BulkIndexError
 from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache
 
 from ._test_utilities import clear_test_indices, create_es_client, read_env

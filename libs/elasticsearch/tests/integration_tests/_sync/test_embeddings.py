@@ -3,8 +3,8 @@
 import os
 
 import pytest
-
 from elasticsearch import Elasticsearch
+
 from langchain_elasticsearch.embeddings import ElasticsearchEmbeddings
 
 from ._test_utilities import model_is_deployed

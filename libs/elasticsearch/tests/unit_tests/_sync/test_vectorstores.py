@@ -5,9 +5,9 @@ from typing import Any, Dict, Generator, List, Optional
 from unittest.mock import Mock
 
 import pytest
+from elasticsearch import Elasticsearch
 from langchain_core.documents import Document
 
-from elasticsearch import Elasticsearch
 from langchain_elasticsearch._sync.vectorstores import _convert_retrieval_strategy
 from langchain_elasticsearch._utilities import _hits_to_docs_scores
 from langchain_elasticsearch.embeddings import Embeddings, EmbeddingServiceAdapter

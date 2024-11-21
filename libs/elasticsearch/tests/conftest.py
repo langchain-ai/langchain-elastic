@@ -3,7 +3,7 @@ from unittest import mock
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from elasticsearch import Elasticsearch, AsyncElasticsearch
+from elasticsearch import AsyncElasticsearch, Elasticsearch
 from elasticsearch._async.client import IndicesClient as AsyncIndicesClient
 from elasticsearch._sync.client import IndicesClient
 from langchain_community.chat_models.fake import FakeMessagesListChatModel
@@ -11,10 +11,10 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
 from langchain_elasticsearch import (
-    ElasticsearchCache,
-    ElasticsearchEmbeddingsCache,
     AsyncElasticsearchCache,
     AsyncElasticsearchEmbeddingsCache,
+    ElasticsearchCache,
+    ElasticsearchEmbeddingsCache,
 )
 
 

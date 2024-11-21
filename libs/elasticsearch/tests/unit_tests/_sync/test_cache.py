@@ -6,11 +6,11 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from _pytest.fixtures import FixtureRequest
 from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
+from elasticsearch import NotFoundError
 from langchain.embeddings.cache import _value_serializer
 from langchain_core.load import dumps
 from langchain_core.outputs import Generation
 
-from elasticsearch import NotFoundError
 from langchain_elasticsearch import ElasticsearchCache, ElasticsearchEmbeddingsCache
 
 

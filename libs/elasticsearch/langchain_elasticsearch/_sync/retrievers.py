@@ -1,11 +1,11 @@
 import logging
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union, cast
 
+from elasticsearch import Elasticsearch
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
-from elasticsearch import Elasticsearch
 from langchain_elasticsearch._utilities import with_user_agent_header
 from langchain_elasticsearch.client import create_elasticsearch_client
 

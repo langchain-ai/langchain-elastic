@@ -5,9 +5,9 @@ import uuid
 from typing import Any, Dict, Iterator, List, Optional, Union
 
 import pytest
+from elasticsearch import NotFoundError
 from langchain_core.documents import Document
 
-from elasticsearch import NotFoundError
 from langchain_elasticsearch.vectorstores import ElasticsearchStore
 
 from ...fake_embeddings import ConsistentFakeEmbeddings, FakeEmbeddings

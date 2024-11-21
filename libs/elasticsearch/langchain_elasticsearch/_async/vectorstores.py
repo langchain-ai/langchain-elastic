@@ -16,20 +16,18 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
 from langchain_elasticsearch._utilities import (
+    ApproxRetrievalStrategy,
+    BaseRetrievalStrategy,
+    BM25RetrievalStrategy,
     DistanceStrategy,
+    ExactRetrievalStrategy,
+    SparseRetrievalStrategy,
     _hits_to_docs_scores,
     model_must_be_deployed,
     user_agent,
 )
 from langchain_elasticsearch.client import create_async_elasticsearch_client
 from langchain_elasticsearch.embeddings import AsyncEmbeddingServiceAdapter
-from langchain_elasticsearch._utilities import (
-    BaseRetrievalStrategy,
-    BM25RetrievalStrategy,
-    ApproxRetrievalStrategy,
-    ExactRetrievalStrategy,
-    SparseRetrievalStrategy,
-)
 
 logger = logging.getLogger(__name__)
 

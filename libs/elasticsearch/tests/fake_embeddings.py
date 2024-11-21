@@ -3,10 +3,10 @@
 from typing import List
 
 from ._async.fake_embeddings import (
-    AsyncFakeEmbeddings as _AsyncFakeEmbeddings,
     AsyncConsistentFakeEmbeddings as _AsyncConsistentFakeEmbeddings,
 )
-from ._sync.fake_embeddings import FakeEmbeddings, ConsistentFakeEmbeddings
+from ._async.fake_embeddings import AsyncFakeEmbeddings as _AsyncFakeEmbeddings
+from ._sync.fake_embeddings import ConsistentFakeEmbeddings, FakeEmbeddings
 
 
 # langchain defines embed_documents and embed_query as abstract in its base class

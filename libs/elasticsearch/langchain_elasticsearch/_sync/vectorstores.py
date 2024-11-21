@@ -1,10 +1,6 @@
 import logging
 from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
-from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
-from langchain_core.vectorstores import VectorStore
-
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers.vectorstore import (
     BM25Strategy,
@@ -15,6 +11,10 @@ from elasticsearch.helpers.vectorstore import (
     SparseVectorStrategy,
 )
 from elasticsearch.helpers.vectorstore import VectorStore as EVectorStore
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
+from langchain_core.vectorstores import VectorStore
+
 from langchain_elasticsearch._utilities import (
     ApproxRetrievalStrategy,
     BaseRetrievalStrategy,

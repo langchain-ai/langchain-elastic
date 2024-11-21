@@ -15,11 +15,7 @@ from typing import (
     Tuple,
 )
 
-from elasticsearch import (
-    AsyncElasticsearch,
-    exceptions,
-    helpers,
-)
+from elasticsearch import AsyncElasticsearch, exceptions, helpers
 from elasticsearch.helpers import BulkIndexError
 from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.load import dumps, loads

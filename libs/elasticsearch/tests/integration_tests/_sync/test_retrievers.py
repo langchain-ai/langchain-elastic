@@ -6,9 +6,9 @@ import uuid
 from typing import Any, Dict
 
 import pytest
+from elasticsearch import Elasticsearch
 from langchain_core.documents import Document
 
-from elasticsearch import Elasticsearch
 from langchain_elasticsearch.retrievers import ElasticsearchRetriever
 
 from ._test_utilities import requests_saving_es_client

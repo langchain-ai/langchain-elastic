@@ -1,6 +1,6 @@
 import logging
-from enum import Enum
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from elasticsearch import Elasticsearch, exceptions

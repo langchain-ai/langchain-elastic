@@ -15,12 +15,12 @@ from typing import (
     Tuple,
 )
 
+from elasticsearch import Elasticsearch, exceptions, helpers
+from elasticsearch.helpers import BulkIndexError
 from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.load import dumps, loads
 from langchain_core.stores import ByteStore
 
-from elasticsearch import Elasticsearch, exceptions, helpers
-from elasticsearch.helpers import BulkIndexError
 from langchain_elasticsearch.client import create_elasticsearch_client
 
 if TYPE_CHECKING:

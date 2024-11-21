@@ -1,4 +1,4 @@
-from typing import Dict, AsyncGenerator, Union
+from typing import AsyncGenerator, Dict, Union
 
 import pytest
 from elasticsearch.helpers import BulkIndexError
@@ -10,11 +10,8 @@ from langchain_elasticsearch import (
     AsyncElasticsearchCache,
     AsyncElasticsearchEmbeddingsCache,
 )
-from ._test_utilities import (
-    clear_test_indices,
-    create_es_client,
-    read_env,
-)
+
+from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 
 @pytest.fixture

@@ -2,14 +2,16 @@ from typing import List
 
 from langchain_elasticsearch._async.embeddings import (
     AsyncElasticsearchEmbeddings as _AsyncElasticsearchEmbeddings,
-    AsyncEmbeddingServiceAdapter,
+)
+from langchain_elasticsearch._async.embeddings import (
     AsyncEmbeddingService,
+    AsyncEmbeddingServiceAdapter,
     Embeddings,
 )
 from langchain_elasticsearch._sync.embeddings import (
     ElasticsearchEmbeddings,
-    EmbeddingServiceAdapter,
     EmbeddingService,
+    EmbeddingServiceAdapter,
 )
 
 

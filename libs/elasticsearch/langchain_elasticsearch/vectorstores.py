@@ -6,28 +6,30 @@ from langchain_elasticsearch._async.vectorstores import (
     AsyncDenseVectorStrategy,
     AsyncRetrievalStrategy,
     AsyncSparseVectorStrategy,
-    AsyncElasticsearchStore as _AsyncElasticsearchStore,
     DistanceMetric,
     Document,
     Embeddings,
+)
+from langchain_elasticsearch._async.vectorstores import (
+    AsyncElasticsearchStore as _AsyncElasticsearchStore,
 )
 from langchain_elasticsearch._sync.vectorstores import (
     BM25Strategy,
     DenseVectorScriptScoreStrategy,
     DenseVectorStrategy,
+    ElasticsearchStore,
     RetrievalStrategy,
     SparseVectorStrategy,
-    ElasticsearchStore,
 )
 
 # deprecated strategy classes
 from langchain_elasticsearch._utilities import (
+    ApproxRetrievalStrategy,
     BaseRetrievalStrategy,
     BM25RetrievalStrategy,
-    ApproxRetrievalStrategy,
+    DistanceStrategy,
     ExactRetrievalStrategy,
     SparseRetrievalStrategy,
-    DistanceStrategy,
 )
 
 
