@@ -56,9 +56,9 @@ def main(check=False):
         "afrom_documents": "from_documents",
         "amax_marginal_relevance_search": "max_marginal_relevance_search",
         "asimilarity_search": "similarity_search",
-        "asimilarity_search_by_vector_with_relevance_scores": "similarity_search_by_vector_with_relevance_scores",
+        "asimilarity_search_by_vector_with_relevance_scores": "similarity_search_by_vector_with_relevance_scores",  # noqa: E501
         "asimilarity_search_with_score": "similarity_search_with_score",
-        "asimilarity_search_with_relevance_scores": "similarity_search_with_relevance_scores",
+        "asimilarity_search_with_relevance_scores": "similarity_search_with_relevance_scores",  # noqa: E501
         "adelete": "delete",
         "aclose": "close",
         "ainvoke": "invoke",
@@ -108,7 +108,7 @@ def main(check=False):
     unasync.unasync_files(filepaths, rules)
     for dir in source_dirs:
         output_dir = f"{dir[0]}_sync_check/" if check else dir[1]
-        subprocess.check_call(["black", "--target-version=py38", output_dir])
+        subprocess.check_call(["ruff", "format", "--target-version=py38", output_dir])
         subprocess.check_call(["isort", output_dir])
         for file in glob("*.py", root_dir=dir[0]):
             # remove asyncio from sync files

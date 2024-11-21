@@ -95,7 +95,6 @@ class ElasticsearchEmbeddings(Embeddings):
 
         es_cloud_id = es_cloud_id or get_from_env("es_cloud_id", "ES_CLOUD_ID")
         es_api_key = es_api_key or get_from_env("es_api_key", "ES_API_KEY")
-        es_url = es_api_key or get_from_env("es_url", "ES_URL")
 
         # Connect to Elasticsearch
         es_connection = Elasticsearch(cloud_id=es_cloud_id, api_key=es_api_key)

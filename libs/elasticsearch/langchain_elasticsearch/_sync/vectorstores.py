@@ -23,7 +23,6 @@ from langchain_elasticsearch._utilities import (
     ExactRetrievalStrategy,
     SparseRetrievalStrategy,
     _hits_to_docs_scores,
-    model_must_be_deployed,
     user_agent,
 )
 from langchain_elasticsearch.client import create_elasticsearch_client

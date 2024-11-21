@@ -76,7 +76,10 @@ class ElasticsearchChatMessageHistory(BaseChatMessageHistory):
         if not self.created:
             if self.client.indices.exists(index=self.index):
                 logger.debug(
-                    f"Chat history index {self.index} already exists, skipping creation."
+                    (
+                        f"Chat history index {self.index} already exists, "
+                        "skipping creation."
+                    )
                 )
             else:
                 logger.debug(f"Creating index {self.index} for storing chat history.")

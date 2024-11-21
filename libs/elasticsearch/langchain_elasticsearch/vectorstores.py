@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from langchain_elasticsearch._async.vectorstores import (
+from langchain_elasticsearch._async.vectorstores import (  # noqa: F401
     AsyncBM25Strategy,
     AsyncDenseVectorScriptScoreStrategy,
     AsyncDenseVectorStrategy,
@@ -13,7 +13,7 @@ from langchain_elasticsearch._async.vectorstores import (
 from langchain_elasticsearch._async.vectorstores import (
     AsyncElasticsearchStore as _AsyncElasticsearchStore,
 )
-from langchain_elasticsearch._sync.vectorstores import (
+from langchain_elasticsearch._sync.vectorstores import (  # noqa: F401
     BM25Strategy,
     DenseVectorScriptScoreStrategy,
     DenseVectorStrategy,
@@ -23,7 +23,7 @@ from langchain_elasticsearch._sync.vectorstores import (
 )
 
 # deprecated strategy classes
-from langchain_elasticsearch._utilities import (
+from langchain_elasticsearch._utilities import (  # noqa: F401
     ApproxRetrievalStrategy,
     BaseRetrievalStrategy,
     BM25RetrievalStrategy,
@@ -46,9 +46,11 @@ class AsyncElasticsearchStore(_AsyncElasticsearchStore):
         ids: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> "AsyncElasticsearchStore":
-        raise NotImplemented("This class is asynchronous, use afrom_texts()")
+        raise NotImplementedError("This class is asynchronous, use afrom_texts()")
 
     def similarity_search(
         self, query: str, k: int = 4, **kwargs: Any
     ) -> list[Document]:
-        raise NotImplemented("This class is asynchronous, use asimilarity_search()")
+        raise NotImplementedError(
+            "This class is asynchronous, use asimilarity_search()"
+        )

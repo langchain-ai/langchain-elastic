@@ -21,4 +21,4 @@ class ElasticsearchChatMessageHistory(_ElasticsearchChatMessageHistory):
 # so we have to add dummy methods for them, even though we only use the async versions
 class AsyncElasticsearchChatMessageHistory(_AsyncElasticsearchChatMessageHistory):
     def clear(self) -> None:
-        raise NotImplemented("This class is asynchronous, use aclear()")
+        raise NotImplementedError("This class is asynchronous, use aclear()")

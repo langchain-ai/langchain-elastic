@@ -248,7 +248,9 @@ def test_mget_cache_store(
     ]
 
 
-def test_deduplicate_hits(es_embeddings_cache_fx: ElasticsearchEmbeddingsCache) -> None:
+def test_deduplicate_hits(
+    es_embeddings_cache_fx: ElasticsearchEmbeddingsCache,
+) -> None:
     hits = [
         {
             "_id": "1",
@@ -344,7 +346,9 @@ def _del_timestamp(doc: Dict[str, Any]) -> Dict[str, Any]:
     return doc
 
 
-def test_mset_cache_store(es_embeddings_cache_fx: ElasticsearchEmbeddingsCache) -> None:
+def test_mset_cache_store(
+    es_embeddings_cache_fx: ElasticsearchEmbeddingsCache,
+) -> None:
     input = [
         ("test_text1", _value_serializer([1.5, 2, 3.6])),
         ("test_text2", _value_serializer([5, 6, 7.1])),

@@ -6,7 +6,9 @@ from langchain_core.documents import Document
 from langchain_elasticsearch._async.retrievers import (
     AsyncElasticsearchRetriever as _AsyncElasticsearchRetriever,
 )
-from langchain_elasticsearch._sync.retrievers import ElasticsearchRetriever
+from langchain_elasticsearch._sync.retrievers import (
+    ElasticsearchRetriever,  # noqa: F401
+)
 
 
 # langchain defines some sync methods as abstract in its base class
@@ -15,6 +17,6 @@ class AsyncElasticsearchRetriever(_AsyncElasticsearchRetriever):
     def _get_relevant_documents(
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun, **kwargs: Any
     ) -> List[Document]:
-        raise NotImplemented(
+        raise NotImplementedError(
             "This class is asynchronous, use _aget_relevant_documents()"
         )

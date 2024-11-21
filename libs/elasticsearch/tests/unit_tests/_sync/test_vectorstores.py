@@ -230,8 +230,7 @@ class TestVectorStore:
     def test_agent_header(self, store: ElasticsearchStore) -> None:
         agent = store.client._headers["User-Agent"]
         assert (
-            re.match(r"^langchain-py-vs/\d+\.\d+\.\d+(?:rc\d+)?(?:\.dev\d+)?$", agent)
-            is not None
+            re.match(r"^langchain-py-vs/\d+\.\d+\.\d+(?:rc\d+)?$", agent) is not None
         ), f"The string '{agent}' does not match the expected pattern."
 
     @pytest.mark.sync
