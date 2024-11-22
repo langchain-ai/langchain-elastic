@@ -29,6 +29,9 @@ class ElasticsearchChatMessageHistory(BaseChatMessageHistory):
         index: Name of the index to use.
         session_id: Arbitrary key that is used to store the messages
             of a single chat session.
+
+    For synchronous applications, use the `ElasticsearchChatMessageHistory` class.
+    For asyhchronous applications, use the `AsyncElasticsearchChatMessageHistory` class.
     """
 
     def __init__(

@@ -27,6 +27,9 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         content_field: The document field name that contains the page content. If
             multiple indices are queried, specify a dict {index_name: field_name} here.
         document_mapper: Function to map Elasticsearch hits to LangChain Documents.
+
+    For synchronous applications, use the ``ElasticsearchRetriever`` class.
+    For asyhchronous applications, use the ``AsyncElasticsearchRetriever`` class.
     """
 
     es_client: AsyncElasticsearch

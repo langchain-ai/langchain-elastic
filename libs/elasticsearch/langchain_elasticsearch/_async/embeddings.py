@@ -21,6 +21,9 @@ class AsyncElasticsearchEmbeddings(Embeddings):
     In Elasticsearch you need to have an embedding model loaded and deployed.
     - https://www.elastic.co/guide/en/elasticsearch/reference/current/infer-trained-model.html
     - https://www.elastic.co/guide/en/machine-learning/current/ml-nlp-deploy-models.html
+
+    For synchronous applications, use the `ElasticsearchEmbeddings` class.
+    For asyhchronous applications, use the `AsyncElasticsearchEmbeddings` class.
     """  # noqa: E501
 
     def __init__(

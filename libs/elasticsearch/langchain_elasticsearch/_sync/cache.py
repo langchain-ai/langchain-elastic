@@ -46,7 +46,11 @@ def _manage_cache_index(
 
 
 class ElasticsearchCache(BaseCache):
-    """An Elasticsearch cache integration for LLMs."""
+    """An Elasticsearch cache integration for LLMs.
+
+    For synchronous applications, use the ``ElasticsearchCache`` class.
+    For asyhchronous applications, use the ``AsyncElasticsearchCache`` class.
+    """
 
     def __init__(
         self,
@@ -195,7 +199,11 @@ class ElasticsearchCache(BaseCache):
 
 
 class ElasticsearchEmbeddingsCache(ByteStore):
-    """An Elasticsearch store for caching embeddings."""
+    """An Elasticsearch store for caching embeddings.
+
+    For synchronous applications, use the ``ElasticsearchEmbeddingsCache`` class.
+    For asyhchronous applications, use the ``AsyncElasticsearchEmbeddingsCache`` class.
+    """
 
     def __init__(
         self,

@@ -204,14 +204,18 @@ class ElasticsearchStore(VectorStore):
     Async:
         .. code-block:: python
 
+            from langchain_elasticsearch import AsyncElasticsearchStore
+
+            vector_store = AsyncElasticsearchStore(...)
+
             # add documents
-            # await vector_store.aadd_documents(documents=documents, ids=ids)
+            await vector_store.aadd_documents(documents=documents, ids=ids)
 
             # delete documents
-            # await vector_store.adelete(ids=["3"])
+            await vector_store.adelete(ids=["3"])
 
             # search
-            # results = vector_store.asimilarity_search(query="thud",k=1)
+            results = vector_store.asimilarity_search(query="thud",k=1)
 
             # search with score
             results = await vector_store.asimilarity_search_with_score(query="qux",k=1)
