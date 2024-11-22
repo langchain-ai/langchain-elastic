@@ -411,7 +411,7 @@ class AsyncElasticsearchEmbeddingsCache(ByteStore):
         actions = ({"_op_type": "delete", "_id": self._key(key)} for key in keys)
         await self._bulk(actions)
 
-    async def ayield_keys(self, *, prefix: Optional[str] = None) -> AsyncIterator[str]:
+    async def ayield_keys(self, *, prefix: Optional[str] = None) -> AsyncIterator[str]:  # type: ignore[override]
         """Get an iterator over keys that match the given prefix."""
         # TODO This method is not currently used by CacheBackedEmbeddings,
         #  we can leave it blank. It could be implemented with ES "index_prefixes",
