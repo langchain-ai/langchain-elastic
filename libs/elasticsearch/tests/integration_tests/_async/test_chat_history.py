@@ -1,6 +1,6 @@
 import json
 import uuid
-from typing import Iterator
+from typing import AsyncIterator
 
 import pytest
 from langchain.memory import ConversationBufferMemory
@@ -24,7 +24,7 @@ To run against Elastic Cloud, set the following environment variables:
 
 class TestElasticsearch:
     @pytest.fixture
-    async def elasticsearch_connection(self) -> Iterator[dict]:
+    async def elasticsearch_connection(self) -> AsyncIterator[dict]:
         params = read_env()
         es = create_es_client(params)
 
@@ -60,7 +60,7 @@ class TestElasticsearch:
         )
 
         # get the message history from the memory store and turn it into a json
-        messages = await memory.chat_memory.aget_messages()
+        messages = await memory.chat_memory.aget_messages()  # type: ignore[attr-defined]
         messages_json = json.dumps([message_to_dict(msg) for msg in messages])
 
         assert "This is me, the AI" in messages_json
@@ -69,4 +69,4 @@ class TestElasticsearch:
         # remove the record from Elasticsearch, so the next test run won't pick it up
         await memory.chat_memory.aclear()
 
-        assert await memory.chat_memory.aget_messages() == []
+        assert await memory.chat_memory.aget_messages() == []  # type: ignore[attr-defined]

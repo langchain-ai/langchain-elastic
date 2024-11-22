@@ -1,7 +1,7 @@
 """Test Elasticsearch functionality."""
 
 import re
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 from unittest.mock import AsyncMock
 
 import pytest
@@ -192,7 +192,7 @@ class TestVectorStore:
         return AsyncConsistentFakeEmbeddings()
 
     @pytest.fixture
-    async def store(self) -> Generator[AsyncElasticsearchStore, None, None]:
+    async def store(self) -> AsyncGenerator:
         client = AsyncElasticsearch(hosts=["http://dummy:9200"])  # never connected to
         store = AsyncElasticsearchStore(index_name="test_index", es_connection=client)
         try:
@@ -201,9 +201,7 @@ class TestVectorStore:
             await store.aclose()
 
     @pytest.fixture
-    async def hybrid_store(
-        self, embeddings: Embeddings
-    ) -> Generator[AsyncElasticsearchStore, None, None]:
+    async def hybrid_store(self, embeddings: Embeddings) -> AsyncGenerator:
         client = AsyncElasticsearch(hosts=["http://dummy:9200"])  # never connected to
         store = AsyncElasticsearchStore(
             index_name="test_index",

@@ -192,7 +192,7 @@ class TestVectorStore:
         return ConsistentFakeEmbeddings()
 
     @pytest.fixture
-    def store(self) -> Generator[ElasticsearchStore, None, None]:
+    def store(self) -> Generator:
         client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
         store = ElasticsearchStore(index_name="test_index", es_connection=client)
         try:
@@ -201,9 +201,7 @@ class TestVectorStore:
             store.close()
 
     @pytest.fixture
-    def hybrid_store(
-        self, embeddings: Embeddings
-    ) -> Generator[ElasticsearchStore, None, None]:
+    def hybrid_store(self, embeddings: Embeddings) -> Generator:
         client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
         store = ElasticsearchStore(
             index_name="test_index",

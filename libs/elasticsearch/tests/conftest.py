@@ -74,7 +74,7 @@ def async_es_embeddings_cache_fx(
 @pytest.fixture
 def es_cache_fx(
     es_client_fx: MagicMock,
-) -> Generator[AsyncElasticsearchCache, None, None]:
+) -> Generator[ElasticsearchCache, None, None]:
     with mock.patch(
         "langchain_elasticsearch._sync.cache.create_elasticsearch_client",
         return_value=es_client_fx,
