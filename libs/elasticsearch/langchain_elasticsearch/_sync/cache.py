@@ -99,7 +99,7 @@ class ElasticsearchCache(BaseCache):
             password=es_password,
             params=es_params,
         )
-        self._is_alias = None
+        self._is_alias: Optional[bool] = None
 
     def is_alias(self) -> bool:
         if self._is_alias is None:
@@ -108,7 +108,7 @@ class ElasticsearchCache(BaseCache):
                 self._index_name,
                 self.mapping,
             )
-        return self._is_alias
+        return self._is_alias  # type: ignore[return-value]
 
     @cached_property
     def mapping(self) -> Dict[str, Any]:
@@ -252,7 +252,7 @@ class ElasticsearchEmbeddingsCache(ByteStore):
             password=es_password,
             params=es_params,
         )
-        self._is_alias = None
+        self._is_alias: Optional[bool] = None
 
     def is_alias(self) -> bool:
         if self._is_alias is None:
@@ -261,7 +261,7 @@ class ElasticsearchEmbeddingsCache(ByteStore):
                 self._index_name,
                 self.mapping,
             )
-        return self._is_alias
+        return self._is_alias  # type: ignore[return-value]
 
     @staticmethod
     def encode_vector(data: bytes) -> str:

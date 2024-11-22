@@ -72,7 +72,7 @@ class ElasticsearchChatMessageHistory(BaseChatMessageHistory):
         self.client = with_user_agent_header(self.client, "langchain-py-ms")
         self.created = False
 
-    def create_if_missing(self):
+    def create_if_missing(self) -> None:
         if not self.created:
             if self.client.indices.exists(index=self.index):
                 logger.debug(

@@ -72,7 +72,7 @@ class AsyncElasticsearchChatMessageHistory(BaseChatMessageHistory):
         self.client = async_with_user_agent_header(self.client, "langchain-py-ms")
         self.created = False
 
-    async def create_if_missing(self):
+    async def create_if_missing(self) -> None:
         if not self.created:
             if await self.client.indices.exists(index=self.index):
                 logger.debug(
