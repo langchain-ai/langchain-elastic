@@ -768,7 +768,7 @@ class ElasticsearchStore(VectorStore):
         elasticsearchStore = cls(embedding=embedding, **kwargs)
 
         # Encode the provided texts and add them to the newly created index.
-        elasticsearchStore.aadd_documents(documents, bulk_kwargs=bulk_kwargs)
+        elasticsearchStore.add_documents(documents, bulk_kwargs=bulk_kwargs)
 
         return elasticsearchStore
 

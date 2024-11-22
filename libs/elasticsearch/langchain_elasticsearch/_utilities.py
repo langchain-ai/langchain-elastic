@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from elasticsearch import Elasticsearch, exceptions
+from elasticsearch import AsyncElasticsearch, Elasticsearch, exceptions
 from langchain_core import __version__ as langchain_version
 from langchain_core._api.deprecation import deprecated
 from langchain_core.documents import Document
@@ -27,6 +27,14 @@ def user_agent(prefix: str) -> str:
 
 
 def with_user_agent_header(client: Elasticsearch, header_prefix: str) -> Elasticsearch:
+    headers = dict(client._headers)
+    headers.update({"user-agent": f"{user_agent(header_prefix)}"})
+    return client.options(headers=headers)
+
+
+def async_with_user_agent_header(
+    client: AsyncElasticsearch, header_prefix: str
+) -> AsyncElasticsearch:
     headers = dict(client._headers)
     headers.update({"user-agent": f"{user_agent(header_prefix)}"})
     return client.options(headers=headers)

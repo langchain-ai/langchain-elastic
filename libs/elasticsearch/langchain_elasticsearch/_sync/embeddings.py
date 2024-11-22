@@ -91,7 +91,7 @@ class ElasticsearchEmbeddings(Embeddings):
                 ]
                 embeddings_generator.embed_documents(documents)
         """
-        from elasticsearch.client import MlClient
+        from elasticsearch._sync.client.ml import MlClient
 
         es_cloud_id = es_cloud_id or get_from_env("es_cloud_id", "ES_CLOUD_ID")
         es_api_key = es_api_key or get_from_env("es_api_key", "ES_API_KEY")
@@ -155,7 +155,7 @@ class ElasticsearchEmbeddings(Embeddings):
                 ]
                 embeddings_generator.embed_documents(documents)
         """
-        from elasticsearch.client import MlClient
+        from elasticsearch._sync.client.ml import MlClient
 
         # Create an MlClient from the given Elasticsearch connection
         client = MlClient(es_connection)

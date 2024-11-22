@@ -101,7 +101,7 @@ class ElasticsearchCache(BaseCache):
         )
         self._is_alias = None
 
-    def is_alias(self):
+    def is_alias(self) -> bool:
         if self._is_alias is None:
             self._is_alias = _manage_cache_index(
                 self._es_client,
@@ -254,7 +254,7 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         )
         self._is_alias = None
 
-    def is_alias(self):
+    def is_alias(self) -> bool:
         if self._is_alias is None:
             self._is_alias = _manage_cache_index(
                 self._es_client,

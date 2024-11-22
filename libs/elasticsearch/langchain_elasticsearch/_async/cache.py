@@ -6,9 +6,9 @@ from functools import cached_property
 from typing import (
     TYPE_CHECKING,
     Any,
+    AsyncIterator,
     Dict,
     Iterable,
-    Iterator,
     List,
     Optional,
     Sequence,
@@ -101,7 +101,7 @@ class AsyncElasticsearchCache(BaseCache):
         )
         self._is_alias = None
 
-    async def is_alias(self):
+    async def is_alias(self) -> bool:
         if self._is_alias is None:
             self._is_alias = await _manage_cache_index(
                 self._es_client,
@@ -256,7 +256,7 @@ class AsyncElasticsearchEmbeddingsCache(ByteStore):
         )
         self._is_alias = None
 
-    async def is_alias(self):
+    async def is_alias(self) -> bool:
         if self._is_alias is None:
             self._is_alias = await _manage_cache_index(
                 self._es_client,
@@ -411,7 +411,7 @@ class AsyncElasticsearchEmbeddingsCache(ByteStore):
         actions = ({"_op_type": "delete", "_id": self._key(key)} for key in keys)
         await self._bulk(actions)
 
-    async def ayield_keys(self, *, prefix: Optional[str] = None) -> Iterator[str]:
+    async def ayield_keys(self, *, prefix: Optional[str] = None) -> AsyncIterator[str]:
         """Get an iterator over keys that match the given prefix."""
         # TODO This method is not currently used by CacheBackedEmbeddings,
         #  we can leave it blank. It could be implemented with ES "index_prefixes",

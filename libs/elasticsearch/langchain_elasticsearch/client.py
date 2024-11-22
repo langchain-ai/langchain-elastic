@@ -71,7 +71,4 @@ def create_async_elasticsearch_client(
         connection_params.update(params)
 
     es_client = AsyncElasticsearch(**connection_params)
-
-    es_client.info()  # test connection
-
     return es_client

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, List, Optional, Sequence
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, message_to_dict, messages_from_dict
 
-from langchain_elasticsearch._utilities import with_user_agent_header
+from langchain_elasticsearch._utilities import async_with_user_agent_header
 from langchain_elasticsearch.client import create_async_elasticsearch_client
 
 if TYPE_CHECKING:
@@ -69,7 +69,7 @@ class AsyncElasticsearchChatMessageHistory(BaseChatMessageHistory):
                 or valid credentials for creating a new connection."""
             )
 
-        self.client = with_user_agent_header(self.client, "langchain-py-ms")
+        self.client = async_with_user_agent_header(self.client, "langchain-py-ms")
         self.created = False
 
     async def create_if_missing(self):

@@ -6,7 +6,7 @@ from langchain_core.callbacks import AsyncCallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
-from langchain_elasticsearch._utilities import with_user_agent_header
+from langchain_elasticsearch._utilities import async_with_user_agent_header
 from langchain_elasticsearch.client import create_async_elasticsearch_client
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class AsyncElasticsearchRetriever(BaseRetriever):
                     "unknown type for content_field, expected string or dict."
                 )
 
-        self.es_client = with_user_agent_header(self.es_client, "langchain-py-r")
+        self.es_client = async_with_user_agent_header(self.es_client, "langchain-py-r")
 
     @classmethod
     def from_es_params(

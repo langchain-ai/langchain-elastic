@@ -52,6 +52,7 @@ def main(check=False):
         "create_async_elasticsearch_client": "create_elasticsearch_client",
         "aadd_texts": "add_texts",
         "aadd_embeddings": "add_embeddings",
+        "aadd_documents": "add_documents",
         "afrom_texts": "from_texts",
         "afrom_documents": "from_documents",
         "amax_marginal_relevance_search": "max_marginal_relevance_search",
@@ -83,6 +84,7 @@ def main(check=False):
         "async_es_embeddings_cache_fx": "es_embeddings_cache_fx",
         "async_es_cache_fx": "es_cache_fx",
         "async_bulk": "bulk",
+        "async_with_user_agent_header": "with_user_agent_header",
         "asyncio": "sync",
     }
     rules = [
