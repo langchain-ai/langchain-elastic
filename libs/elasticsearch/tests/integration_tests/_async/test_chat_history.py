@@ -60,7 +60,7 @@ class TestElasticsearch:
         )
 
         # get the message history from the memory store and turn it into a json
-        messages = await memory.chat_memory.aget_messages()  # type: ignore[attr-defined]
+        messages = await memory.chat_memory.aget_messages()
         messages_json = json.dumps([message_to_dict(msg) for msg in messages])
 
         assert "This is me, the AI" in messages_json
@@ -69,4 +69,4 @@ class TestElasticsearch:
         # remove the record from Elasticsearch, so the next test run won't pick it up
         await memory.chat_memory.aclear()
 
-        assert await memory.chat_memory.aget_messages() == []  # type: ignore[attr-defined]
+        assert await memory.chat_memory.aget_messages() == []

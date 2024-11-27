@@ -201,8 +201,8 @@ class ElasticsearchCache(BaseCache):
 class ElasticsearchEmbeddingsCache(ByteStore):
     """An Elasticsearch store for caching embeddings.
 
-    For synchronous applications, use the ``ElasticsearchEmbeddingsCache`` class.
-    For asyhchronous applications, use the ``AsyncElasticsearchEmbeddingsCache`` class.
+    For synchronous applications, use the `ElasticsearchEmbeddingsCache` class.
+    For asyhchronous applications, use the `AsyncElasticsearchEmbeddingsCache` class.
     """
 
     def __init__(

@@ -113,15 +113,11 @@ def main(check=False):
         subprocess.check_call(["ruff", "format", "--target-version=py38", output_dir])
         subprocess.check_call(["isort", output_dir])
         for file in glob("*.py", root_dir=dir[0]):
-            # remove asyncio from sync files
-            subprocess.check_call(
-                ["sed", "-i.bak", "/^import asyncio$/d", f"{output_dir}{file}"]
-            )
             subprocess.check_call(
                 [
                     "sed",
                     "-i.bak",
-                    "s/asyncio\\.run(main())/main()/",
+                    "s/pytest.mark.asyncio/pytest.mark.sync/",
                     f"{output_dir}{file}",
                 ]
             )
@@ -129,7 +125,7 @@ def main(check=False):
                 [
                     "sed",
                     "-i.bak",
-                    "s/pytest.mark.asyncio/pytest.mark.sync/",
+                    "s/get_messages()/messages/",
                     f"{output_dir}{file}",
                 ]
             )
