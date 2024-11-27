@@ -1,7 +1,7 @@
 import json
 import logging
 from time import time
-from typing import TYPE_CHECKING, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, message_to_dict, messages_from_dict
@@ -101,26 +101,33 @@ class ElasticsearchChatMessageHistory(BaseChatMessageHistory):
 
     def get_messages(self) -> List[BaseMessage]:  # type: ignore[override]
         """Retrieve the messages from Elasticsearch"""
-        try:
-            from elasticsearch import ApiError
+        from elasticsearch import ApiError
 
-            self.create_if_missing()
-            result = self.client.search(
-                index=self.index,
-                query={"term": {"session_id": self.session_id}},
-                sort="created_at:asc",
-            )
-        except ApiError as err:
-            logger.error(f"Could not retrieve messages from Elasticsearch: {err}")
-            raise err
+        self.create_if_missing()
 
-        if result and len(result["hits"]["hits"]) > 0:
-            items = [
-                json.loads(document["_source"]["history"])
-                for document in result["hits"]["hits"]
-            ]
-        else:
-            items = []
+        search_after: Dict[str, Any] = {}
+        items = []
+        while True:
+            try:
+                result = self.client.search(
+                    index=self.index,
+                    query={"term": {"session_id": self.session_id}},
+                    sort="created_at:asc",
+                    size=100,
+                    **search_after,
+                )
+            except ApiError as err:
+                logger.error(f"Could not retrieve messages from Elasticsearch: {err}")
+                raise err
+
+            if result and len(result["hits"]["hits"]) > 0:
+                items += [
+                    json.loads(document["_source"]["history"])
+                    for document in result["hits"]["hits"]
+                ]
+                search_after = {"search_after": result["hits"]["hits"][-1]["sort"]}
+            else:
+                break
 
         return messages_from_dict(items)
 
