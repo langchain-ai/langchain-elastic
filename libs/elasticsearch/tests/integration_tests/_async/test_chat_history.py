@@ -1,12 +1,12 @@
 import json
 import uuid
-from typing import Iterator
+from typing import AsyncIterator
 
 import pytest
 from langchain.memory import ConversationBufferMemory
-from langchain_core.messages import message_to_dict
+from langchain_core.messages import AIMessage, HumanMessage, message_to_dict
 
-from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
+from langchain_elasticsearch.chat_history import AsyncElasticsearchChatMessageHistory
 
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
@@ -24,25 +24,26 @@ To run against Elastic Cloud, set the following environment variables:
 
 class TestElasticsearch:
     @pytest.fixture
-    def elasticsearch_connection(self) -> Iterator[dict]:
+    async def elasticsearch_connection(self) -> AsyncIterator[dict]:
         params = read_env()
         es = create_es_client(params)
 
         yield params
 
-        clear_test_indices(es)
+        await clear_test_indices(es)
+        await es.close()
 
     @pytest.fixture(scope="function")
     def index_name(self) -> str:
         """Return the index name."""
         return f"test_{uuid.uuid4().hex}"
 
-    def test_memory_with_message_store(
+    async def test_memory_with_message_store(
         self, elasticsearch_connection: dict, index_name: str
     ) -> None:
         """Test the memory with a message store."""
         # setup Elasticsearch as a message store
-        message_history = ElasticsearchChatMessageHistory(
+        message_history = AsyncElasticsearchChatMessageHistory(
             **elasticsearch_connection, index=index_name, session_id="test-session"
         )
 
@@ -51,17 +52,21 @@ class TestElasticsearch:
         )
 
         # add some messages
-        memory.chat_memory.add_ai_message("This is me, the AI")
-        memory.chat_memory.add_user_message("This is me, the human")
+        await memory.chat_memory.aadd_messages(
+            [
+                AIMessage("This is me, the AI"),
+                HumanMessage("This is me, the human"),
+            ]
+        )
 
         # get the message history from the memory store and turn it into a json
-        messages = memory.chat_memory.messages
+        messages = await memory.chat_memory.aget_messages()
         messages_json = json.dumps([message_to_dict(msg) for msg in messages])
 
         assert "This is me, the AI" in messages_json
         assert "This is me, the human" in messages_json
 
         # remove the record from Elasticsearch, so the next test run won't pick it up
-        memory.chat_memory.clear()
+        await memory.chat_memory.aclear()
 
-        assert memory.chat_memory.messages == []
+        assert await memory.chat_memory.aget_messages() == []

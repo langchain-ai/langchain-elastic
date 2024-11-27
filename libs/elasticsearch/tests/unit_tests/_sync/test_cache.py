@@ -3,6 +3,7 @@ from typing import Any, Dict
 from unittest import mock
 from unittest.mock import ANY, MagicMock, patch
 
+import pytest
 from _pytest.fixtures import FixtureRequest
 from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
 from elasticsearch import NotFoundError
@@ -17,30 +18,35 @@ def serialize_encode_vector(vector: Any) -> str:
     return ElasticsearchEmbeddingsCache.encode_vector(_value_serializer(vector))
 
 
+@pytest.mark.sync
 def test_initialization_llm_cache(es_client_fx: MagicMock) -> None:
     es_client_fx.ping.return_value = True
     es_client_fx.indices.exists_alias.return_value = True
     with mock.patch(
-        "langchain_elasticsearch.cache.create_elasticsearch_client",
+        "langchain_elasticsearch._sync.cache.create_elasticsearch_client",
         return_value=es_client_fx,
     ):
-        cache = ElasticsearchCache(
-            es_url="http://localhost:9200", index_name="test_index"
-        )
-        es_client_fx.indices.exists_alias.assert_called_with(name="test_index")
-        assert cache._is_alias
-        es_client_fx.indices.put_mapping.assert_called_with(
-            index="test_index", body=cache.mapping["mappings"]
-        )
-        es_client_fx.indices.exists_alias.return_value = False
-        es_client_fx.indices.exists.return_value = False
-        cache = ElasticsearchCache(
-            es_url="http://localhost:9200", index_name="test_index"
-        )
-        assert not cache._is_alias
-        es_client_fx.indices.create.assert_called_with(
-            index="test_index", body=cache.mapping
-        )
+        with mock.patch(
+            "langchain_elasticsearch._async.cache.create_async_elasticsearch_client",
+            return_value=es_client_fx,
+        ):
+            cache = ElasticsearchCache(
+                es_url="http://localhost:9200", index_name="test_index"
+            )
+            assert cache.is_alias()
+            es_client_fx.indices.exists_alias.assert_called_with(name="test_index")
+            es_client_fx.indices.put_mapping.assert_called_with(
+                index="test_index", body=cache.mapping["mappings"]
+            )
+            es_client_fx.indices.exists_alias.return_value = False
+            es_client_fx.indices.exists.return_value = False
+            cache = ElasticsearchCache(
+                es_url="http://localhost:9200", index_name="test_index"
+            )
+            assert not (cache.is_alias())
+            es_client_fx.indices.create.assert_called_with(
+                index="test_index", body=cache.mapping
+            )
 
 
 def test_mapping_llm_cache(
@@ -242,7 +248,9 @@ def test_mget_cache_store(
     ]
 
 
-def test_deduplicate_hits(es_embeddings_cache_fx: ElasticsearchEmbeddingsCache) -> None:
+def test_deduplicate_hits(
+    es_embeddings_cache_fx: ElasticsearchEmbeddingsCache,
+) -> None:
     hits = [
         {
             "_id": "1",
@@ -338,7 +346,9 @@ def _del_timestamp(doc: Dict[str, Any]) -> Dict[str, Any]:
     return doc
 
 
-def test_mset_cache_store(es_embeddings_cache_fx: ElasticsearchEmbeddingsCache) -> None:
+def test_mset_cache_store(
+    es_embeddings_cache_fx: ElasticsearchEmbeddingsCache,
+) -> None:
     input = [
         ("test_text1", _value_serializer([1.5, 2, 3.6])),
         ("test_text2", _value_serializer([5, 6, 7.1])),

@@ -1,4 +1,4 @@
-"""Test ElasticsearchStore functionality."""
+"""Test AsyncElasticsearchStore functionality."""
 
 import logging
 import uuid
@@ -10,7 +10,7 @@ from langchain_core.documents import Document
 
 from langchain_elasticsearch.vectorstores import ElasticsearchStore
 
-from ..fake_embeddings import ConsistentFakeEmbeddings, FakeEmbeddings
+from ...fake_embeddings import ConsistentFakeEmbeddings, FakeEmbeddings
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 logging.basicConfig(level=logging.DEBUG)
@@ -42,6 +42,7 @@ class TestElasticsearch:
         """Return the index name."""
         return f"test_{uuid.uuid4().hex}"
 
+    @pytest.mark.sync
     def test_from_texts_similarity_search_with_doc_builder(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -73,6 +74,7 @@ class TestElasticsearch:
 
         docsearch.close()
 
+    @pytest.mark.sync
     def test_search_with_relevance_threshold(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -112,6 +114,7 @@ class TestElasticsearch:
 
         docsearch.close()
 
+    @pytest.mark.sync
     def test_search_by_vector_with_relevance_threshold(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -154,6 +157,7 @@ class TestElasticsearch:
 
     # Also tested in elasticsearch.helpers.vectorstore
 
+    @pytest.mark.sync
     def test_similarity_search_without_metadata(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -183,20 +187,7 @@ class TestElasticsearch:
         output = docsearch.similarity_search("foo", k=1, custom_query=assert_query)
         assert output == [Document(page_content="foo")]
 
-    async def test_similarity_search_without_metadata_async(
-        self, es_params: dict, index_name: str
-    ) -> None:
-        """Test end to end construction and search without metadata."""
-        texts = ["foo", "bar", "baz"]
-        docsearch = ElasticsearchStore.from_texts(
-            texts,
-            FakeEmbeddings(),
-            **es_params,
-            index_name=index_name,
-        )
-        output = await docsearch.asimilarity_search("foo", k=1)
-        assert output == [Document(page_content="foo")]
-
+    @pytest.mark.sync
     def test_add_embeddings(self, es_params: dict, index_name: str) -> None:
         """
         Test add_embeddings, which accepts pre-built embeddings instead of
@@ -223,6 +214,7 @@ class TestElasticsearch:
         output = docsearch.similarity_search("foo1", k=1)
         assert output == [Document(page_content="foo3", metadata={"page": 2})]
 
+    @pytest.mark.sync
     def test_similarity_search_with_metadata(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -243,6 +235,7 @@ class TestElasticsearch:
         output = docsearch.similarity_search("bar", k=1)
         assert output == [Document(page_content="bar", metadata={"page": 1})]
 
+    @pytest.mark.sync
     def test_similarity_search_with_filter(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -279,6 +272,7 @@ class TestElasticsearch:
         )
         assert output == [Document(page_content="foo", metadata={"page": 1})]
 
+    @pytest.mark.sync
     def test_similarity_search_with_doc_builder(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -308,6 +302,7 @@ class TestElasticsearch:
         assert output[0].metadata["page_number"] == -1
         assert output[0].metadata["original_filename"] == "Mock filename!"
 
+    @pytest.mark.sync
     def test_similarity_search_exact_search(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -355,6 +350,7 @@ class TestElasticsearch:
         output = docsearch.similarity_search("foo", k=1, custom_query=assert_query)
         assert output == [Document(page_content="foo")]
 
+    @pytest.mark.sync
     def test_similarity_search_exact_search_with_filter(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -408,6 +404,7 @@ class TestElasticsearch:
         )
         assert output == [Document(page_content="foo", metadata={"page": 0})]
 
+    @pytest.mark.sync
     def test_similarity_search_exact_search_distance_dot_product(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -457,6 +454,7 @@ class TestElasticsearch:
         output = docsearch.similarity_search("foo", k=1, custom_query=assert_query)
         assert output == [Document(page_content="foo")]
 
+    @pytest.mark.sync
     def test_similarity_search_exact_search_unknown_distance_strategy(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -473,6 +471,7 @@ class TestElasticsearch:
                 distance_strategy="NOT_A_STRATEGY",
             )
 
+    @pytest.mark.sync
     def test_max_marginal_relevance_search(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -509,6 +508,7 @@ class TestElasticsearch:
         mmr_output = docsearch.max_marginal_relevance_search(texts[0], k=3, fetch_k=2)
         assert len(mmr_output) == 2
 
+    @pytest.mark.sync
     def test_similarity_search_approx_with_hybrid_search(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -546,6 +546,7 @@ class TestElasticsearch:
         output = docsearch.similarity_search("foo", k=1, custom_query=assert_query)
         assert output == [Document(page_content="foo")]
 
+    @pytest.mark.sync
     def test_similarity_search_approx_by_vector(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -582,6 +583,7 @@ class TestElasticsearch:
         )
         assert output == [(Document(page_content="foo"), 1.0)]
 
+    @pytest.mark.sync
     def test_similarity_search_approx_with_hybrid_search_rrf(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -690,6 +692,7 @@ class TestElasticsearch:
             "foo", k=3, fetch_k=50, custom_query=assert_query
         )
 
+    @pytest.mark.sync
     def test_similarity_search_approx_with_custom_query_fn(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -719,6 +722,7 @@ class TestElasticsearch:
         output = docsearch.similarity_search("foo", k=1, custom_query=my_custom_query)
         assert output == [Document(page_content="bar")]
 
+    @pytest.mark.sync
     def test_deployed_model_check_fails_approx(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -734,6 +738,7 @@ class TestElasticsearch:
                 ),
             )
 
+    @pytest.mark.sync
     def test_deployed_model_check_fails_sparse(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -748,6 +753,7 @@ class TestElasticsearch:
                 ),
             )
 
+    @pytest.mark.sync
     def test_elasticsearch_with_relevance_score(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -770,6 +776,7 @@ class TestElasticsearch:
         )
         assert output == [(Document(page_content="foo", metadata={"page": "0"}), 1.0)]
 
+    @pytest.mark.sync
     def test_similarity_search_bm25_search(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -799,6 +806,7 @@ class TestElasticsearch:
         output = docsearch.similarity_search("foo", k=1, custom_query=assert_query)
         assert output == [Document(page_content="foo")]
 
+    @pytest.mark.sync
     def test_similarity_search_bm25_search_with_filter(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -835,6 +843,7 @@ class TestElasticsearch:
         )
         assert output == [Document(page_content="foo", metadata={"page": 1})]
 
+    @pytest.mark.sync
     def test_elasticsearch_with_relevance_threshold(
         self, es_params: dict, index_name: str
     ) -> None:
@@ -873,6 +882,7 @@ class TestElasticsearch:
             # third ranked is out
         ]
 
+    @pytest.mark.sync
     def test_elasticsearch_delete_ids(self, es_params: dict, index_name: str) -> None:
         """Test delete methods from vector store."""
         texts = ["foo", "bar", "baz", "gni"]

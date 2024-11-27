@@ -46,6 +46,12 @@ spell_fix:
 check_imports: $(shell find langchain_elasticsearch -name '*.py')
 	poetry run python ./scripts/check_imports.py $^
 
+run_unasync:
+	poetry run python ./scripts/run_unasync.py
+
+run_unasync_check:
+	poetry run python ./scripts/run_unasync.py --check
+
 ######################
 # HELP
 ######################
