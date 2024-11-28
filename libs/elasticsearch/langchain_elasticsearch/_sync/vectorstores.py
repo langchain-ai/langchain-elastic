@@ -3,7 +3,6 @@ from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers.vectorstore import (
-    AsyncRetrievalStrategy,
     BM25Strategy,
     DenseVectorScriptScoreStrategy,
     DenseVectorStrategy,
@@ -64,7 +63,7 @@ def _convert_retrieval_strategy(
     else:
         raise TypeError(
             f"Strategy {langchain_strategy} not supported. To provide a "
-            f"custom strategy, please subclass {AsyncRetrievalStrategy}."
+            f"custom strategy, please subclass {RetrievalStrategy}."
         )
 
 
