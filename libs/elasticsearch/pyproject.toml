@@ -58,6 +58,11 @@ optional = true
 [tool.poetry.group.test_integration.dependencies]
 
 
+
+[tool.poetry.group.codegen.dependencies]
+unasync = "^0.6.0"
+isort = "^5.13.2"
+
 [tool.ruff]
 select = [
   "E", # pycodestyle
