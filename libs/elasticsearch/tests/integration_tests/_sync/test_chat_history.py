@@ -1,4 +1,3 @@
-import json
 import uuid
 from typing import Iterator
 
@@ -54,17 +53,33 @@ class TestElasticsearch:
         # add some messages
         memory.chat_memory.add_messages(
             [
-                AIMessage("This is me, the AI"),
-                HumanMessage("This is me, the human"),
+                AIMessage("This is me, the AI (1)"),
+                HumanMessage("This is me, the human (1)"),
+                AIMessage("This is me, the AI (2)"),
+                HumanMessage("This is me, the human (2)"),
+                AIMessage("This is me, the AI (3)"),
+                HumanMessage("This is me, the human (3)"),
+                AIMessage("This is me, the AI (4)"),
+                HumanMessage("This is me, the human (4)"),
+                AIMessage("This is me, the AI (5)"),
+                HumanMessage("This is me, the human (5)"),
+                AIMessage("This is me, the AI (6)"),
+                HumanMessage("This is me, the human (6)"),
+                AIMessage("This is me, the AI (7)"),
+                HumanMessage("This is me, the human (7)"),
             ]
         )
 
         # get the message history from the memory store and turn it into a json
-        messages = memory.chat_memory.messages
-        messages_json = json.dumps([message_to_dict(msg) for msg in messages])
+        messages = [message_to_dict(msg) for msg in (memory.chat_memory.messages)]
 
-        assert "This is me, the AI" in messages_json
-        assert "This is me, the human" in messages_json
+        assert len(messages) == 14
+        for i in range(7):
+            assert messages[i * 2]["data"]["content"] == f"This is me, the AI ({i+1})"
+            assert (
+                messages[i * 2 + 1]["data"]["content"]
+                == f"This is me, the human ({i+1})"
+            )
 
         # remove the record from Elasticsearch, so the next test run won't pick it up
         memory.chat_memory.clear()
