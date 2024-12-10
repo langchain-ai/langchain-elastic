@@ -2,7 +2,12 @@ import os
 from typing import Any, Dict, List, Optional
 
 from elastic_transport import Transport
-from elasticsearch import BadRequestError, ConflictError, Elasticsearch, NotFoundError
+from elasticsearch import (
+    BadRequestError,
+    ConflictError,
+    Elasticsearch,
+    NotFoundError,
+)
 
 
 def read_env() -> Dict:
