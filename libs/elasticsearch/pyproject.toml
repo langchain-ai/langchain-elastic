@@ -57,6 +57,8 @@ optional = true
 
 [tool.poetry.group.test_integration.dependencies]
 
+[tool.poetry.group.codegen.dependencies]
+unasync = "^0.6.0"
 
 [tool.ruff]
 select = [

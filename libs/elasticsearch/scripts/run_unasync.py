@@ -111,7 +111,7 @@ def main(check=False):
     for dir in source_dirs:
         output_dir = f"{dir[0]}_sync_check/" if check else dir[1]
         subprocess.check_call(["ruff", "format", "--target-version=py38", output_dir])
-        subprocess.check_call(["isort", output_dir])
+        subprocess.check_call(["ruff", "check", "--fix", "--select", "I", output_dir])
         for file in glob("*.py", root_dir=dir[0]):
             subprocess.check_call(
                 [
