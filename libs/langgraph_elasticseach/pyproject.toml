@@ -1,0 +1,54 @@
+[tool.poetry]
+name = "langgraph-elasticseach"
+version = "0.1.0"
+description = "Library with a Elasticsearch implementation of LangGraph checkpoint saver."
+authors = []
+readme = "README.md"
+license = "MIT"
+packages = [{ include = "langgraph"}]
+
+[tool.poetry.dependencies]
+python = ">=3.13,<4.0"
+langchain = "^0.3.14"
+langchain-elasticsearch = "^0.3.1"
+langchain-openai = "^0.3.0"
+langgraph = "^0.2.63"
+langgraph-checkpoint = "^2.0.10"
+langchain-community = "^0.3.14"
+pytest-mock = "^3.14.0"
+pytest-asyncio = "^0.25.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+pytest-asyncio = "^0.25.2"
+testcontainers = "^4.9.0"
+pytest-cov = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.run]
+omit = ["tests/*"]
+
+[tool.pytest-watcher]
+now = true
+delay = 0.1
+patterns = ["*.py"]
+
+[tool.poetry.scripts]
+start = "langgraph.examples:main"
+
+# [tool.poetry.group.test.dependencies.tests]
+# path = "tests"
+# develop = true
+[tool.pytest.ini_options]
+
+# --strict-markers will raise errors on unknown marks.
+# https://docs.pytest.org/en/7.1.x/how-to/mark.html#raising-errors-on-unknown-marks
+#
+# https://docs.pytest.org/en/7.1.x/reference/reference.html
+# --strict-config       any warnings encountered while parsing the `pytest`
+#                       section of the configuration file raise errors.
+addopts = "--strict-markers --strict-config --durations=5 -vv"
+asyncio_mode = "auto"
