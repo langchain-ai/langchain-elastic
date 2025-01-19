@@ -234,7 +234,6 @@ class ElasticQuery(Query[OpInput, OpResult]):
         if not response:
             return []
 
-        print('RESPONSE', response)
         hits = response.get("hits", {}).get("hits", [])
         if not hits and (source := response.get("_source")):
             hits = [{"_source": source}]
