@@ -12,9 +12,11 @@ from langchain_elasticsearch._async.cache import (
 from langchain_elasticsearch._async.cache import (
     AsyncElasticsearchEmbeddingsCache as _AsyncElasticsearchEmbeddingsCache,
 )
-from langchain_elasticsearch._sync.cache import (  # noqa: F401
-    ElasticsearchCache,
-    ElasticsearchEmbeddingsCache,
+from langchain_elasticsearch._sync.cache import (
+    ElasticsearchCache as _ElasticsearchCache,
+)
+from langchain_elasticsearch._sync.cache import (
+    ElasticsearchEmbeddingsCache as _ElasticsearchEmbeddingsCache,
 )
 from langchain_elasticsearch.client import (  # noqa: F401
     create_async_elasticsearch_client,
@@ -49,3 +51,12 @@ class AsyncElasticsearchEmbeddingsCache(_AsyncElasticsearchEmbeddingsCache):
 
     def yield_keys(self, *, prefix: Optional[str] = None) -> Iterator[str]:
         raise NotImplementedError("This class is asynchronous, use ayield_keys()")
+
+
+# these are only defined here so that they are picked up by Langchain's docs generator
+class ElasticsearchCache(_ElasticsearchCache):
+    pass
+
+
+class ElasticsearchEmbeddingsCache(_ElasticsearchEmbeddingsCache):
+    pass
