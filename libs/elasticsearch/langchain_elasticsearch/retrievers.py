@@ -7,7 +7,7 @@ from langchain_elasticsearch._async.retrievers import (
     AsyncElasticsearchRetriever as _AsyncElasticsearchRetriever,
 )
 from langchain_elasticsearch._sync.retrievers import (
-    ElasticsearchRetriever,  # noqa: F401
+    ElasticsearchRetriever as _ElasticsearchRetriever,
 )
 
 
@@ -20,3 +20,8 @@ class AsyncElasticsearchRetriever(_AsyncElasticsearchRetriever):
         raise NotImplementedError(
             "This class is asynchronous, use _aget_relevant_documents()"
         )
+
+
+# this is only defined here so that it is picked up by Langchain's docs generator
+class ElasticsearchRetriever(_ElasticsearchRetriever):
+    pass
