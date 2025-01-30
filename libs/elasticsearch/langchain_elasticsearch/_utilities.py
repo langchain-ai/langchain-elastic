@@ -69,11 +69,14 @@ def _hits_to_docs_scores(
 
     documents = []
 
-    def default_doc_builder(hit: Dict) -> Document:
-        return Document(
+    def default_doc_builder(hit: Dict, fields: List[str]) -> Document:
+        doc = Document(
             page_content=hit["_source"].get(content_field, ""),
             metadata=hit["_source"].get("metadata", {}),
         )
+        for field_key in fields:
+            doc.metadata[field_key] = hit["_source"].get(field_key, None)
+        return doc
 
     doc_builder = doc_builder or default_doc_builder
 
@@ -87,7 +90,7 @@ def _hits_to_docs_scores(
             ]:
                 hit["_source"]["metadata"][field] = hit["_source"][field]
 
-        doc = doc_builder(hit)
+        doc = doc_builder(hit, fields)
         documents.append((doc, hit["_score"]))
 
     return documents
