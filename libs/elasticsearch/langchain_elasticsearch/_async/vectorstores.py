@@ -420,6 +420,7 @@ class AsyncElasticsearchStore(VectorStore):
         docs = _hits_to_docs_scores(
             hits=hits,
             content_field=self.query_field,
+            fields=fields,
             doc_builder=doc_builder,
         )
         return [doc for doc, _score in docs]
@@ -540,6 +541,7 @@ class AsyncElasticsearchStore(VectorStore):
         return _hits_to_docs_scores(
             hits=hits,
             content_field=self.query_field,
+            fields=fields,
             doc_builder=doc_builder,
         )
 
@@ -583,6 +585,7 @@ class AsyncElasticsearchStore(VectorStore):
         return _hits_to_docs_scores(
             hits=hits,
             content_field=self.query_field,
+            fields=fields,
             doc_builder=doc_builder,
         )
 
