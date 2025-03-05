@@ -389,7 +389,7 @@ class AsyncElasticsearchStore(VectorStore):
         k: int = 4,
         fetch_k: int = 50,
         filter: Optional[List[dict]] = None,
-            fields: Optional[List[str]] = None,
+        fields: Optional[List[str]] = None,
         *,
         custom_query: Optional[
             Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
