@@ -1,27 +1,29 @@
 [tool.poetry]
-name = "langgraph-elasticseach"
+name = "langgraph-elasticsearch"
 version = "0.1.0"
 description = "Library with a Elasticsearch implementation of LangGraph checkpoint saver."
 authors = []
 readme = "README.md"
 license = "MIT"
-packages = [{ include = "langgraph"}]
+packages = [{ include = "langgraph" }]
 
 [tool.poetry.dependencies]
-python = ">=3.13,<4.0"
-langchain = "^0.3.14"
-langchain-elasticsearch = "^0.3.1"
-langchain-openai = "^0.3.0"
-langgraph = "^0.2.63"
-langgraph-checkpoint = "^2.0.10"
-langchain-community = "^0.3.14"
+python = ">=3.12,<4.0"
+langchain = "^0.3.20"
+langchain-elasticsearch = "^0.3.2"
+langchain-openai = "^0.3.8"
+langgraph = ">=0.2.76"
+langgraph-checkpoint = "^2.0.19"
+langchain-community = "^0.3.19"
 pytest-mock = "^3.14.0"
-pytest-asyncio = "^0.25.2"
+pytest-asyncio = "^0.25.3"
+pydantic-settings = "^2.8.1"
+fitz = "^0.0.1.dev2"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3.4"
-pytest-asyncio = "^0.25.2"
-testcontainers = "^4.9.0"
+pytest = "^8.3.5"
+pytest-asyncio = "^0.25.3"
+testcontainers = "^4.9.2"
 pytest-cov = "^6.0.0"
 
 [build-system]
@@ -39,6 +41,7 @@ patterns = ["*.py"]
 [tool.poetry.scripts]
 start = "langgraph.examples:main"
 
+
 # [tool.poetry.group.test.dependencies.tests]
 # path = "tests"
 # develop = true
@@ -52,3 +55,9 @@ start = "langgraph.examples:main"
 #                       section of the configuration file raise errors.
 addopts = "--strict-markers --strict-config --durations=5 -vv"
 asyncio_mode = "auto"
+
+[tool.vivoai]
+title = "VivoAI API"
+root_path = "/api"
+docs_url = "/docs"
+redoc_url = "/redoc"

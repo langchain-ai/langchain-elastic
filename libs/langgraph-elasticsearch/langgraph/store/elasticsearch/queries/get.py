@@ -26,10 +26,7 @@ class QueryGet(ElasticQuery[GetOp, Item]):
             index=self.store_index_name,
             id=namespace_to_text(op.namespace + (op.key,))
         )
-        print('GET', response)
-        x = self.es_to_items(response)
-        print('X', x)
-        return x
+        return self.es_to_items(response)
 
     async def aget_by_id(self, op: GetOp) -> list[Item]:
         """

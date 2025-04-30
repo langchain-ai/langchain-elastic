@@ -1,7 +1,8 @@
 from typing import Any, Dict, Optional
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import get_checkpoint_id
-\
+
+
 class Configurable:
     thread_id: Optional[str]
     checkpoint_ns: Optional[str]
@@ -13,6 +14,7 @@ class Configurable:
             "checkpoint_ns": self.checkpoint_ns,
             "checkpoint_id": self.checkpoint_id,
         }
+
 
 def get_configurable(config: Dict[str, Any]) -> Configurable:
     configurable = config.get("configurable", {})

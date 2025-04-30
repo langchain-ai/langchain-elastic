@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Dict, Generic, Optional
+from typing import Any, Dict, Generic, Optional, Sequence, Tuple
 from elasticsearch import Elasticsearch
 from langchain_elasticsearch.client import create_elasticsearch_client
 from langgraph.checkpoint.elasticsearch.base import BaseElasticsearchSaver

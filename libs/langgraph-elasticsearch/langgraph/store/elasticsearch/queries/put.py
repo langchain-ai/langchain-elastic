@@ -41,7 +41,6 @@ class ElasticQueryPut(ElasticQuery[Iterable[PutOp], None]):
     
 class VectorQueryPut(VectorQuery[Iterable[PutOp], None]):
     def put_texts(self, op: PutOp) -> None:
-        print('entrei')
         if not op.value:
             self.vector_store.delete(ids=[namespace_to_text(op.namespace + (op.key,))])
             return []

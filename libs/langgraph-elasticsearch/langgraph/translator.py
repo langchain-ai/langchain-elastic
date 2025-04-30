@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 from langchain_core.structured_query import (
     Comparator,
@@ -7,6 +7,7 @@ from langchain_core.structured_query import (
     Operator,
     StructuredQuery,
     Visitor,
+    FilterDirective,
 )
 from pydantic import Extra
 
@@ -151,7 +152,7 @@ class ElasticsearchTranslator(Visitor):
         return {self._format_func(comparison.comparator): {comparison.attribute: value}}
 
     def visit_structured_query(
-        self, structured_query: StructuredQuery
+        self, structured_query: 'ExtendedStructuredQuery'
     ) -> Tuple[str, dict]:
         """
         Translates a structured query into Elasticsearch's query format.
@@ -168,16 +169,27 @@ class ElasticsearchTranslator(Visitor):
         if structured_query.limit is not None:
             elastic_query["size"] = structured_query.limit
 
-        if hasattr(structured_query, "args"):
-            elastic_query.update(structured_query.model_extra)
+        if hasattr(structured_query, "extra_attributes"):
+            elastic_query.update(structured_query.extra_attributes)
 
         return structured_query.query, elastic_query
 
 
 class ExtendedStructuredQuery(StructuredQuery):
-    def __init__(self, **kwargs):
-        self.extra_attributes = {k: v for k, v in kwargs.items() if k not in self.model_fields}
-        super().__init__(**{k: v for k, v in kwargs.items() if k in self.model_fields})
+    extra_attributes: Dict[str, Any] = {}
+
+    def __init__(self, 
+        query: str,
+        filter: Optional[FilterDirective],
+        limit: Optional[int] = None,
+        **kwargs):
+        super().__init__(
+            query=query, filter=filter, limit=limit, **kwargs
+        )
+
+        self.extra_attributes = kwargs
+
+
 
     def __getattr__(self, name: str):
         if name in self.extra_attributes:

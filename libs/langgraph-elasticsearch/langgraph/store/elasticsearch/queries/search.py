@@ -4,6 +4,7 @@ from langchain_core.runnables import run_in_executor, RunnableConfig
 from langchain_core.documents import Document
 from langgraph.store.base import SearchOp, SearchItem
 from langgraph.store.elasticsearch.queries.base import ElasticQuery, VectorQuery, text_to_namespace, namespace_to_text
+from langgraph.util import validate_before_execution
 
 logger = logging.getLogger(__name__)
 
@@ -19,17 +20,20 @@ class ElasticQuerySearch(ElasticQuery[SearchOp, SearchItem]):
         Returns:
             List[SearchItem]: The search results.
         """
-        if not op or not op.filter:
-            return op
-
         args = {
             "from": op.offset,
             "sort": [{"updated_at": {"order": "desc"}}],
         }
+        print('cheguei aqui')
+        print(self.store_index_name)
+        print(op.namespace_prefix)
+        print(op.filter)
+        print(op.limit)
+        print(args)
 
         response = self.es_connection.search(
             index=self.store_index_name,
-            body=self.build_query(op.filter, limit=op.limit, property="value", **args)
+            body=self.build_query(op.namespace_prefix, op.filter, limit=op.limit, property="value", **args)
         )
         return self.es_to_items(response)
 
@@ -71,7 +75,6 @@ class ElasticQuerySearch(ElasticQuery[SearchOp, SearchItem]):
             list[SearchItem]: The search results.
         """
         return await self._execute_operations(input, sync_func=self.aexecute_search)
-
 class VectorQuerySearch(VectorQuery[SearchOp, SearchItem]):
     """Class for executing vector search operations."""
 
@@ -89,8 +92,10 @@ class VectorQuerySearch(VectorQuery[SearchOp, SearchItem]):
                 namespace=text_to_namespace(doc.metadata["namespace"]),
                 key=doc.id,
                 value=doc.page_content,
-                created_at=doc.model_extra["created_at"],
-                updated_at=doc.model_extra["updated_at"],
+                created_at=doc.metadata["created_at"],
+                updated_at=doc.metadata["updated_at"],
+                # created_at=doc.model_extra["created_at"],
+                # updated_at=doc.model_extra["updated_at"],
                 score=score,
             )
             for doc, score in documents
@@ -120,6 +125,7 @@ class VectorQuerySearch(VectorQuery[SearchOp, SearchItem]):
             })
         return query
 
+    @validate_before_execution
     def execute_search(self, op: SearchOp) -> list[SearchItem]:
         """Execute a synchronous vector search operation.
 
@@ -135,6 +141,7 @@ class VectorQuerySearch(VectorQuery[SearchOp, SearchItem]):
         documents = self.vector_store.similarity_search_with_relevance_scores(**query)
         return self._document_to_search_item(documents)
 
+    @validate_before_execution
     async def aexecute_search(self, op: SearchOp) -> list[SearchItem]:
         """Execute an asynchronous vector search operation.
 

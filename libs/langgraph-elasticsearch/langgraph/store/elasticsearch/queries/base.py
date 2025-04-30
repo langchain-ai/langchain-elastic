@@ -135,7 +135,8 @@ class Query(Runnable[OpInput, OpResult]):
         Returns:
             List[OpResult]: The list of results.
         """
-        return [item for op in ops for item in (sync_func(op) or [])]
+        results: list[OpResult] = [result for op in ops for result in ( sync_func(op) or [])]
+        return results
     
     async def _aexecute_operations(
         self,
@@ -231,13 +232,20 @@ class ElasticQuery(Query[OpInput, OpResult]):
         Returns:
             List[OpResult]: The list of items.
         """
+        print('es_to_items')
+        print(response)
         if not response:
             return []
 
-        hits = response.get("hits", {}).get("hits", [])
+        hits = response.get("hits", None).get("hits", None)
         if not hits and (source := response.get("_source")):
             hits = [{"_source": source}]
-
+        print('HITS')
+        print(hits)
+        if not hits or hits is []:
+            print('HITS IS NONE')
+            return [{}]
+        print('HITS IS NOT NONE')
         now = datetime.now(tz=timezone.utc).isoformat()
         return [
             self._create_item(
@@ -309,19 +317,22 @@ class ElasticQuery(Query[OpInput, OpResult]):
             Dict[str, Any]: The Elasticsearch index mapping.
         """
         return {
-            "properties": {
-                "namespace": {"type": "keyword"},
-                "key": {"type": "keyword"},
-                "value": {
-                    "type": "object",
-                    "enabled": True,
-                },
-                "created_at": {"type": "date"},
-                "updated_at": {"type": "date"},
+            "mappings": {
+                "properties": {
+                    "namespace": {"type": "keyword"},
+                    "key": {"type": "keyword"},
+                    "value": {
+                        "type": "object",
+                        "enabled": True,
+                    },
+                    "created_at": {"type": "date"},
+                    "updated_at": {"type": "date"},
+                }
             }
         }
 
-    def build_query(self, 
+    def build_query(self,
+                    namespace: Optional[Tuple[str, ...]],
                     filters: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]], 
                     property: Optional[str] = None,
                     **kwargs: Any) -> Optional[Dict[str, Any]]:
@@ -335,10 +346,18 @@ class ElasticQuery(Query[OpInput, OpResult]):
         Returns:
             Optional[Dict[str, Any]]: The built query.
         """
+        namespace_filter = Comparison(
+            comparator=self.translator.str_to_comparator("$contain"),
+            attribute="namespace",
+            value=f"{namespace_to_text(namespace)}*"
+        ) if namespace else None
+
         if isinstance(filters, dict):
             filters = [filters]
 
         comparisons = []
+        comparisons.append(namespace_filter)
+
         for filter_item in (filters or []):
             for key, value in (filter_item or {}).items():
                 if isinstance(value, str):
@@ -382,3 +401,12 @@ class VectorQuery(Query[OpInput, OpResult]):
         self.index_config = index_config
         self.vector_store = vector_store
         self.vector_index_name = index_config.get("vector_index_name")
+
+    def before_execution(self) -> bool:
+        """Execute before the query is executed.
+        
+        Returns:
+            bool: Whether the execution should continue.
+        """
+        return self.vector_store.client.indices.exists(index=self.vector_index_name)
+

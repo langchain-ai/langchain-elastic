@@ -44,8 +44,6 @@ class QueryListNamespaces(ElasticQuery[ListNamespacesOp, list[Result]]):
             index=self.store_index_name,
             body=query_conditions,
         )
-        print('listnamespace')
-        print(documents)
         return self.es_to_tuple(documents)
 
     async def aexecute_list_namespaces(self, op: ListNamespacesOp) -> list[Result]:
