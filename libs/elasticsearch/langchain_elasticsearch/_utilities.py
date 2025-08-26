@@ -71,6 +71,7 @@ def _hits_to_docs_scores(
 
     def default_doc_builder(hit: Dict) -> Document:
         return Document(
+            id=hit.get("_id"),
             page_content=hit["_source"].get(content_field, ""),
             metadata=hit["_source"].get("metadata", {}),
         )
