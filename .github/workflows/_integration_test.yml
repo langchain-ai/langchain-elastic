@@ -30,9 +30,15 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
+          - "3.13"
+        elasticsearch-version:
+         - "8.13.0"
+         - "8.19.2"
+         - "9.1.2"
     services:
       elasticsearch:
-        image: elasticsearch:8.13.0
+        image: elasticsearch:${{ elasticsearch-version }}
         env:
           discovery.type: single-node
           xpack.license.self_generated.type: trial
