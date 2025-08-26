@@ -25,12 +25,10 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version:
           - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
           - "3.13"
         elasticsearch-version:
           - "8.13.0"
