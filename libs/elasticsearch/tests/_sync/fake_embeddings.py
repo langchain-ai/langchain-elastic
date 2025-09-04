@@ -13,7 +13,9 @@ class FakeEmbeddings(Embeddings):
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Return simple embeddings.
         Embeddings encode each text as its index."""
-        return [[float(1.0)] * 9 + [float(i)] for i in range(len(texts))]
+        temp = [[float(1.0)] * 9 + [float(i * 2)] for i in range(len(texts))]
+        print(temp)
+        return temp
 
     def embed_query(self, text: str) -> List[float]:
         """Return constant query embeddings.
