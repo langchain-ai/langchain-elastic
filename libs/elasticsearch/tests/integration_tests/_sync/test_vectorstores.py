@@ -765,7 +765,7 @@ class TestElasticsearch:
         """Test to make sure the relevance score is scaled to 0-1."""
         texts = ["foo", "bar", "baz"]
         metadatas = [{"page": str(i)} for i in range(len(texts))]
-        embeddings = FakeEmbeddings()
+        embeddings = StableHashEmbeddings()
 
         docsearch = ElasticsearchStore.from_texts(
             index_name=index_name,
