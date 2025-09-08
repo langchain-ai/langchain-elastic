@@ -75,8 +75,8 @@ class StableHashEmbeddings(Embeddings):
         total = sum(raw)
         return [float(v) / float(total) for v in raw]
 
-    def embed_documents(self, texts):
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
         return [self._encode(text) for text in texts]
 
-    def embed_query(self, text):
+    def embed_query(self, text: str) -> List[float]:
         return self._encode(text)
