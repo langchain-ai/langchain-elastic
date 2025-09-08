@@ -50,7 +50,20 @@ class AsyncConsistentFakeEmbeddings(AsyncFakeEmbeddings):
         return (await self.aembed_documents([text]))[0]
     
 class AsyncStableHashEmbeddings(Embeddings):
-    """Embeddings which return stable hash-based vectors for the same texts."""
+    """Deterministic hash-based embeddings for robust testing. (async version)
+
+    Why:
+    - Elasticsearch 8.14+ indexes dense vectors with int8_hnsw by default.
+      Quantization (int8) + HNSW ANN can slightly disturb scores/ranking
+      especially when vectors are nearly identical (e.g., 9 ones + tiny delta).
+    - Tests need deterministic separation so small quantization/ANN
+      effects do not flip top-1 results or break strict assertions.
+
+    What:
+    - Produce a 10-dim vector from md5(text), take first 10 bytes, convert to
+      integers, then L1-normalize so values sum to 1.0. This gives stable,
+      well-separated but deterministic vectors which will work across ES versions.
+    """
 
     @staticmethod
     def _encode(text: str) -> List[float]:
