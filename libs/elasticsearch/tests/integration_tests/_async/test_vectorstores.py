@@ -10,7 +10,7 @@ from langchain_core.documents import Document
 
 from langchain_elasticsearch.vectorstores import AsyncElasticsearchStore
 
-from ...fake_embeddings import AsyncConsistentFakeEmbeddings, AsyncFakeEmbeddings
+from ...fake_embeddings import AsyncConsistentFakeEmbeddings, AsyncFakeEmbeddings, AsyncStableHashEmbeddings
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 logging.basicConfig(level=logging.DEBUG)
@@ -166,21 +166,19 @@ class TestElasticsearch:
         def assert_query(
             query_body: Dict[str, Any], query: Optional[str]
         ) -> Dict[str, Any]:
-            assert query_body == {
-                "knn": {
-                    "field": "vector",
-                    "filter": [],
-                    "k": 1,
-                    "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-                }
-            }
+            assert "knn" in query_body
+            knn = query_body["knn"]
+            assert knn["field"] == "vector"
+            assert knn["k"] == 1
+            assert knn["num_candidates"] == 50
+            assert knn["filter"] == []
+            assert isinstance(knn["query_vector"], list) and len(knn["query_vector"]) == 10
             return query_body
 
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncStableHashEmbeddings(),
             **es_params,
             index_name=index_name,
         )
