@@ -609,7 +609,7 @@ class TestElasticsearch:
         rrf_test_cases: List[Optional[Union[dict, bool]]] = [
             True,
             False,
-            {"rank_constant": 1, "window_size": 5},
+            {"rank_constant": 1, "rank_window_size": 5},
         ]
         for rrf_test_case in rrf_test_cases:
             texts = ["foo", "bar", "baz"]
@@ -686,7 +686,7 @@ class TestElasticsearch:
                 "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
             },
             size=3,
-            rank={"rrf": {"rank_constant": 1, "window_size": 5}},
+            rank={"rrf": {"rank_constant": 1, "rank_window_size": 5}},
         )
 
         assert [o.page_content for o in output] == [
