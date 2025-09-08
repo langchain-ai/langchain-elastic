@@ -797,7 +797,18 @@ class TestElasticsearch:
         output = await docsearch.asimilarity_search_by_vector_with_relevance_scores(
             embedding=embedded_query, k=1
         )
-        assert output == [(Document(page_content="foo", metadata={"page": "0"}), 1.0)]
+        doc, score = output[0]
+        assert doc == Document(page_content="foo", metadata={"page": "0"})
+        #Use the client to pick a tolernace for based on ES version
+        info = await docsearch.client.info()
+        es_version = info["version"]["number"]
+        major, minor = map(int, es_version.split(".")[:2])
+        if (major, minor) >= (8, 14):
+            # if ES 8.14+ then relax the assertion to a tolerance to 1e-5
+            assert score == pytest.approx(1.0, rel=0.05)
+        else:
+            # earlier versions don't use quantization by default so exact match is expected
+            assert score == 1.0 
 
     @pytest.mark.asyncio
     async def test_similarity_search_bm25_search(
