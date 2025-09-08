@@ -557,7 +557,7 @@ class TestElasticsearch:
     ) -> None:
         """Test end to end construction and search with metadata."""
         texts = ["foo", "bar", "baz"]
-        embeddings = ConsistentFakeEmbeddings()
+        embeddings = StableHashEmbeddings()
         docsearch = ElasticsearchStore.from_texts(
             texts,
             embedding=embeddings,

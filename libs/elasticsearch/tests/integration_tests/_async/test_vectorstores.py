@@ -573,7 +573,7 @@ class TestElasticsearch:
     ) -> None:
         """Test end to end construction and search with metadata."""
         texts = ["foo", "bar", "baz"]
-        embeddings = AsyncConsistentFakeEmbeddings()
+        embeddings = AsyncStableHashEmbeddings()
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
             embedding=embeddings,
