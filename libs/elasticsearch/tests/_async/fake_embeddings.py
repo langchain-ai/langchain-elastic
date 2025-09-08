@@ -48,7 +48,8 @@ class AsyncConsistentFakeEmbeddings(AsyncFakeEmbeddings):
         """Return consistent embeddings for the text, if seen before, or a constant
         one if the text is unknown."""
         return (await self.aembed_documents([text]))[0]
-    
+
+
 class AsyncStableHashEmbeddings(Embeddings):
     """Deterministic hash-based embeddings for robust testing. (async version)
 
@@ -70,7 +71,7 @@ class AsyncStableHashEmbeddings(Embeddings):
         digest = hashlib.md5(text.encode("utf-8")).digest()
         raw = [b for b in digest[:10]]
         total = sum(raw)
-        return [float(v)/float(total) for v in raw]
+        return [float(v) / float(total) for v in raw]
 
     async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
         """Return stable hash-based embeddings for each text."""

@@ -50,7 +50,8 @@ class ConsistentFakeEmbeddings(FakeEmbeddings):
         """Return consistent embeddings for the text, if seen before, or a constant
         one if the text is unknown."""
         return (self.embed_documents([text]))[0]
-    
+
+
 class StableHashEmbeddings(Embeddings):
     """Deterministic hash-based embeddings for robust testing. (sync version)
 
@@ -72,11 +73,10 @@ class StableHashEmbeddings(Embeddings):
         digest = hashlib.md5(text.encode("utf-8")).digest()
         raw = [b for b in digest[:10]]
         total = sum(raw)
-        return [float(v)/float(total) for v in raw]
-    
+        return [float(v) / float(total) for v in raw]
+
     def embed_documents(self, texts):
         return [self._encode(text) for text in texts]
-    
+
     def embed_query(self, text):
         return self._encode(text)
-    

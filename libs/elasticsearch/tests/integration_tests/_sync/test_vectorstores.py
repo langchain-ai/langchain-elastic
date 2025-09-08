@@ -177,8 +177,7 @@ class TestElasticsearch:
             assert knn["num_candidates"] == 50
             assert knn["filter"] == []
             assert (
-                isinstance(knn["query_vector"], list) 
-                and len(knn["query_vector"]) == 10
+                isinstance(knn["query_vector"], list) and len(knn["query_vector"]) == 10
             )
             return query_body
 
@@ -598,7 +597,7 @@ class TestElasticsearch:
         else:
             # Prev versions don't use int8_hnsw quantization default
             # We expect an exact match on score for older versions
-            assert score == 1.0 
+            assert score == 1.0
 
     @pytest.mark.sync
     def test_similarity_search_approx_with_hybrid_search_rrf(
@@ -607,15 +606,15 @@ class TestElasticsearch:
         """Test end to end construction and rrf hybrid search with metadata."""
         from functools import partial
 
-        #Check version of ES 
+        # Check version of ES
         # ES 8.15+ requires rank_window_size instead of window_size
         _es = create_es_client(es_params)
         try:
             _info = _es.info()
             _version = _info["version"]["number"]
             _major, _minor = map(int, _version.split(".")[:2])
-            if ( _major, _minor) >= (8, 15):
-                window_key = "rank_window_size" 
+            if (_major, _minor) >= (8, 15):
+                window_key = "rank_window_size"
             else:
                 window_key = "window_size"
         finally:
@@ -807,7 +806,7 @@ class TestElasticsearch:
         )
         doc, score = output[0]
         assert doc == Document(page_content="foo", metadata={"page": "0"})
-        #Use the client to pick a tolernace for based on ES version
+        # Use the client to pick a tolernace for based on ES version
         info = docsearch.client.info()
         es_version = info["version"]["number"]
         major, minor = map(int, es_version.split(".")[:2])
@@ -818,7 +817,7 @@ class TestElasticsearch:
         else:
             # Prev versions don't use int8_hnsw quantization default
             # We expect an exact match on score for older versions
-            assert score == 1.0 
+            assert score == 1.0
 
     @pytest.mark.sync
     def test_similarity_search_bm25_search(
