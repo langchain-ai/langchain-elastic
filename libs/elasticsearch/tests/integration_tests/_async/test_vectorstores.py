@@ -602,7 +602,18 @@ class TestElasticsearch:
             k=1,
             custom_query=assert_query,
         )
-        assert output == [(Document(page_content="foo"), 1.0)]
+        doc, score = output[0]
+        assert doc == Document(page_content="foo")
+        info = await docsearch.client.info()
+        es_version = info["version"]["number"]
+        major, minor = map(int, es_version.split(".")[:2])
+        if (major, minor) >= (8, 14):
+            # if ES 8.14+ then relax the assertion to a tolerance to 1e-5
+            assert score == pytest.approx(1.0, rel=0.05)
+        else:
+            # earlier versions don't use quantization by default so exact match needed
+            assert score == 1.0 
+
 
     @pytest.mark.asyncio
     async def test_similarity_search_approx_with_hybrid_search_rrf(
