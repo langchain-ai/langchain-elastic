@@ -176,7 +176,10 @@ class TestElasticsearch:
             assert knn["k"] == 1
             assert knn["num_candidates"] == 50
             assert knn["filter"] == []
-            assert isinstance(knn["query_vector"], list) and len(knn["query_vector"]) == 10
+            assert (
+                isinstance(knn["query_vector"], list) 
+                and len(knn["query_vector"]) == 10
+            )
             return query_body
 
         texts = ["foo", "bar", "baz"]
