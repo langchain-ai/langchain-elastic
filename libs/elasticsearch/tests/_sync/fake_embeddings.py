@@ -58,7 +58,7 @@ class StableHashEmbeddings(Embeddings):
     Why:
     - Elasticsearch 8.14+ indexes dense vectors with int8_hnsw by default.
       Quantization (int8) + HNSW ANN can slightly disturb scores/ranking
-      especially when vectors are nearly identical (e.g., 9 ones + tiny delta).
+      especially when vectors are nearly identical.
     - Tests need deterministic separation so small quantization/ANN
       effects do not flip top-1 results or break strict assertions.
 
