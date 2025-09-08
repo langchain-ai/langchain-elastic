@@ -592,10 +592,12 @@ class TestElasticsearch:
         es_version = info["version"]["number"]
         major, minor = map(int, es_version.split(".")[:2])
         if (major, minor) >= (8, 14):
-            # if ES 8.14+ then relax the assertion to a tolerance to 1e-5
+            # if ES 8.14+ then relax the assertion to a tolerance delta
+            # See comment on StableHashEmbeddings class for more details
             assert score == pytest.approx(1.0, rel=0.05)
         else:
-            # earlier versions don't use quantization by default so exact match needed
+            # Prev versions don't use int8_hnsw quantization default
+            # We expect an exact match on score for older versions
             assert score == 1.0 
 
     @pytest.mark.sync
@@ -810,10 +812,12 @@ class TestElasticsearch:
         es_version = info["version"]["number"]
         major, minor = map(int, es_version.split(".")[:2])
         if (major, minor) >= (8, 14):
-            # if ES 8.14+ then relax the assertion to a tolerance to 1e-5
+            # if ES 8.14+ then relax the assertion to a tolerance delta
+            # See comment on StableHashEmbeddings class for more details
             assert score == pytest.approx(1.0, rel=0.05)
         else:
-            # earlier versions don't use quantization by default so exact match needed
+            # Prev versions don't use int8_hnsw quantization default
+            # We expect an exact match on score for older versions
             assert score == 1.0 
 
     @pytest.mark.sync
