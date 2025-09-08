@@ -204,7 +204,7 @@ class TestElasticsearch:
         For example, your embedding text can be a question, whereas page_content
          is the answer.
         """
-        embeddings = AsyncConsistentFakeEmbeddings()
+        embeddings = AsyncStableHashEmbeddings()
         text_input = ["foo1", "foo2", "foo3"]
         metadatas = [{"page": i} for i in range(len(text_input))]
 
