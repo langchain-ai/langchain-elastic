@@ -1,6 +1,7 @@
 """Fake Embedding class for testing purposes."""
 
 from typing import List
+import hashlib
 
 from langchain_core.embeddings import Embeddings
 
@@ -13,7 +14,7 @@ class AsyncFakeEmbeddings(Embeddings):
     async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
         """Return simple embeddings.
         Embeddings encode each text as its index."""
-        return [[float(1.0)] * 9 + [float(i * 2)] for i in range(len(texts))]
+        return [[float(1.0)] * 9 + [float(i)] for i in range(len(texts))]
 
     async def aembed_query(self, text: str) -> List[float]:
         """Return constant query embeddings.
@@ -47,3 +48,21 @@ class AsyncConsistentFakeEmbeddings(AsyncFakeEmbeddings):
         """Return consistent embeddings for the text, if seen before, or a constant
         one if the text is unknown."""
         return (await self.aembed_documents([text]))[0]
+    
+class AsyncStableHashEmbeddings(Embeddings):
+    """Embeddings which return stable hash-based vectors for the same texts."""
+
+    @staticmethod
+    def _encode(text: str) -> List[float]:
+        digest = hashlib.md5(text.encode("utf-8")).digest()
+        raw = [b for b in digest[:10]]
+        total = sum(raw)
+        return [float(v)/float(total) for v in raw]
+
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Return stable hash-based embeddings for each text."""
+        return [self._encode(text) for text in texts]
+
+    async def aembed_query(self, text: str) -> List[float]:
+        """Return stable hash-based embeddings for the text."""
+        return self._encode(text)
