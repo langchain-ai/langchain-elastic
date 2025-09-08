@@ -1,7 +1,7 @@
 """Fake Embedding class for testing purposes."""
 
-from typing import List
 import hashlib
+from typing import List
 
 from langchain_core.embeddings import Embeddings
 

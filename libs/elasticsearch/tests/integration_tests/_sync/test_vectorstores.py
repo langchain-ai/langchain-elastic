@@ -10,7 +10,11 @@ from langchain_core.documents import Document
 
 from langchain_elasticsearch.vectorstores import ElasticsearchStore
 
-from ...fake_embeddings import ConsistentFakeEmbeddings, FakeEmbeddings, StableHashEmbeddings
+from ...fake_embeddings import (
+    ConsistentFakeEmbeddings,
+    FakeEmbeddings,
+    StableHashEmbeddings,
+)
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 logging.basicConfig(level=logging.DEBUG)

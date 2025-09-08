@@ -4,14 +4,17 @@ from typing import List
 
 from ._async.fake_embeddings import (
     AsyncConsistentFakeEmbeddings as _AsyncConsistentFakeEmbeddings,
-    AsyncStableHashEmbeddings as _AsyncStableHashEmbeddings,
+)
+from ._async.fake_embeddings import (
     AsyncFakeEmbeddings as _AsyncFakeEmbeddings,
 )
-
+from ._async.fake_embeddings import (
+    AsyncStableHashEmbeddings as _AsyncStableHashEmbeddings,
+)
 from ._sync.fake_embeddings import (  # noqa: F401
     ConsistentFakeEmbeddings,
     FakeEmbeddings,
-    StableHashEmbeddings
+    StableHashEmbeddings,
 )
 
 
