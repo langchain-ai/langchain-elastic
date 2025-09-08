@@ -789,7 +789,7 @@ class TestElasticsearch:
             # if ES 8.14+ then relax the assertion to a tolerance to 1e-5
             assert score == pytest.approx(1.0, rel=0.05)
         else:
-            # earlier versions don't use quantization by default so exact match is expected
+            # earlier versions don't use quantization by default so exact match needed
             assert score == 1.0 
 
     @pytest.mark.sync
