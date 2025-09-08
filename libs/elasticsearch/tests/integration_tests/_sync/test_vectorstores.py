@@ -605,13 +605,17 @@ class TestElasticsearch:
         """Test end to end construction and rrf hybrid search with metadata."""
         from functools import partial
 
-        #Check version of ES because ES 8.15+ requires rank_window_size instead of window_size
+        #Check version of ES 
+        # ES 8.15+ requires rank_window_size instead of window_size
         _es = create_es_client(es_params)
         try:
             _info = _es.info()
             _version = _info["version"]["number"]
             _major, _minor = map(int, _version.split(".")[:2])
-            window_key = "rank_window_size" if ( _major, _minor) >= (8, 15) else "window_size"
+            if ( _major, _minor) >= (8, 15):
+                window_key = "rank_window_size" 
+            else:
+                window_key = "window_size"
         finally:
             _es.close()
 
