@@ -14,9 +14,7 @@ class FakeEmbeddings(Embeddings):
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Return simple embeddings.
         Embeddings encode each text as its index."""
-        temp = [[float(1.0)] * 9 + [float(i)] for i in range(len(texts))]
-        print(temp)
-        return temp
+        return [[float(1.0)] * 9 + [float(i)] for i in range(len(texts))]
 
     def embed_query(self, text: str) -> List[float]:
         """Return constant query embeddings.
@@ -27,7 +25,7 @@ class FakeEmbeddings(Embeddings):
 
 
 class ConsistentFakeEmbeddings(FakeEmbeddings):
-    """Deterministic hash-based embeddings for robust testing. (sync version)
+    """Deterministic hash-based embeddings for robust testing. (async version)
 
     Why:
     - Elasticsearch 8.14+ indexes dense vectors with int8_hnsw by default.
@@ -37,9 +35,9 @@ class ConsistentFakeEmbeddings(FakeEmbeddings):
       effects do not flip top-1 results or break strict assertions.
 
     What:
-    - Produce a 16-dim vector from md5(text), convert to integers, then L1-normalize 
+    - Produce a 16-dim vector from md5(text), convert to integers, then L1-normalize
       so values sum to 1.0. Round to 2 decimal places for precision stability.
-      This gives stable, well-separated but deterministic vectors which will work 
+      This gives stable, well-separated but deterministic vectors which will work
       across ES versions.
     """
 
@@ -51,7 +49,9 @@ class ConsistentFakeEmbeddings(FakeEmbeddings):
         return [round(float(v) / float(total), 2) for v in digest]
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Return stable hash-based embeddings for each text."""
         return [self._encode(text) for text in texts]
 
     def embed_query(self, text: str) -> List[float]:
+        """Return stable hash-based embeddings for the text."""
         return self._encode(text)

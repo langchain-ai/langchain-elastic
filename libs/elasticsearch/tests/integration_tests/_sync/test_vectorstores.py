@@ -175,7 +175,24 @@ class TestElasticsearch:
                     "filter": [],
                     "k": 1,
                     "num_candidates": 50,
-                    "query_vector": [0.06, 0.07, 0.01, 0.08, 0.03, 0.07, 0.09, 0.03, 0.09, 0.09, 0.04, 0.03, 0.08, 0.07, 0.06, 0.08],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return query_body
@@ -585,18 +602,9 @@ class TestElasticsearch:
             custom_query=assert_query,
         )
         doc, score = output[0]
+
         assert doc == Document(page_content="foo")
-        info = docsearch.client.info()
-        es_version = info["version"]["number"]
-        major, minor = map(int, es_version.split(".")[:2])
-        if (major, minor) >= (8, 14):
-            # if ES 8.14+ then relax the assertion to a tolerance delta
-            # See comment on StableHashEmbeddings class for more details
-            assert score == pytest.approx(1.0, rel=0.05)
-        else:
-            # Prev versions don't use int8_hnsw quantization default
-            # We expect an exact match on score for older versions
-            assert score == 1.0
+        assert score == pytest.approx(1.0, rel=0.05)
 
     @pytest.mark.sync
     def test_similarity_search_approx_with_hybrid_search_rrf(
@@ -811,7 +819,7 @@ class TestElasticsearch:
         major, minor = map(int, es_version.split(".")[:2])
         if (major, minor) >= (8, 14):
             # if ES 8.14+ then relax the assertion to a tolerance delta
-            # See comment on StableHashEmbeddings class for more details
+            # See comment on ASyncStableHashEmbeddings class for more details
             assert score == pytest.approx(1.0, rel=0.05)
         else:
             # Prev versions don't use int8_hnsw quantization default

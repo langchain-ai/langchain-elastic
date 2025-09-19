@@ -601,18 +601,9 @@ class TestElasticsearch:
             custom_query=assert_query,
         )
         doc, score = output[0]
+
         assert doc == Document(page_content="foo")
-        info = await docsearch.client.info()
-        es_version = info["version"]["number"]
-        major, minor = map(int, es_version.split(".")[:2])
-        if (major, minor) >= (8, 14):
-            # if ES 8.14+ then relax the assertion to a tolerance delta
-            # See comment on ASyncStableHashEmbeddings class for more details
-            assert score == pytest.approx(1.0, rel=0.05)
-        else:
-            # Prev versions don't use int8_hnsw quantization default
-            # We expect an exact match on score for older versions
-            assert score == 1.0
+        assert score == pytest.approx(1.0, rel=0.05)
 
     @pytest.mark.asyncio
     async def test_similarity_search_approx_with_hybrid_search_rrf(
@@ -822,19 +813,9 @@ class TestElasticsearch:
             embedding=embedded_query, k=1
         )
         doc, score = output[0]
+
         assert doc == Document(page_content="foo", metadata={"page": "0"})
-        # Use the client to pick a tolernace for based on ES version
-        info = await docsearch.client.info()
-        es_version = info["version"]["number"]
-        major, minor = map(int, es_version.split(".")[:2])
-        if (major, minor) >= (8, 14):
-            # if ES 8.14+ then relax the assertion to a tolerance delta
-            # See comment on ASyncStableHashEmbeddings class for more details
-            assert score == pytest.approx(1.0, rel=0.05)
-        else:
-            # Prev versions don't use int8_hnsw quantization default
-            # We expect an exact match on score for older versions
-            assert score == 1.0
+        assert score == pytest.approx(1.0, rel=0.05)
 
     @pytest.mark.asyncio
     async def test_similarity_search_bm25_search(
