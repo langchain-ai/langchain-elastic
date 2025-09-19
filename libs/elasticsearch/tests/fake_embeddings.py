@@ -30,4 +30,3 @@ class AsyncConsistentFakeEmbeddings(_AsyncConsistentFakeEmbeddings):
 
     def embed_query(self, text: str) -> List[float]:
         raise NotImplementedError("This class is asynchronous, use aembed_query()")
-

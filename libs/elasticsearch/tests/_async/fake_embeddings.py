@@ -35,9 +35,9 @@ class AsyncConsistentFakeEmbeddings(AsyncFakeEmbeddings):
       effects do not flip top-1 results or break strict assertions.
 
     What:
-    - Produce a 16-dim vector from md5(text), convert to integers, then L1-normalize 
+    - Produce a 16-dim vector from md5(text), convert to integers, then L1-normalize
       so values sum to 1.0. Round to 2 decimal places for precision stability.
-      This gives stable, well-separated but deterministic vectors which will work 
+      This gives stable, well-separated but deterministic vectors which will work
       across ES versions.
     """
 

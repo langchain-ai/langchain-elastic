@@ -175,7 +175,24 @@ class TestElasticsearch:
                     "filter": [],
                     "k": 1,
                     "num_candidates": 50,
-                    "query_vector": [0.06, 0.07, 0.01, 0.08, 0.03, 0.07, 0.09, 0.03, 0.09, 0.09, 0.04, 0.03, 0.08, 0.07, 0.06, 0.08],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return query_body
@@ -611,6 +628,7 @@ class TestElasticsearch:
     ) -> None:
         """Test end to end construction and rrf hybrid search with metadata."""
         from functools import partial
+
         # 1. check query_body is okay
         rrf_test_cases: List[Optional[Union[dict, bool]]] = [
             True,
