@@ -8,7 +8,6 @@ from ._async.fake_embeddings import (
 from ._async.fake_embeddings import (
     AsyncFakeEmbeddings as _AsyncFakeEmbeddings,
 )
-
 from ._sync.fake_embeddings import (  # noqa: F401
     ConsistentFakeEmbeddings,
     FakeEmbeddings,
