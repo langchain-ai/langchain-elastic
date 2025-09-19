@@ -37,17 +37,18 @@ class ConsistentFakeEmbeddings(FakeEmbeddings):
       effects do not flip top-1 results or break strict assertions.
 
     What:
-    - Produce a 10-dim vector from md5(text), take first 10 bytes, convert to
-      integers, then L1-normalize so values sum to 1.0. This gives stable,
-      well-separated but deterministic vectors which will work across ES versions.
+    - Produce a 16-dim vector from md5(text), convert to integers, then L1-normalize 
+      so values sum to 1.0. Round to 2 decimal places for precision stability.
+      This gives stable, well-separated but deterministic vectors which will work 
+      across ES versions.
     """
 
     @staticmethod
     def _encode(text: str) -> List[float]:
         digest = hashlib.md5(text.encode("utf-8")).digest()
-        raw = [b for b in digest[:10]]
-        total = sum(raw)
-        return [float(v) / float(total) for v in raw]
+        total = sum(digest)
+        # Round to 2 decimal places to avoid precision issues
+        return [round(float(v) / float(total), 2) for v in digest]
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         return [self._encode(text) for text in texts]

@@ -169,15 +169,15 @@ class TestElasticsearch:
         def assert_query(
             query_body: Dict[str, Any], query: Optional[str]
         ) -> Dict[str, Any]:
-            assert "knn" in query_body
-            knn = query_body["knn"]
-            assert knn["field"] == "vector"
-            assert knn["k"] == 1
-            assert knn["num_candidates"] == 50
-            assert knn["filter"] == []
-            assert (
-                isinstance(knn["query_vector"], list) and len(knn["query_vector"]) == 10
-            )
+            assert query_body == {
+                "knn": {
+                    "field": "vector",
+                    "filter": [],
+                    "k": 1,
+                    "num_candidates": 50,
+                    "query_vector": [0.06, 0.07, 0.01, 0.08, 0.03, 0.07, 0.09, 0.03, 0.09, 0.09, 0.04, 0.03, 0.08, 0.07, 0.06, 0.08],
+                }
+            }
             return query_body
 
         texts = ["foo", "bar", "baz"]
