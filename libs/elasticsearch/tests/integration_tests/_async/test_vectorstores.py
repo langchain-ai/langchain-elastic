@@ -611,26 +611,11 @@ class TestElasticsearch:
     ) -> None:
         """Test end to end construction and rrf hybrid search with metadata."""
         from functools import partial
-
-        # Check version of ES
-        # ES 8.15+ requires rank_window_size instead of window_size
-        _es = create_es_client(es_params)
-        try:
-            _info = await _es.info()
-            _version = _info["version"]["number"]
-            _major, _minor = map(int, _version.split(".")[:2])
-            if (_major, _minor) >= (8, 15):
-                window_key = "rank_window_size"
-            else:
-                window_key = "window_size"
-        finally:
-            await _es.close()
-
         # 1. check query_body is okay
         rrf_test_cases: List[Optional[Union[dict, bool]]] = [
             True,
             False,
-            {"rank_constant": 1, window_key: 5},
+            {"rank_constant": 1, "rank_window_size": 5},
         ]
         for rrf_test_case in rrf_test_cases:
             texts = ["foo", "bar", "baz"]
@@ -707,7 +692,7 @@ class TestElasticsearch:
                 "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
             },
             size=3,
-            rank={"rrf": {"rank_constant": 1, window_key: 5}},
+            rank={"rrf": {"rank_constant": 1, "rank_window_size": 5}},
         )
 
         assert [o.page_content for o in output] == [
