@@ -13,7 +13,6 @@ from langchain_elasticsearch.vectorstores import ElasticsearchStore
 from ...fake_embeddings import (
     ConsistentFakeEmbeddings,
     FakeEmbeddings,
-    StableHashEmbeddings,
 )
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
@@ -184,7 +183,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            StableHashEmbeddings(),
+            ConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
         )
@@ -201,7 +200,7 @@ class TestElasticsearch:
         For example, your embedding text can be a question, whereas page_content
          is the answer.
         """
-        embeddings = StableHashEmbeddings()
+        embeddings = ConsistentFakeEmbeddings()
         text_input = ["foo1", "foo2", "foo3"]
         metadatas = [{"page": i} for i in range(len(text_input))]
 
@@ -556,7 +555,7 @@ class TestElasticsearch:
     ) -> None:
         """Test end to end construction and search with metadata."""
         texts = ["foo", "bar", "baz"]
-        embeddings = StableHashEmbeddings()
+        embeddings = ConsistentFakeEmbeddings()
         docsearch = ElasticsearchStore.from_texts(
             texts,
             embedding=embeddings,
@@ -760,7 +759,7 @@ class TestElasticsearch:
         with pytest.raises(NotFoundError):
             ElasticsearchStore.from_texts(
                 texts=["foo", "bar", "baz"],
-                embedding=ConsistentFakeEmbeddings(10),
+                embedding=ConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=ElasticsearchStore.ApproxRetrievalStrategy(
@@ -790,7 +789,7 @@ class TestElasticsearch:
         """Test to make sure the relevance score is scaled to 0-1."""
         texts = ["foo", "bar", "baz"]
         metadatas = [{"page": str(i)} for i in range(len(texts))]
-        embeddings = StableHashEmbeddings()
+        embeddings = ConsistentFakeEmbeddings()
 
         docsearch = ElasticsearchStore.from_texts(
             index_name=index_name,

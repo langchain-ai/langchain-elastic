@@ -8,13 +8,10 @@ from ._async.fake_embeddings import (
 from ._async.fake_embeddings import (
     AsyncFakeEmbeddings as _AsyncFakeEmbeddings,
 )
-from ._async.fake_embeddings import (
-    AsyncStableHashEmbeddings as _AsyncStableHashEmbeddings,
-)
+
 from ._sync.fake_embeddings import (  # noqa: F401
     ConsistentFakeEmbeddings,
     FakeEmbeddings,
-    StableHashEmbeddings,
 )
 
 
@@ -35,10 +32,3 @@ class AsyncConsistentFakeEmbeddings(_AsyncConsistentFakeEmbeddings):
     def embed_query(self, text: str) -> List[float]:
         raise NotImplementedError("This class is asynchronous, use aembed_query()")
 
-
-class AsyncStableHashEmbeddings(_AsyncStableHashEmbeddings):
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        raise NotImplementedError("This class is asynchronous, use aembed_documents()")
-
-    def embed_query(self, text: str) -> List[float]:
-        raise NotImplementedError("This class is asynchronous, use aembed_query()")

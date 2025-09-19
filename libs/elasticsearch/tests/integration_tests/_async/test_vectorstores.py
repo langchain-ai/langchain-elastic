@@ -13,7 +13,6 @@ from langchain_elasticsearch.vectorstores import AsyncElasticsearchStore
 from ...fake_embeddings import (
     AsyncConsistentFakeEmbeddings,
     AsyncFakeEmbeddings,
-    AsyncStableHashEmbeddings,
 )
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
@@ -184,7 +183,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncStableHashEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
         )
@@ -203,7 +202,7 @@ class TestElasticsearch:
         For example, your embedding text can be a question, whereas page_content
          is the answer.
         """
-        embeddings = AsyncStableHashEmbeddings()
+        embeddings = AsyncConsistentFakeEmbeddings()
         text_input = ["foo1", "foo2", "foo3"]
         metadatas = [{"page": i} for i in range(len(text_input))]
 
@@ -572,7 +571,7 @@ class TestElasticsearch:
     ) -> None:
         """Test end to end construction and search with metadata."""
         texts = ["foo", "bar", "baz"]
-        embeddings = AsyncStableHashEmbeddings()
+        embeddings = AsyncConsistentFakeEmbeddings()
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
             embedding=embeddings,
@@ -778,7 +777,7 @@ class TestElasticsearch:
         with pytest.raises(NotFoundError):
             await AsyncElasticsearchStore.afrom_texts(
                 texts=["foo", "bar", "baz"],
-                embedding=AsyncConsistentFakeEmbeddings(10),
+                embedding=AsyncConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=AsyncElasticsearchStore.ApproxRetrievalStrategy(
@@ -808,7 +807,7 @@ class TestElasticsearch:
         """Test to make sure the relevance score is scaled to 0-1."""
         texts = ["foo", "bar", "baz"]
         metadatas = [{"page": str(i)} for i in range(len(texts))]
-        embeddings = AsyncStableHashEmbeddings()
+        embeddings = AsyncConsistentFakeEmbeddings()
 
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             index_name=index_name,
