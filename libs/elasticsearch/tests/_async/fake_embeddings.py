@@ -1,5 +1,6 @@
 """Fake Embedding class for testing purposes."""
 
+import hashlib
 from typing import List
 
 from langchain_core.embeddings import Embeddings
@@ -24,26 +25,33 @@ class AsyncFakeEmbeddings(Embeddings):
 
 
 class AsyncConsistentFakeEmbeddings(AsyncFakeEmbeddings):
-    """Fake embeddings which remember all the texts seen so far to return consistent
-    vectors for the same texts."""
+    """Deterministic hash-based embeddings for robust testing (async version).
 
-    def __init__(self, dimensionality: int = 10) -> None:
-        self.known_texts: List[str] = []
-        self.dimensionality = dimensionality
+    Why:
+    - Elasticsearch 8.14+ indexes dense vectors with int8_hnsw by default.
+      Quantization (int8) + HNSW ANN can slightly disturb scores/ranking
+      especially when vectors are nearly identical.
+    - Tests need deterministic separation so small quantization/ANN
+      effects do not flip top-1 results or break strict assertions.
+
+    What:
+    - Produce a 16-dim vector from md5(text), convert to floats, then L1-normalize
+      so values sum to 1.0. Round to 2 decimal places for precision stability.
+      This gives stable, well-separated but deterministic vectors which will work
+      across ES versions.
+    """
+
+    @staticmethod
+    def _encode(text: str) -> List[float]:
+        digest = hashlib.md5(text.encode("utf-8")).digest()
+        total = sum(digest)
+        # Round to 2 decimal places to avoid precision issues
+        return [round(float(v) / float(total), 2) for v in digest]
 
     async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
-        """Return consistent embeddings for each text seen so far."""
-        out_vectors = []
-        for text in texts:
-            if text not in self.known_texts:
-                self.known_texts.append(text)
-            vector = [float(1.0)] * (self.dimensionality - 1) + [
-                float(self.known_texts.index(text))
-            ]
-            out_vectors.append(vector)
-        return out_vectors
+        """Return stable hash-based embeddings for each text."""
+        return [self._encode(text) for text in texts]
 
     async def aembed_query(self, text: str) -> List[float]:
-        """Return consistent embeddings for the text, if seen before, or a constant
-        one if the text is unknown."""
-        return (await self.aembed_documents([text]))[0]
+        """Return stable hash-based embeddings for the text."""
+        return self._encode(text)
