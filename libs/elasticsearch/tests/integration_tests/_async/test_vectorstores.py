@@ -981,7 +981,7 @@ class TestElasticsearch:
         # Test 2: Match should work
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),  # Creates 10-dimensional vectors
+            AsyncConsistentFakeEmbeddings(),  # Creates 10-dimensional vectors
             num_dimensions=10,  # Match: 10 vs 10
             **es_params,
             index_name=f"{index_name}_match",  # Use separate index

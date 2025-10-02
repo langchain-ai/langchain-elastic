@@ -959,7 +959,7 @@ class TestElasticsearch:
         # Test 2: Match should work
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),  # Creates 10-dimensional vectors
+            ConsistentFakeEmbeddings(),  # Creates 10-dimensional vectors
             num_dimensions=10,  # Match: 10 vs 10
             **es_params,
             index_name=f"{index_name}_match",  # Use separate index
