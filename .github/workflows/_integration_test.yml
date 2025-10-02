@@ -25,14 +25,21 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version:
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
+          - "3.13"
+        elasticsearch-version:
+          - "8.15.0"
+          - "8.19.0"
+          - "9.1.2"
     services:
       elasticsearch:
-        image: elasticsearch:8.13.0
+        image: elasticsearch:${{ matrix.elasticsearch-version }}
         env:
           discovery.type: single-node
           xpack.license.self_generated.type: trial

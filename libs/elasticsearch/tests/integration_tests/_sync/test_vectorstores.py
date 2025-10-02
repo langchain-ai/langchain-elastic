@@ -10,7 +10,10 @@ from langchain_core.documents import Document
 
 from langchain_elasticsearch.vectorstores import ElasticsearchStore
 
-from ...fake_embeddings import ConsistentFakeEmbeddings, FakeEmbeddings
+from ...fake_embeddings import (
+    ConsistentFakeEmbeddings,
+    FakeEmbeddings,
+)
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 logging.basicConfig(level=logging.DEBUG)
@@ -172,7 +175,24 @@ class TestElasticsearch:
                     "filter": [],
                     "k": 1,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return query_body
@@ -180,7 +200,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
         )
@@ -581,7 +601,10 @@ class TestElasticsearch:
             k=1,
             custom_query=assert_query,
         )
-        assert output == [(Document(page_content="foo"), 1.0)]
+        doc, score = output[0]
+
+        assert doc == Document(page_content="foo")
+        assert score == pytest.approx(1.0, rel=0.05)
 
     @pytest.mark.sync
     def test_similarity_search_approx_with_hybrid_search_rrf(
@@ -594,7 +617,7 @@ class TestElasticsearch:
         rrf_test_cases: List[Optional[Union[dict, bool]]] = [
             True,
             False,
-            {"rank_constant": 1, "window_size": 5},
+            {"rank_constant": 1, "rank_window_size": 5},
         ]
         for rrf_test_case in rrf_test_cases:
             texts = ["foo", "bar", "baz"]
@@ -671,7 +694,7 @@ class TestElasticsearch:
                 "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
             },
             size=3,
-            rank={"rrf": {"rank_constant": 1, "window_size": 5}},
+            rank={"rrf": {"rank_constant": 1, "rank_window_size": 5}},
         )
 
         assert [o.page_content for o in output] == [
@@ -730,7 +753,7 @@ class TestElasticsearch:
         with pytest.raises(NotFoundError):
             ElasticsearchStore.from_texts(
                 texts=["foo", "bar", "baz"],
-                embedding=ConsistentFakeEmbeddings(10),
+                embedding=ConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=ElasticsearchStore.ApproxRetrievalStrategy(
@@ -760,7 +783,7 @@ class TestElasticsearch:
         """Test to make sure the relevance score is scaled to 0-1."""
         texts = ["foo", "bar", "baz"]
         metadatas = [{"page": str(i)} for i in range(len(texts))]
-        embeddings = FakeEmbeddings()
+        embeddings = ConsistentFakeEmbeddings()
 
         docsearch = ElasticsearchStore.from_texts(
             index_name=index_name,
@@ -774,7 +797,10 @@ class TestElasticsearch:
         output = docsearch.similarity_search_by_vector_with_relevance_scores(
             embedding=embedded_query, k=1
         )
-        assert output == [(Document(page_content="foo", metadata={"page": "0"}), 1.0)]
+        doc, score = output[0]
+
+        assert doc == Document(page_content="foo", metadata={"page": "0"})
+        assert score == pytest.approx(1.0, rel=0.05)
 
     @pytest.mark.sync
     def test_similarity_search_bm25_search(

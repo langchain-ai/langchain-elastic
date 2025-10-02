@@ -5,7 +5,9 @@ from typing import List
 from ._async.fake_embeddings import (
     AsyncConsistentFakeEmbeddings as _AsyncConsistentFakeEmbeddings,
 )
-from ._async.fake_embeddings import AsyncFakeEmbeddings as _AsyncFakeEmbeddings
+from ._async.fake_embeddings import (
+    AsyncFakeEmbeddings as _AsyncFakeEmbeddings,
+)
 from ._sync.fake_embeddings import (  # noqa: F401
     ConsistentFakeEmbeddings,
     FakeEmbeddings,
