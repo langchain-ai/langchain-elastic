@@ -924,7 +924,7 @@ class TestElasticsearch:
         with pytest.raises(Exception):  # Should fail when trying to add documents
             docsearch = ElasticsearchStore.from_texts(
                 texts,
-                FakeEmbeddings(),  # Creates 10-dimensional vectors
+                ConsistentFakeEmbeddings(),  # Creates 10-dimensional vectors
                 num_dimensions=5,  # Mismatch: 5 vs 10
                 **es_params,
                 index_name=f"{index_name}_mismatch",  # Use separate index
