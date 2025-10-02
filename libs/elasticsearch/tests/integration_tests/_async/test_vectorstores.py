@@ -967,30 +967,30 @@ class TestElasticsearch:
     ) -> None:
         """Test that mismatched num_dimensions causes an error."""
         texts = ["foo", "bar"]
-        
+
         # Test 1: Mismatch should fail
         with pytest.raises(Exception):  # Should fail when trying to add documents
             docsearch = await AsyncElasticsearchStore.afrom_texts(
                 texts,
-                AsyncConsistentFakeEmbeddings(),  # Creates 10-dimensional vectors
-                num_dimensions=5,  # Mismatch: 5 vs 10
+                AsyncConsistentFakeEmbeddings(),  # Creates 16-dimensional vectors
+                num_dimensions=5,  # Mismatch: 5 vs 16
                 **es_params,
                 index_name=f"{index_name}_mismatch",  # Use separate index
             )
-        
+
         # Test 2: Match should work
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncConsistentFakeEmbeddings(),  # Creates 10-dimensional vectors
-            num_dimensions=10,  # Match: 10 vs 10
+            AsyncConsistentFakeEmbeddings(),  # Creates 16-dimensional vectors
+            num_dimensions=16,  # Match: 16 vs 16
             **es_params,
             index_name=f"{index_name}_match",  # Use separate index
         )
-        
+
         # Verify it works by doing a search
         results = await docsearch.asimilarity_search("foo", k=1)
         assert results == [Document(page_content="foo")]
-        
+
         await docsearch.aclose()
 
     @pytest.mark.asyncio
@@ -998,7 +998,7 @@ class TestElasticsearch:
         self, es_params: dict, index_name: str
     ) -> None:
         """Test that metadata_mappings parameter works correctly.
-        
+
         This test verifies that custom metadata field mappings are properly applied to
         Elasticsearch index, allowing for proper indexing and searching of metadata.
         """
@@ -1007,14 +1007,14 @@ class TestElasticsearch:
             "score": {"type": "float"},
             "tags": {"type": "text"},
         }
-        
+
         texts = ["Document about cats", "Document about dogs", "Document about birds"]
         metadatas = [
             {"category": "animals", "score": 0.9, "tags": "some tag about cats"},
             {"category": "animals", "score": 0.8, "tags": "some tag about dogs"},
             {"category": "animals", "score": 0.7, "tags": "some tag about birds"},
         ]
-        
+
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
             AsyncFakeEmbeddings(),
@@ -1024,23 +1024,21 @@ class TestElasticsearch:
             **es_params,
             index_name=index_name,
         )
-        
+
         mapping_response = await docsearch.client.indices.get_mapping(index=index_name)
         mapping_properties = mapping_response[index_name]["mappings"]["properties"]
-        
+
         assert "metadata" in mapping_properties
         metadata_props = mapping_properties["metadata"]["properties"]
-        
+
         assert metadata_props["category"] == {"type": "keyword"}
         assert metadata_props["score"] == {"type": "float"}
         assert metadata_props["tags"] == {"type": "text"}
-        
+
         results = await docsearch.asimilarity_search(
-            "pets", 
-            k=3,
-            filter=[{"term": {"metadata.category": "animals"}}]
+            "pets", k=3, filter=[{"term": {"metadata.category": "animals"}}]
         )
-        
+
         assert len(results) == 3
-        
+
         await docsearch.aclose()
