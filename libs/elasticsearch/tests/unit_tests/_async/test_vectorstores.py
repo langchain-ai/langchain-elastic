@@ -420,8 +420,8 @@ class TestVectorStore:
 
     @pytest.mark.asyncio
     async def test_parameter_forwarding_to_evectorstore(self) -> None:
-        """ Test to catch missing AsyncEVectorStore parameters.
-        
+        """Test to catch missing AsyncEVectorStore parameters.
+
         This test compares the AsyncEVectorStore constructor signature against what
         AsyncElasticsearchStore actually forwards. If AsyncEVectorStore adds new
         parameters, this test will fail and alert us to update AsyncElasticsearchStore.
@@ -430,31 +430,31 @@ class TestVectorStore:
         from unittest.mock import AsyncMock, patch
 
         from elasticsearch.helpers.vectorstore import VectorStore as EVectorStore
-        
+
         client = AsyncElasticsearch(hosts=["http://dummy:9200"])
-        
+
         # Get EVectorStore constructor signature
         evectorstore_sig = inspect.signature(EVectorStore.__init__)
-        #Remove self from the parameters set
-        evectorstore_params = set(evectorstore_sig.parameters.keys()) - {'self'}
-        
+        # Remove self from the parameters set
+        evectorstore_params = set(evectorstore_sig.parameters.keys()) - {"self"}
+
         with patch(
-            'langchain_elasticsearch._async.vectorstores.EVectorStore'
+            "langchain_elasticsearch._async.vectorstores.EVectorStore"
         ) as mock_evectorstore:
             # Mock the close method to be async
             mock_evectorstore.return_value.close = AsyncMock()
-            
+
             store = AsyncElasticsearchStore(
                 index_name="test_index",
                 es_connection=client,
                 num_dimensions=1536,
             )
-            
+
             # Get what parameters were actually passed to EVectorStore
             mock_evectorstore.assert_called_once()
             call_args = mock_evectorstore.call_args
             forwarded_params = set(call_args.kwargs.keys())
-            
+
             # Check for missing parameters
             missing_params = evectorstore_params - forwarded_params
             if missing_params:
@@ -463,7 +463,7 @@ class TestVectorStore:
                     f"{missing_params}. Please add them to AsyncElasticsearchStore "
                     f"and forward them to EVectorStore."
                 )
-            
+
             # Check for unexpected parameters
             unexpected_params = forwarded_params - evectorstore_params
             if unexpected_params:
@@ -472,38 +472,37 @@ class TestVectorStore:
                     f"EVectorStore: {unexpected_params}. These parameters don't exist "
                     f"in EVectorStore.__init__."
                 )
-            
+
             await store.aclose()
 
     @pytest.mark.asyncio
     async def test_parameter_forwarding_defaults(self) -> None:
-        """Test that default parameter values are properly forwarded to 
+        """Test that default parameter values are properly forwarded to
         AsyncEVectorStore."""
         from unittest.mock import AsyncMock, patch
-        
+
         client = AsyncElasticsearch(hosts=["http://dummy:9200"])
-        
+
         with patch(
-            'langchain_elasticsearch._async.vectorstores.EVectorStore'
+            "langchain_elasticsearch._async.vectorstores.EVectorStore"
         ) as mock_evectorstore:
             # Mock the close method to be async
             mock_evectorstore.return_value.close = AsyncMock()
-            
+
             # Test with minimal parameters (should use defaults)
             store = AsyncElasticsearchStore(
-                index_name="test_index",
-                es_connection=client
+                index_name="test_index", es_connection=client
             )
-            
+
             # Verify EVectorStore was called with default values
             mock_evectorstore.assert_called_once()
             call_args = mock_evectorstore.call_args
-            
+
             # Check default values
-            assert call_args.kwargs['index'] == "test_index"
-            assert call_args.kwargs['client'] == client
-            assert call_args.kwargs['vector_field'] == "vector"  # default
-            assert call_args.kwargs['text_field'] == "text"      # default
-            assert call_args.kwargs['num_dimensions'] is None    # default
-            
+            assert call_args.kwargs["index"] == "test_index"
+            assert call_args.kwargs["client"] == client
+            assert call_args.kwargs["vector_field"] == "vector"  # default
+            assert call_args.kwargs["text_field"] == "text"  # default
+            assert call_args.kwargs["num_dimensions"] is None  # default
+
             await store.aclose()
