@@ -418,7 +418,7 @@ class TestVectorStore:
 
     @pytest.mark.sync
     def test_parameter_forwarding_to_evectorstore(self) -> None:
-        """Comprehensive test to catch missing EVectorStore parameters.
+        """Test to catch missing EVectorStore parameters.
 
         This test compares the EVectorStore constructor signature against what
         ElasticsearchStore actually forwards. If EVectorStore adds new
