@@ -9,7 +9,7 @@ from elasticsearch import NotFoundError
 from langchain_core.documents import Document
 
 from langchain_elasticsearch.vectorstores import ElasticsearchStore
-from tests._sync.fake_embeddings import ConsistentFakeEmbeddings
+from tests.fake_embeddings import ConsistentFakeEmbeddings
 
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
@@ -544,8 +544,8 @@ class TestElasticsearch:
         mmr_output = docsearch.max_marginal_relevance_search(texts[0], k=2, fetch_k=3)
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
-        # baz is more similar to foo than bar when using ConsistentFakeEmbeddings
-        assert mmr_output[1].page_content == texts[2]  
+        # baz is more similar to foo when using AsyncConsistentFakeEmbeddings
+        assert mmr_output[1].page_content == texts[2]
 
         mmr_output = docsearch.max_marginal_relevance_search(
             texts[0],
