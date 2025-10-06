@@ -9,11 +9,8 @@ from elasticsearch import NotFoundError
 from langchain_core.documents import Document
 
 from langchain_elasticsearch.vectorstores import AsyncElasticsearchStore
+from tests.fake_embeddings import AsyncConsistentFakeEmbeddings
 
-from ...fake_embeddings import (
-    AsyncConsistentFakeEmbeddings,
-    AsyncFakeEmbeddings,
-)
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 logging.basicConfig(level=logging.DEBUG)
@@ -53,7 +50,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             metadatas=metadatas,
             **es_params,
             index_name=index_name,
@@ -268,7 +265,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             metadatas=metadatas,
             **es_params,
             index_name=index_name,
@@ -283,7 +280,24 @@ class TestElasticsearch:
                     "filter": [{"term": {"metadata.page": "1"}}],
                     "k": 3,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector":[
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return query_body
@@ -304,7 +318,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             metadatas=metadatas,
             **es_params,
             index_name=index_name,
@@ -334,7 +348,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ExactRetrievalStrategy(),
@@ -348,17 +362,23 @@ class TestElasticsearch:
                         "source": "cosineSimilarity(params.query_vector, 'vector') + 1.0",  # noqa: E501
                         "params": {
                             "query_vector": [
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                0.0,
-                            ]
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ]
                         },
                     },
                 }
@@ -385,7 +405,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             metadatas=metadatas,
@@ -403,17 +423,23 @@ class TestElasticsearch:
                             "source": "cosineSimilarity(params.query_vector, 'vector') + 1.0",  # noqa: E501
                             "params": {
                                 "query_vector": [
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    0.0,
-                                ]
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ]
                             },
                         },
                     }
@@ -438,7 +464,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ExactRetrievalStrategy(),
@@ -459,17 +485,23 @@ class TestElasticsearch:
             """,
                             "params": {
                                 "query_vector": [
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    0.0,
-                                ]
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ]
                             },
                         },
                     }
@@ -492,7 +524,7 @@ class TestElasticsearch:
             texts = ["foo", "bar", "baz"]
             await AsyncElasticsearchStore.afrom_texts(
                 texts,
-                AsyncFakeEmbeddings(),
+                AsyncConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=AsyncElasticsearchStore.ExactRetrievalStrategy(),
@@ -507,7 +539,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ExactRetrievalStrategy(),
@@ -524,7 +556,8 @@ class TestElasticsearch:
         )
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
-        assert mmr_output[1].page_content == texts[1]
+        # baz is more similar to foo when using AsyncConsistentFakeEmbeddings
+        assert mmr_output[1].page_content == texts[2]  
 
         mmr_output = await docsearch.amax_marginal_relevance_search(
             texts[0],
@@ -534,7 +567,8 @@ class TestElasticsearch:
         )
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
-        assert mmr_output[1].page_content == texts[2]
+        # with more diversity, prefer bar over baz
+        assert mmr_output[1].page_content == texts[1]
 
         # if fetch_k < k, then the output will be less than k
         mmr_output = await docsearch.amax_marginal_relevance_search(
@@ -550,7 +584,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ApproxRetrievalStrategy(hybrid=True),
@@ -565,7 +599,24 @@ class TestElasticsearch:
                     "filter": [],
                     "k": 1,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ]
                 },
                 "query": {
                     "bool": {
@@ -639,7 +690,7 @@ class TestElasticsearch:
             texts = ["foo", "bar", "baz"]
             docsearch = await AsyncElasticsearchStore.afrom_texts(
                 texts,
-                AsyncFakeEmbeddings(),
+                AsyncConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=AsyncElasticsearchStore.ApproxRetrievalStrategy(
@@ -659,17 +710,23 @@ class TestElasticsearch:
                         "k": 3,
                         "num_candidates": 50,
                         "query_vector": [
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            0.0,
-                        ],
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                     },
                     "query": {
                         "bool": {
@@ -720,7 +777,7 @@ class TestElasticsearch:
         # 3. check rrf default option is okay
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ApproxRetrievalStrategy(hybrid=True),
@@ -748,7 +805,24 @@ class TestElasticsearch:
                     "filter": [],
                     "k": 1,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return {"query": {"match": {"text": {"query": "bar"}}}}
@@ -756,7 +830,7 @@ class TestElasticsearch:
         """Test end to end construction and search with metadata."""
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
-            texts, AsyncFakeEmbeddings(), **es_params, index_name=index_name
+            texts, AsyncConsistentFakeEmbeddings(), **es_params, index_name=index_name
         )
         output = await docsearch.asimilarity_search(
             "foo", k=1, custom_query=my_custom_query
@@ -896,7 +970,7 @@ class TestElasticsearch:
         """Test to make sure the relevance threshold is respected."""
         texts = ["foo", "bar", "baz"]
         metadatas = [{"page": str(i)} for i in range(len(texts))]
-        embeddings = AsyncFakeEmbeddings()
+        embeddings = AsyncConsistentFakeEmbeddings()
 
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             index_name=index_name,
