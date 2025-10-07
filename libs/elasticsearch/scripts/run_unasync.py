@@ -42,7 +42,6 @@ def main(check=False):
         "AsyncElasticsearchCache": "ElasticsearchCache",
         "AsyncElasticsearchChatMessageHistory": "ElasticsearchChatMessageHistory",
         "AsyncCallbackManagerForRetrieverRun": "CallbackManagerForRetrieverRun",
-        "AsyncFakeEmbeddings": "FakeEmbeddings",
         "AsyncConsistentFakeEmbeddings": "ConsistentFakeEmbeddings",
         "AsyncRequestSavingTransport": "RequestSavingTransport",
         "AsyncMock": "Mock",
