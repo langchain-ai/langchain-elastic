@@ -1,11 +1,13 @@
 """Test Elasticsearch functionality."""
 
 import re
+import inspect
 from typing import Any, Dict, Generator, List, Optional
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers.vectorstore import VectorStore as EVectorStore
 from langchain_core.documents import Document
 
 from langchain_elasticsearch._sync.vectorstores import (
@@ -424,10 +426,6 @@ class TestVectorStore:
         ElasticsearchStore actually forwards. If EVectorStore adds new
         parameters, this test will fail and alert us to update ElasticsearchStore.
         """
-        import inspect
-        from unittest.mock import Mock, patch
-
-        from elasticsearch.helpers.vectorstore import VectorStore as EVectorStore
 
         client = Elasticsearch(hosts=["http://dummy:9200"])
 
@@ -477,7 +475,6 @@ class TestVectorStore:
     def test_parameter_forwarding_defaults(self) -> None:
         """Test that default parameter values are properly forwarded to
         EVectorStore."""
-        from unittest.mock import Mock, patch
 
         client = Elasticsearch(hosts=["http://dummy:9200"])
 
