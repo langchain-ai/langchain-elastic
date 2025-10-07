@@ -1,7 +1,7 @@
 """Test Elasticsearch functionality."""
 
-import re
 import inspect
+import re
 from typing import Any, Dict, Generator, List, Optional
 from unittest.mock import Mock, patch
 
