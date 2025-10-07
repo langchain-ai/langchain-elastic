@@ -7,6 +7,7 @@ from langchain_core.embeddings import Embeddings
 
 fake_texts = ["foo", "bar", "baz"]
 
+
 class AsyncConsistentFakeEmbeddings(Embeddings):
     """Deterministic hash-based embeddings for robust testing (async version).
 

@@ -280,7 +280,7 @@ class TestElasticsearch:
                     "filter": [{"term": {"metadata.page": "1"}}],
                     "k": 3,
                     "num_candidates": 50,
-                    "query_vector":[
+                    "query_vector": [
                         0.06,
                         0.07,
                         0.01,
@@ -362,23 +362,23 @@ class TestElasticsearch:
                         "source": "cosineSimilarity(params.query_vector, 'vector') + 1.0",  # noqa: E501
                         "params": {
                             "query_vector": [
-                        0.06,
-                        0.07,
-                        0.01,
-                        0.08,
-                        0.03,
-                        0.07,
-                        0.09,
-                        0.03,
-                        0.09,
-                        0.09,
-                        0.04,
-                        0.03,
-                        0.08,
-                        0.07,
-                        0.06,
-                        0.08,
-                    ]
+                                0.06,
+                                0.07,
+                                0.01,
+                                0.08,
+                                0.03,
+                                0.07,
+                                0.09,
+                                0.03,
+                                0.09,
+                                0.09,
+                                0.04,
+                                0.03,
+                                0.08,
+                                0.07,
+                                0.06,
+                                0.08,
+                            ]
                         },
                     },
                 }
@@ -423,23 +423,23 @@ class TestElasticsearch:
                             "source": "cosineSimilarity(params.query_vector, 'vector') + 1.0",  # noqa: E501
                             "params": {
                                 "query_vector": [
-                        0.06,
-                        0.07,
-                        0.01,
-                        0.08,
-                        0.03,
-                        0.07,
-                        0.09,
-                        0.03,
-                        0.09,
-                        0.09,
-                        0.04,
-                        0.03,
-                        0.08,
-                        0.07,
-                        0.06,
-                        0.08,
-                    ]
+                                    0.06,
+                                    0.07,
+                                    0.01,
+                                    0.08,
+                                    0.03,
+                                    0.07,
+                                    0.09,
+                                    0.03,
+                                    0.09,
+                                    0.09,
+                                    0.04,
+                                    0.03,
+                                    0.08,
+                                    0.07,
+                                    0.06,
+                                    0.08,
+                                ]
                             },
                         },
                     }
@@ -485,23 +485,23 @@ class TestElasticsearch:
             """,
                             "params": {
                                 "query_vector": [
-                        0.06,
-                        0.07,
-                        0.01,
-                        0.08,
-                        0.03,
-                        0.07,
-                        0.09,
-                        0.03,
-                        0.09,
-                        0.09,
-                        0.04,
-                        0.03,
-                        0.08,
-                        0.07,
-                        0.06,
-                        0.08,
-                    ]
+                                    0.06,
+                                    0.07,
+                                    0.01,
+                                    0.08,
+                                    0.03,
+                                    0.07,
+                                    0.09,
+                                    0.03,
+                                    0.09,
+                                    0.09,
+                                    0.04,
+                                    0.03,
+                                    0.08,
+                                    0.07,
+                                    0.06,
+                                    0.08,
+                                ]
                             },
                         },
                     }
@@ -557,7 +557,7 @@ class TestElasticsearch:
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
         # baz is more similar to foo when using AsyncConsistentFakeEmbeddings
-        assert mmr_output[1].page_content == texts[2]  
+        assert mmr_output[1].page_content == texts[2]
 
         mmr_output = await docsearch.amax_marginal_relevance_search(
             texts[0],
@@ -616,7 +616,7 @@ class TestElasticsearch:
                         0.07,
                         0.06,
                         0.08,
-                    ]
+                    ],
                 },
                 "query": {
                     "bool": {
@@ -710,23 +710,23 @@ class TestElasticsearch:
                         "k": 3,
                         "num_candidates": 50,
                         "query_vector": [
-                        0.06,
-                        0.07,
-                        0.01,
-                        0.08,
-                        0.03,
-                        0.07,
-                        0.09,
-                        0.03,
-                        0.09,
-                        0.09,
-                        0.04,
-                        0.03,
-                        0.08,
-                        0.07,
-                        0.06,
-                        0.08,
-                    ],
+                            0.06,
+                            0.07,
+                            0.01,
+                            0.08,
+                            0.03,
+                            0.07,
+                            0.09,
+                            0.03,
+                            0.09,
+                            0.09,
+                            0.04,
+                            0.03,
+                            0.08,
+                            0.07,
+                            0.06,
+                            0.08,
+                        ],
                     },
                     "query": {
                         "bool": {
