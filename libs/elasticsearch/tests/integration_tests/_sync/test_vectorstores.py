@@ -9,11 +9,8 @@ from elasticsearch import NotFoundError
 from langchain_core.documents import Document
 
 from langchain_elasticsearch.vectorstores import ElasticsearchStore
+from tests.fake_embeddings import ConsistentFakeEmbeddings
 
-from ...fake_embeddings import (
-    ConsistentFakeEmbeddings,
-    FakeEmbeddings,
-)
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 logging.basicConfig(level=logging.DEBUG)
@@ -53,7 +50,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             metadatas=metadatas,
             **es_params,
             index_name=index_name,
@@ -264,7 +261,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             metadatas=metadatas,
             **es_params,
             index_name=index_name,
@@ -279,7 +276,24 @@ class TestElasticsearch:
                     "filter": [{"term": {"metadata.page": "1"}}],
                     "k": 3,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return query_body
@@ -300,7 +314,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             metadatas=metadatas,
             **es_params,
             index_name=index_name,
@@ -330,7 +344,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=ElasticsearchStore.ExactRetrievalStrategy(),
@@ -344,16 +358,22 @@ class TestElasticsearch:
                         "source": "cosineSimilarity(params.query_vector, 'vector') + 1.0",  # noqa: E501
                         "params": {
                             "query_vector": [
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                0.0,
+                                0.06,
+                                0.07,
+                                0.01,
+                                0.08,
+                                0.03,
+                                0.07,
+                                0.09,
+                                0.03,
+                                0.09,
+                                0.09,
+                                0.04,
+                                0.03,
+                                0.08,
+                                0.07,
+                                0.06,
+                                0.08,
                             ]
                         },
                     },
@@ -379,7 +399,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             metadatas=metadatas,
@@ -397,16 +417,22 @@ class TestElasticsearch:
                             "source": "cosineSimilarity(params.query_vector, 'vector') + 1.0",  # noqa: E501
                             "params": {
                                 "query_vector": [
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    0.0,
+                                    0.06,
+                                    0.07,
+                                    0.01,
+                                    0.08,
+                                    0.03,
+                                    0.07,
+                                    0.09,
+                                    0.03,
+                                    0.09,
+                                    0.09,
+                                    0.04,
+                                    0.03,
+                                    0.08,
+                                    0.07,
+                                    0.06,
+                                    0.08,
                                 ]
                             },
                         },
@@ -432,7 +458,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=ElasticsearchStore.ExactRetrievalStrategy(),
@@ -453,16 +479,22 @@ class TestElasticsearch:
             """,
                             "params": {
                                 "query_vector": [
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    0.0,
+                                    0.06,
+                                    0.07,
+                                    0.01,
+                                    0.08,
+                                    0.03,
+                                    0.07,
+                                    0.09,
+                                    0.03,
+                                    0.09,
+                                    0.09,
+                                    0.04,
+                                    0.03,
+                                    0.08,
+                                    0.07,
+                                    0.06,
+                                    0.08,
                                 ]
                             },
                         },
@@ -484,7 +516,7 @@ class TestElasticsearch:
             texts = ["foo", "bar", "baz"]
             ElasticsearchStore.from_texts(
                 texts,
-                FakeEmbeddings(),
+                ConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=ElasticsearchStore.ExactRetrievalStrategy(),
@@ -499,7 +531,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=ElasticsearchStore.ExactRetrievalStrategy(),
@@ -512,7 +544,8 @@ class TestElasticsearch:
         mmr_output = docsearch.max_marginal_relevance_search(texts[0], k=2, fetch_k=3)
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
-        assert mmr_output[1].page_content == texts[1]
+        # baz is more similar to foo when using ConsistentFakeEmbeddings
+        assert mmr_output[1].page_content == texts[2]
 
         mmr_output = docsearch.max_marginal_relevance_search(
             texts[0],
@@ -522,7 +555,8 @@ class TestElasticsearch:
         )
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
-        assert mmr_output[1].page_content == texts[2]
+        # with more diversity, prefer bar over baz
+        assert mmr_output[1].page_content == texts[1]
 
         # if fetch_k < k, then the output will be less than k
         mmr_output = docsearch.max_marginal_relevance_search(texts[0], k=3, fetch_k=2)
@@ -536,7 +570,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=ElasticsearchStore.ApproxRetrievalStrategy(hybrid=True),
@@ -551,7 +585,24 @@ class TestElasticsearch:
                     "filter": [],
                     "k": 1,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 },
                 "query": {
                     "bool": {
@@ -623,7 +674,7 @@ class TestElasticsearch:
             texts = ["foo", "bar", "baz"]
             docsearch = ElasticsearchStore.from_texts(
                 texts,
-                FakeEmbeddings(),
+                ConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=ElasticsearchStore.ApproxRetrievalStrategy(
@@ -643,16 +694,22 @@ class TestElasticsearch:
                         "k": 3,
                         "num_candidates": 50,
                         "query_vector": [
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            0.0,
+                            0.06,
+                            0.07,
+                            0.01,
+                            0.08,
+                            0.03,
+                            0.07,
+                            0.09,
+                            0.03,
+                            0.09,
+                            0.09,
+                            0.04,
+                            0.03,
+                            0.08,
+                            0.07,
+                            0.06,
+                            0.08,
                         ],
                     },
                     "query": {
@@ -691,7 +748,24 @@ class TestElasticsearch:
                 "filter": [],
                 "k": 3,
                 "num_candidates": 50,
-                "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                "query_vector": [
+                    0.06,
+                    0.07,
+                    0.01,
+                    0.08,
+                    0.03,
+                    0.07,
+                    0.09,
+                    0.03,
+                    0.09,
+                    0.09,
+                    0.04,
+                    0.03,
+                    0.08,
+                    0.07,
+                    0.06,
+                    0.08,
+                ],
             },
             size=3,
             rank={"rrf": {"rank_constant": 1, "rank_window_size": 5}},
@@ -704,7 +778,7 @@ class TestElasticsearch:
         # 3. check rrf default option is okay
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=ElasticsearchStore.ApproxRetrievalStrategy(hybrid=True),
@@ -732,7 +806,24 @@ class TestElasticsearch:
                     "filter": [],
                     "k": 1,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return {"query": {"match": {"text": {"query": "bar"}}}}
@@ -740,7 +831,7 @@ class TestElasticsearch:
         """Test end to end construction and search with metadata."""
         texts = ["foo", "bar", "baz"]
         docsearch = ElasticsearchStore.from_texts(
-            texts, FakeEmbeddings(), **es_params, index_name=index_name
+            texts, ConsistentFakeEmbeddings(), **es_params, index_name=index_name
         )
         output = docsearch.similarity_search("foo", k=1, custom_query=my_custom_query)
         assert output == [Document(page_content="bar")]
@@ -876,7 +967,7 @@ class TestElasticsearch:
         """Test to make sure the relevance threshold is respected."""
         texts = ["foo", "bar", "baz"]
         metadatas = [{"page": str(i)} for i in range(len(texts))]
-        embeddings = FakeEmbeddings()
+        embeddings = ConsistentFakeEmbeddings()
 
         docsearch = ElasticsearchStore.from_texts(
             index_name=index_name,
