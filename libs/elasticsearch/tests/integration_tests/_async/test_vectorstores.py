@@ -1108,10 +1108,10 @@ class TestElasticsearch:
 
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             metadatas=metadatas,
             metadata_mappings=metadata_mappings,
-            num_dimensions=10,
+            num_dimensions=16,
             **es_params,
             index_name=index_name,
         )

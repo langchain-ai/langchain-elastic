@@ -1086,10 +1086,10 @@ class TestElasticsearch:
 
         docsearch = ElasticsearchStore.from_texts(
             texts,
-            FakeEmbeddings(),
+            ConsistentFakeEmbeddings(),
             metadatas=metadatas,
             metadata_mappings=metadata_mappings,
-            num_dimensions=10,
+            num_dimensions=16,
             **es_params,
             index_name=index_name,
         )
