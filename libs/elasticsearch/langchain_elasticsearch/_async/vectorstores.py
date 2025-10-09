@@ -320,6 +320,8 @@ class AsyncElasticsearchStore(VectorStore):
         ] = ApproxRetrievalStrategy(),
         es_params: Optional[Dict[str, Any]] = None,
         custom_index_settings: Optional[Dict[str, Any]] = None,
+        num_dimensions: Optional[int] = None,
+        metadata_mappings: Optional[Dict[str, Any]] = None,
     ):
         if isinstance(strategy, BaseRetrievalStrategy):
             strategy = _convert_retrieval_strategy(
@@ -345,8 +347,10 @@ class AsyncElasticsearchStore(VectorStore):
             index=index_name,
             retrieval_strategy=strategy,
             embedding_service=embedding_service,
+            num_dimensions=num_dimensions,
             text_field=query_field,
             vector_field=vector_query_field,
+            metadata_mappings=metadata_mappings,
             user_agent=user_agent("langchain-py-vs"),
             custom_index_settings=custom_index_settings,
         )
