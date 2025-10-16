@@ -759,9 +759,9 @@ class TestElasticsearch:
                     cmp_query_body = {
                         "retriever": {
                             "rrf": {
-                                # Dictionary unpacking spreads rrf_config contents into this dict
+                                # Dictionary unpacking: spreads rrf_config into dict
                                 # If rrf=True: rrf_config={} adds nothing
-                                # If rrf=dict: rrf_config adds custom RRF parameters like rank_constant
+                                # If rrf=dict: rrf_config adds custom RRF parameters
                                 **rrf_config,
                                 "retrievers": [
                                     {
