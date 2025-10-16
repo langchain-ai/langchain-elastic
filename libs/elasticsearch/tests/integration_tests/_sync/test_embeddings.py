@@ -3,7 +3,6 @@
 import os
 
 import pytest
-from elasticsearch import Elasticsearch
 
 from langchain_elasticsearch.embeddings import ElasticsearchEmbeddings
 

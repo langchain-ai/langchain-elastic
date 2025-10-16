@@ -1,6 +1,5 @@
 """Test ElasticsearchRetriever functionality."""
 
-import os
 import re
 import uuid
 from typing import Any, Dict
@@ -11,7 +10,7 @@ from langchain_core.documents import Document
 
 from langchain_elasticsearch.retrievers import AsyncElasticsearchRetriever
 
-from ._test_utilities import create_es_client, read_env, requests_saving_es_client
+from ._test_utilities import read_env, requests_saving_es_client
 
 """
 cd tests/integration_tests
