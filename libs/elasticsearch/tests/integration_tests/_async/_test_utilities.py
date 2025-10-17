@@ -50,7 +50,7 @@ def create_es_client(
             **es_kwargs,
         )
 
-    client_kwargs = {"hosts": [es_params["es_url"]]}
+    client_kwargs: Dict[str, Any] = {"hosts": [es_params["es_url"]]}
     if "es_api_key" in es_params:
         client_kwargs["api_key"] = es_params["es_api_key"]
     client_kwargs.update(es_kwargs)
