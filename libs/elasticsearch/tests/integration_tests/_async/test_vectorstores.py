@@ -634,7 +634,7 @@ class TestElasticsearch:
                                         0.08,
                                     ],
                                 }
-                            }
+                            },
                         ]
                     }
                 }
@@ -755,7 +755,7 @@ class TestElasticsearch:
                     rrf_config = {}
                     if isinstance(rrf, dict):
                         rrf_config = rrf
-                    
+
                     cmp_query_body = {
                         "retriever": {
                             "rrf": {
@@ -805,8 +805,8 @@ class TestElasticsearch:
                                                 0.08,
                                             ],
                                         }
-                                    }
-                                ]
+                                    },
+                                ],
                             }
                         }
                     }

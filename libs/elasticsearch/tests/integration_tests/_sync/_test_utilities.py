@@ -17,7 +17,7 @@ def read_env() -> Dict:
 
     if cloud_id:
         return {"es_cloud_id": cloud_id, "es_api_key": api_key}
-    
+
     result = {"es_url": url}
     if api_key:
         result["es_api_key"] = api_key
@@ -50,11 +50,11 @@ def create_es_client(
             **es_kwargs,
         )
 
-    client_kwargs = {"hosts": [es_params["es_url"]]}
+    client_kwargs: Dict[str, Any] = {"hosts": [es_params["es_url"]]}
     if "es_api_key" in es_params:
         client_kwargs["api_key"] = es_params["es_api_key"]
     client_kwargs.update(es_kwargs)
-    
+
     return Elasticsearch(**client_kwargs)
 
 
