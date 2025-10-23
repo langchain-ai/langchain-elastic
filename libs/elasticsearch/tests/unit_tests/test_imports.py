@@ -19,6 +19,7 @@ EXPECTED_ALL = sorted(
         "DenseVectorScriptScoreStrategy",
         "DenseVectorStrategy",
         "DistanceMetric",
+        "DistanceStrategy",
         "RetrievalStrategy",
         "SparseVectorStrategy",
         "AsyncBM25Strategy",

@@ -580,37 +580,50 @@ class TestElasticsearch:
             query_body: Dict[str, Any], query: Optional[str]
         ) -> Dict[str, Any]:
             assert query_body == {
-                "knn": {
-                    "field": "vector",
-                    "filter": [],
-                    "k": 1,
-                    "num_candidates": 50,
-                    "query_vector": [
-                        0.06,
-                        0.07,
-                        0.01,
-                        0.08,
-                        0.03,
-                        0.07,
-                        0.09,
-                        0.03,
-                        0.09,
-                        0.09,
-                        0.04,
-                        0.03,
-                        0.08,
-                        0.07,
-                        0.06,
-                        0.08,
-                    ],
-                },
-                "query": {
-                    "bool": {
-                        "filter": [],
-                        "must": [{"match": {"text": {"query": "foo"}}}],
+                "retriever": {
+                    "rrf": {
+                        "retrievers": [
+                            {
+                                "standard": {
+                                    "query": {
+                                        "bool": {
+                                            "filter": [],
+                                            "must": [
+                                                {"match": {"text": {"query": "foo"}}}
+                                            ],
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "knn": {
+                                    "field": "vector",
+                                    "filter": [],
+                                    "k": 1,
+                                    "num_candidates": 50,
+                                    "query_vector": [
+                                        0.06,
+                                        0.07,
+                                        0.01,
+                                        0.08,
+                                        0.03,
+                                        0.07,
+                                        0.09,
+                                        0.03,
+                                        0.09,
+                                        0.09,
+                                        0.04,
+                                        0.03,
+                                        0.08,
+                                        0.07,
+                                        0.06,
+                                        0.08,
+                                    ],
+                                }
+                            },
+                        ]
                     }
-                },
-                "rank": {"rrf": {}},
+                }
             }
             return query_body
 
@@ -687,43 +700,100 @@ class TestElasticsearch:
                 query: Optional[str],
                 rrf: Optional[Union[dict, bool]] = True,
             ) -> dict:
-                cmp_query_body = {
-                    "knn": {
-                        "field": "vector",
-                        "filter": [],
-                        "k": 3,
-                        "num_candidates": 50,
-                        "query_vector": [
-                            0.06,
-                            0.07,
-                            0.01,
-                            0.08,
-                            0.03,
-                            0.07,
-                            0.09,
-                            0.03,
-                            0.09,
-                            0.09,
-                            0.04,
-                            0.03,
-                            0.08,
-                            0.07,
-                            0.06,
-                            0.08,
-                        ],
-                    },
-                    "query": {
-                        "bool": {
+                if rrf is False:
+                    # When rrf=False, uses old format
+                    cmp_query_body = {
+                        "knn": {
+                            "field": "vector",
                             "filter": [],
-                            "must": [{"match": {"text": {"query": "foo"}}}],
-                        }
-                    },
-                }
+                            "k": 3,
+                            "num_candidates": 50,
+                            "query_vector": [
+                                0.06,
+                                0.07,
+                                0.01,
+                                0.08,
+                                0.03,
+                                0.07,
+                                0.09,
+                                0.03,
+                                0.09,
+                                0.09,
+                                0.04,
+                                0.03,
+                                0.08,
+                                0.07,
+                                0.06,
+                                0.08,
+                            ],
+                        },
+                        "query": {
+                            "bool": {
+                                "filter": [],
+                                "must": [{"match": {"text": {"query": "foo"}}}],
+                            }
+                        },
+                    }
+                else:
+                    # When rrf=True or rrf=dict, uses new retriever format
+                    rrf_config = {}
+                    if isinstance(rrf, dict):
+                        rrf_config = rrf
 
-                if isinstance(rrf, dict):
-                    cmp_query_body["rank"] = {"rrf": rrf}
-                elif isinstance(rrf, bool) and rrf is True:
-                    cmp_query_body["rank"] = {"rrf": {}}
+                    cmp_query_body = {
+                        "retriever": {
+                            "rrf": {
+                                # Dictionary unpacking: spreads rrf_config into dict
+                                # If rrf=True: rrf_config={} adds nothing
+                                # If rrf=dict: rrf_config adds custom RRF parameters
+                                **rrf_config,
+                                "retrievers": [
+                                    {
+                                        "standard": {
+                                            "query": {
+                                                "bool": {
+                                                    "filter": [],
+                                                    "must": [
+                                                        {
+                                                            "match": {
+                                                                "text": {"query": "foo"}
+                                                            }
+                                                        }
+                                                    ],
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "knn": {
+                                            "field": "vector",
+                                            "filter": [],
+                                            "k": 3,
+                                            "num_candidates": 50,
+                                            "query_vector": [
+                                                0.06,
+                                                0.07,
+                                                0.01,
+                                                0.08,
+                                                0.03,
+                                                0.07,
+                                                0.09,
+                                                0.03,
+                                                0.09,
+                                                0.09,
+                                                0.04,
+                                                0.03,
+                                                0.08,
+                                                0.07,
+                                                0.06,
+                                                0.08,
+                                            ],
+                                        }
+                                    },
+                                ],
+                            }
+                        }
+                    }
 
                 assert query_body == cmp_query_body
 

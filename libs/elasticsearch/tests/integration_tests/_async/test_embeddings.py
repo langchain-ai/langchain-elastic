@@ -3,11 +3,10 @@
 import os
 
 import pytest
-from elasticsearch import AsyncElasticsearch
 
 from langchain_elasticsearch.embeddings import AsyncElasticsearchEmbeddings
 
-from ._test_utilities import model_is_deployed
+from ._test_utilities import create_es_client, model_is_deployed
 
 # deployed with
 # https://www.elastic.co/guide/en/machine-learning/current/ml-nlp-text-emb-vector-search-example.html
@@ -20,7 +19,7 @@ ES_URL = os.environ.get("ES_URL", "http://localhost:9200")
 @pytest.mark.asyncio
 async def test_elasticsearch_embedding_documents() -> None:
     """Test Elasticsearch embedding documents."""
-    client = AsyncElasticsearch(hosts=[ES_URL])
+    client = create_es_client()
     if not (await model_is_deployed(client, MODEL_ID)):
         await client.close()
         pytest.skip(
@@ -40,7 +39,7 @@ async def test_elasticsearch_embedding_documents() -> None:
 @pytest.mark.asyncio
 async def test_elasticsearch_embedding_query() -> None:
     """Test Elasticsearch embedding query."""
-    client = AsyncElasticsearch(hosts=[ES_URL])
+    client = create_es_client()
     if not (await model_is_deployed(client, MODEL_ID)):
         await client.close()
         pytest.skip(
