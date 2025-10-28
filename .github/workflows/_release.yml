@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       elasticsearch:
-        image: elasticsearch:8.13.0
+        image: elasticsearch:8.16.0
         env:
           discovery.type: single-node
           xpack.license.self_generated.type: trial
