@@ -1,6 +1,5 @@
 """Test ElasticsearchRetriever functionality."""
 
-import os
 import re
 import uuid
 from typing import Any, Dict
@@ -11,7 +10,7 @@ from langchain_core.documents import Document
 
 from langchain_elasticsearch.retrievers import AsyncElasticsearchRetriever
 
-from ._test_utilities import requests_saving_es_client
+from ._test_utilities import read_env, requests_saving_es_client
 
 """
 cd tests/integration_tests
@@ -88,13 +87,15 @@ class TestElasticsearchRetriever:
         def body_func(query: str) -> Dict:
             return {"query": {"match": {text_field: {"query": query}}}}
 
-        es_url = os.environ.get("ES_URL", "http://localhost:9200")
-        cloud_id = os.environ.get("ES_CLOUD_ID")
-        api_key = os.environ.get("ES_API_KEY")
-
-        config = (
-            {"cloud_id": cloud_id, "api_key": api_key} if cloud_id else {"url": es_url}
-        )
+        env_config = read_env()
+        # Map test utility format to retriever format
+        config = {}
+        if "es_url" in env_config:
+            config["url"] = env_config["es_url"]
+        if "es_api_key" in env_config:
+            config["api_key"] = env_config["es_api_key"]
+        if "es_cloud_id" in env_config:
+            config["cloud_id"] = env_config["es_cloud_id"]
 
         retriever = AsyncElasticsearchRetriever.from_es_params(
             index_name=index_name,

@@ -283,7 +283,7 @@ class ElasticsearchStore(VectorStore):
 
             from langchain_elasticsearch.vectorstores import ElasticsearchStore
             from langchain_openai import OpenAIEmbeddings
-            from langchain_community.vectorstores.utils import DistanceStrategy
+            from langchain_elasticsearch import DistanceStrategy
 
             store = ElasticsearchStore(
                 "langchain-demo",
