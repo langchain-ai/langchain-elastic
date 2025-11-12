@@ -104,7 +104,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = await retriever.aget_relevant_documents(query=query_string)
+        output = await retriever.ainvoke(query_string)
 
         assert output == [
             top3[0][0],
@@ -145,7 +145,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = await retriever.aget_relevant_documents(query=query_string)
+        output = await retriever.ainvoke(query_string)
 
         assert output == [
             top3[0][0],
@@ -1081,7 +1081,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = await retriever.aget_relevant_documents(query=query_string)
+        output = await retriever.ainvoke(query_string)
 
         assert output == [
             top3[0][0],
