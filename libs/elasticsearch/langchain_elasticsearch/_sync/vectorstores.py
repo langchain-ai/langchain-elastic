@@ -340,6 +340,7 @@ class ElasticsearchStore(VectorStore):
                 username=es_user,
                 password=es_password,
                 params=es_params,
+                user_agent="langchain-py-vs",
             )
 
         self._store = EVectorStore(
