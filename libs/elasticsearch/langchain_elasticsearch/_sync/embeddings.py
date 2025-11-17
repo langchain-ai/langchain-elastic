@@ -70,8 +70,10 @@ class ElasticsearchEmbeddings(Embeddings):
                 document. Defaults to 'text_field'.
             es_url: (str, optional): URL of the Elasticsearch instance to connect to.
             es_cloud_id: (str, optional): The Elasticsearch cloud ID to connect to.
-            es_api_key: (str, optional): API key to use when connecting to Elasticsearch.
-            es_params: (dict, optional): Additional parameters for the Elasticsearch client.
+            es_api_key: (str, optional): API key to use when connecting to
+                Elasticsearch.
+            es_params: (dict, optional): Additional parameters for the
+                Elasticsearch client.
 
         Example:
             .. code-block:: python
@@ -184,7 +186,9 @@ class ElasticsearchEmbeddings(Embeddings):
         from elasticsearch._sync.client.ml import MlClient
 
         # Set User-Agent for telemetry
-        es_connection_with_user_agent = with_user_agent_header(es_connection, "langchain-py-e")
+        es_connection_with_user_agent = with_user_agent_header(
+            es_connection, "langchain-py-e"
+        )
         
         # Create an MlClient from the given Elasticsearch connection
         client = MlClient(es_connection_with_user_agent)

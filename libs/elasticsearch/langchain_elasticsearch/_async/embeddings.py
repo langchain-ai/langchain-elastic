@@ -77,7 +77,9 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         Example:
             .. code-block:: python
 
-                from langchain_elasticserach.embeddings import AsyncElasticsearchEmbeddings
+                from langchain_elasticserach.embeddings import (
+                    AsyncElasticsearchEmbeddings,
+                )
 
                 # Define the model ID and input field name (if different from default)
                 model_id = "your_model_id"
@@ -117,7 +119,8 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         if not es_api_key:
             es_api_key = get_from_env("es_api_key", "ES_API_KEY")
 
-        # Connect to Elasticsearch using create_async_elasticsearch_client for consistency
+        # Connect to Elasticsearch using create_async_elasticsearch_client
+        # for consistency
         es_connection = create_async_elasticsearch_client(
             url=es_url,
             cloud_id=es_cloud_id,
@@ -185,7 +188,9 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         from elasticsearch._async.client.ml import MlClient
 
         # Set User-Agent for telemetry
-        es_connection_with_user_agent = async_with_user_agent_header(es_connection, "langchain-py-e")
+        es_connection_with_user_agent = async_with_user_agent_header(
+            es_connection, "langchain-py-e"
+        )
         
         # Create an MlClient from the given Elasticsearch connection
         client = MlClient(es_connection_with_user_agent)

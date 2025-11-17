@@ -1,9 +1,8 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-
 from importlib.metadata import version
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from elasticsearch import AsyncElasticsearch, Elasticsearch, exceptions
 from langchain_core._api.deprecation import deprecated

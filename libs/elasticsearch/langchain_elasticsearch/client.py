@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
 
 from elasticsearch import AsyncElasticsearch, Elasticsearch
+
 from langchain_elasticsearch._utilities import with_user_agent_header
 
 
