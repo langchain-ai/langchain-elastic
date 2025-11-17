@@ -3,8 +3,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+from importlib.metadata import version
+
 from elasticsearch import AsyncElasticsearch, Elasticsearch, exceptions
-from langchain_core import __version__ as langchain_version
 from langchain_core._api.deprecation import deprecated
 from langchain_core.documents import Document
 
@@ -23,7 +24,13 @@ class DistanceStrategy(str, Enum):
 
 
 def user_agent(prefix: str) -> str:
-    return f"{prefix}/{langchain_version}"
+    """Generate a User-Agent string with the langchain-elasticsearch package version."""
+    try:
+        package_version = version("langchain-elasticsearch")
+    except Exception:
+        # Fallback if version cannot be determined
+        package_version = "unknown"
+    return f"{prefix}/{package_version}"
 
 
 def with_user_agent_header(client: Elasticsearch, header_prefix: str) -> Elasticsearch:
