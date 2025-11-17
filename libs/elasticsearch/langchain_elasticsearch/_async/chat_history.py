@@ -24,6 +24,7 @@ class AsyncElasticsearchChatMessageHistory(BaseChatMessageHistory):
         es_user: Username to use when connecting to Elasticsearch.
         es_password: Password to use when connecting to Elasticsearch.
         es_api_key: API key to use when connecting to Elasticsearch.
+        es_params: Additional parameters for the Elasticsearch client.
         es_connection: Optional pre-existing Elasticsearch connection.
         esnsure_ascii: Used to escape ASCII symbols in json.dumps. Defaults to True.
         index: Name of the index to use.
@@ -45,6 +46,7 @@ class AsyncElasticsearchChatMessageHistory(BaseChatMessageHistory):
         es_user: Optional[str] = None,
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
+        es_params: Optional[Dict[str, Any]] = None,
         esnsure_ascii: Optional[bool] = True,
     ):
         self.index: str = index
@@ -62,6 +64,8 @@ class AsyncElasticsearchChatMessageHistory(BaseChatMessageHistory):
                     password=es_password,
                     cloud_id=es_cloud_id,
                     api_key=es_api_key,
+                    params=es_params,
+                    user_agent="langchain-py-ms",
                 )
             except Exception as err:
                 logger.error(f"Error connecting to Elasticsearch: {err}")
