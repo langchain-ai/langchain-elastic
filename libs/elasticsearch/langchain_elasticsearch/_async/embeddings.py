@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers.vectorstore import AsyncEmbeddingService
 from langchain_core.embeddings import Embeddings
 from langchain_core.utils import get_from_env
+
+from langchain_elasticsearch._utilities import async_with_user_agent_header
+from langchain_elasticsearch.client import create_async_elasticsearch_client
 
 if TYPE_CHECKING:
     from elasticsearch._async.client.ml import MlClient
@@ -52,8 +55,10 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         cls,
         model_id: str,
         *,
+        es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_api_key: Optional[str] = None,
+        es_params: Optional[Dict[str, Any]] = None,
         input_field: str = "text_field",
     ) -> AsyncElasticsearchEmbeddings:
         """Instantiate embeddings from Elasticsearch credentials.
@@ -63,14 +68,16 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                 cluster.
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
+            es_url: (str, optional): URL of the Elasticsearch instance to connect to.
             es_cloud_id: (str, optional): The Elasticsearch cloud ID to connect to.
-            es_user: (str, optional): Elasticsearch username.
-            es_password: (str, optional): Elasticsearch password.
+            es_api_key: (str, optional): API key to use connecting to Elasticsearch.
+            es_params: (dict, optional): Additional parameters for the 
+                Elasticsearch client.
 
         Example:
             .. code-block:: python
 
-                from langchain_elasticserach.embeddings import ElasticsearchEmbeddings
+                from langchain_elasticserach.embeddings import AsyncElasticsearchEmbeddings
 
                 # Define the model ID and input field name (if different from default)
                 model_id = "your_model_id"
@@ -80,27 +87,44 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                 # Credentials can be passed in two ways. Either set the env vars
                 # ES_CLOUD_ID, ES_USER, ES_PASSWORD and they will be automatically
                 # pulled in, or pass them in directly as kwargs.
-                embeddings = ElasticsearchEmbeddings.from_credentials(
+                embeddings = AsyncElasticsearchEmbeddings.from_credentials(
                     model_id,
                     input_field=input_field,
-                    # es_cloud_id="foo",
-                    # es_user="bar",
-                    # es_password="baz",
+                    es_cloud_id="foo",
+                    es_api_key="bar",
+                )
+
+                # Or use local URL:
+                embeddings = AsyncElasticsearchEmbeddings.from_credentials(
+                    model_id,
+                    es_url="http://localhost:9200",
+                    es_api_key="bar",
+                    es_params={"node_class": "requests"},
                 )
 
                 documents = [
                     "This is an example document.",
                     "Another example document to generate embeddings for.",
                 ]
-                embeddings_generator.embed_documents(documents)
+                await embeddings.aembed_documents(documents)
         """
         from elasticsearch._async.client.ml import MlClient
 
-        es_cloud_id = es_cloud_id or get_from_env("es_cloud_id", "ES_CLOUD_ID")
-        es_api_key = es_api_key or get_from_env("es_api_key", "ES_API_KEY")
+        # Only get from environment if not provided and es_url is not provided.
+        # This prevents errors when using es_url (local) instead of es_cloud_id (cloud).
+        if not es_url and not es_cloud_id:
+            es_cloud_id = get_from_env("es_cloud_id", "ES_CLOUD_ID")
+        if not es_api_key:
+            es_api_key = get_from_env("es_api_key", "ES_API_KEY")
 
-        # Connect to Elasticsearch
-        es_connection = AsyncElasticsearch(cloud_id=es_cloud_id, api_key=es_api_key)
+        # Connect to Elasticsearch using create_async_elasticsearch_client for consistency
+        es_connection = create_async_elasticsearch_client(
+            url=es_url,
+            cloud_id=es_cloud_id,
+            api_key=es_api_key,
+            params=es_params,
+            user_agent="langchain-py-e",
+        )
         client = MlClient(es_connection)
         return cls(client, model_id, input_field=input_field)
 
@@ -160,8 +184,11 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         """
         from elasticsearch._async.client.ml import MlClient
 
+        # Set User-Agent for telemetry
+        es_connection_with_user_agent = async_with_user_agent_header(es_connection, "langchain-py-e")
+        
         # Create an MlClient from the given Elasticsearch connection
-        client = MlClient(es_connection)
+        client = MlClient(es_connection_with_user_agent)
 
         # Return a new instance of the ElasticsearchEmbeddings class with
         # the MlClient, model_id, and input_field
