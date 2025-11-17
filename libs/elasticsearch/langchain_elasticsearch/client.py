@@ -2,9 +2,10 @@ from typing import Any, Dict, Optional
 
 from elasticsearch import AsyncElasticsearch, Elasticsearch
 
-from langchain_elasticsearch._utilities import with_user_agent_header
-from langchain_elasticsearch._utilities import async_with_user_agent_header
-
+from langchain_elasticsearch._utilities import (
+    async_with_user_agent_header,
+    with_user_agent_header,
+)
 
 
 def create_elasticsearch_client(
