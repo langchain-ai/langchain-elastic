@@ -71,7 +71,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
             es_url: (str, optional): URL of the Elasticsearch instance to connect to.
             es_cloud_id: (str, optional): The Elasticsearch cloud ID to connect to.
             es_api_key: (str, optional): API key to use connecting to Elasticsearch.
-            es_params: (dict, optional): Additional parameters for the 
+            es_params: (dict, optional): Additional parameters for the
                 Elasticsearch client.
 
         Example:
@@ -191,7 +191,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         es_connection_with_user_agent = async_with_user_agent_header(
             es_connection, "langchain-py-e"
         )
-        
+
         # Create an MlClient from the given Elasticsearch connection
         client = MlClient(es_connection_with_user_agent)
 

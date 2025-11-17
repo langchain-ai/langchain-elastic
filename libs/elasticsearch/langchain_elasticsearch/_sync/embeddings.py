@@ -189,7 +189,7 @@ class ElasticsearchEmbeddings(Embeddings):
         es_connection_with_user_agent = with_user_agent_header(
             es_connection, "langchain-py-e"
         )
-        
+
         # Create an MlClient from the given Elasticsearch connection
         client = MlClient(es_connection_with_user_agent)
 

@@ -82,9 +82,9 @@ def create_async_elasticsearch_client(
         connection_params.update(params)
 
     es_client = AsyncElasticsearch(**connection_params)
-    
+
     # Set User-Agent if provided
     if user_agent:
         es_client = async_with_user_agent_header(es_client, user_agent)
-    
+
     return es_client
