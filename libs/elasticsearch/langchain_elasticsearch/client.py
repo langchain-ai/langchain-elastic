@@ -3,6 +3,8 @@ from typing import Any, Dict, Optional
 from elasticsearch import AsyncElasticsearch, Elasticsearch
 
 from langchain_elasticsearch._utilities import with_user_agent_header
+from langchain_elasticsearch._utilities import async_with_user_agent_header
+
 
 
 def create_elasticsearch_client(
@@ -82,7 +84,6 @@ def create_async_elasticsearch_client(
     
     # Set User-Agent if provided
     if user_agent:
-        from langchain_elasticsearch._utilities import async_with_user_agent_header
         es_client = async_with_user_agent_header(es_client, user_agent)
     
     return es_client
