@@ -89,7 +89,8 @@ class ElasticsearchEmbeddings(Embeddings):
                 input_field = "your_input_field"
 
                 # Provide either es_url (local) or es_cloud_id (cloud).
-                # For authentication, provide either es_api_key or (es_user + es_password).
+                # For authentication, provide either es_api_key or
+                # (es_user + es_password).
                 embeddings = ElasticsearchEmbeddings.from_credentials(
                     model_id,
                     input_field=input_field,
