@@ -65,7 +65,6 @@ class AsyncElasticsearchChatMessageHistory(BaseChatMessageHistory):
                     cloud_id=es_cloud_id,
                     api_key=es_api_key,
                     params=es_params,
-                    user_agent="langchain-py-ms",
                 )
             except Exception as err:
                 logger.error(f"Error connecting to Elasticsearch: {err}")
