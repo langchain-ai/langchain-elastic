@@ -48,9 +48,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                 document. Defaults to 'text_field'.
         """
 
-        client._client = async_with_user_agent_header(
-            client._client, "langchain-py-e"
-        )
+        client._client = async_with_user_agent_header(client._client, "langchain-py-e")
 
         self.client = client
         self.model_id = model_id
