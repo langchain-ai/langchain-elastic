@@ -84,7 +84,6 @@ class ElasticsearchRetriever(BaseRetriever):
                 username=username,
                 password=password,
                 params=params,
-                user_agent="langchain-py-r",
             )
         except Exception as err:
             logger.error(f"Error connecting to Elasticsearch: {err}")
