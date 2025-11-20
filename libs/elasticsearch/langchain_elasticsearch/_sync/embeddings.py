@@ -50,7 +50,7 @@ class ElasticsearchEmbeddings(Embeddings):
         """
 
         client._client = with_user_agent_header(
-            client._client, user_agent("langchain-py-e")
+            client._client, "langchain-py-e"
         )
 
         self.client = client

@@ -50,7 +50,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         """
 
         client._client = async_with_user_agent_header(
-            client._client, user_agent("langchain-py-e")
+            client._client, "langchain-py-e"
         )
 
         self.client = client
