@@ -8,7 +8,6 @@ from langchain_core.embeddings import Embeddings
 
 from langchain_elasticsearch._utilities import (
     async_with_user_agent_header,
-    user_agent,
 )
 from langchain_elasticsearch.client import create_async_elasticsearch_client
 

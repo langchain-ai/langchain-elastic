@@ -7,7 +7,6 @@ from elasticsearch.helpers.vectorstore import EmbeddingService
 from langchain_core.embeddings import Embeddings
 
 from langchain_elasticsearch._utilities import (
-    user_agent,
     with_user_agent_header,
 )
 from langchain_elasticsearch.client import create_elasticsearch_client
