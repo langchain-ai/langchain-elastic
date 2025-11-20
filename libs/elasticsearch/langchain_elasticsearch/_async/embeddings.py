@@ -48,7 +48,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
         """
-        # Apply User-Agent for telemetry (applies to both passed and internally created clients)
+
         client._client = async_with_user_agent_header(
             client._client, user_agent("langchain-py-e")
         )
