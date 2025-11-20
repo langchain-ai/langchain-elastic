@@ -6,7 +6,10 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers.vectorstore import EmbeddingService
 from langchain_core.embeddings import Embeddings
 
-from langchain_elasticsearch._utilities import with_user_agent_header
+from langchain_elasticsearch._utilities import (
+    user_agent,
+    with_user_agent_header,
+)
 from langchain_elasticsearch.client import create_elasticsearch_client
 
 if TYPE_CHECKING:
@@ -45,6 +48,11 @@ class ElasticsearchEmbeddings(Embeddings):
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
         """
+        # Apply User-Agent for telemetry (applies to both passed and internally created clients)
+        client._client = with_user_agent_header(
+            client._client, user_agent("langchain-py-e")
+        )
+
         self.client = client
         self.model_id = model_id
         self.input_field = input_field
@@ -137,7 +145,6 @@ class ElasticsearchEmbeddings(Embeddings):
             username=es_user,
             password=es_password,
             params=es_params,
-            user_agent="langchain-py-e",
         )
         client = MlClient(es_connection)
         return cls(client, model_id, input_field=input_field)
@@ -198,13 +205,8 @@ class ElasticsearchEmbeddings(Embeddings):
         """
         from elasticsearch._sync.client.ml import MlClient
 
-        # Set User-Agent for telemetry
-        es_connection_with_user_agent = with_user_agent_header(
-            es_connection, "langchain-py-e"
-        )
-
         # Create an MlClient from the given Elasticsearch connection
-        client = MlClient(es_connection_with_user_agent)
+        client = MlClient(es_connection)
 
         # Return a new instance of the ElasticsearchEmbeddings class with
         # the MlClient, model_id, and input_field
