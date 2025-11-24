@@ -44,7 +44,8 @@ class AsyncElasticsearchEmbeddings(Embeddings):
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
         """
-        # Apply User-Agent for telemetry (applies to both passed and internally created clients)
+        # Apply User-Agent for telemetry
+        # (applies to both passed and internally created clients)
         self.client = async_with_user_agent_header(client, "langchain-py-e")
         self.model_id = model_id
         self.input_field = input_field
@@ -160,14 +161,17 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         input text field in the document. Defaults to 'text_field'.
 
         Returns:
-        AsyncElasticsearchEmbeddings: An instance of the AsyncElasticsearchEmbeddings class.
+        AsyncElasticsearchEmbeddings: An instance of the
+            AsyncElasticsearchEmbeddings class.
 
         Example:
             .. code-block:: python
 
                 from elasticsearch import AsyncElasticsearch
 
-                from langchain_elasticsearch.embeddings import AsyncElasticsearchEmbeddings
+                from langchain_elasticsearch.embeddings import (
+                    AsyncElasticsearchEmbeddings,
+                )
 
                 # Define the model ID and input field name (if different from default)
                 model_id = "your_model_id"

@@ -44,7 +44,8 @@ class ElasticsearchEmbeddings(Embeddings):
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
         """
-        # Apply User-Agent for telemetry (applies to both passed and internally created clients)
+        # Apply User-Agent for telemetry (applies to both passed and
+        # internally created clients)
         self.client = with_user_agent_header(client, "langchain-py-e")
         self.model_id = model_id
         self.input_field = input_field
