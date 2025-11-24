@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers.vectorstore import AsyncEmbeddingService
@@ -10,9 +10,6 @@ from langchain_elasticsearch._utilities import (
     async_with_user_agent_header,
 )
 from langchain_elasticsearch.client import create_async_elasticsearch_client
-
-if TYPE_CHECKING:
-    from elasticsearch._async.client.ml import MlClient
 
 
 class AsyncElasticsearchEmbeddings(Embeddings):
@@ -32,7 +29,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
 
     def __init__(
         self,
-        client: MlClient,
+        client: AsyncElasticsearch,
         model_id: str,
         *,
         input_field: str = "text_field",
@@ -41,16 +38,14 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         Initialize the ElasticsearchEmbeddings instance.
 
         Args:
-            client (MlClient): An Elasticsearch ML client object.
+            client (AsyncElasticsearch): An Elasticsearch client object.
             model_id (str): The model_id of the model deployed in the Elasticsearch
                 cluster.
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
         """
-
-        client._client = async_with_user_agent_header(client._client, "langchain-py-e")
-
-        self.client = client
+        # Apply User-Agent for telemetry (applies to both passed and internally created clients)
+        self.client = async_with_user_agent_header(client, "langchain-py-e")
         self.model_id = model_id
         self.input_field = input_field
 
@@ -133,8 +128,6 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                 ]
                 await embeddings.aembed_documents(documents)
         """
-        from elasticsearch._async.client.ml import MlClient
-
         # Connect to Elasticsearch using create_async_elasticsearch_client
         # for consistency
         es_connection = create_async_elasticsearch_client(
@@ -145,8 +138,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
             password=es_password,
             params=es_params,
         )
-        client = MlClient(es_connection)
-        return cls(client, model_id, input_field=input_field)
+        return cls(es_connection, model_id, input_field=input_field)
 
     @classmethod
     def from_es_connection(
@@ -159,25 +151,23 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         Instantiate embeddings from an existing Elasticsearch connection.
 
         This method provides a way to create an instance of the ElasticsearchEmbeddings
-        class using an existing Elasticsearch connection. The connection object is used
-        to create an MlClient, which is then used to initialize the
-        ElasticsearchEmbeddings instance.
+        class using an existing Elasticsearch connection.
 
         Args:
         model_id (str): The model_id of the model deployed in the Elasticsearch cluster.
-        es_connection (elasticsearch.Elasticsearch): An existing Elasticsearch
+        es_connection (elasticsearch.AsyncElasticsearch): An existing Elasticsearch
         connection object. input_field (str, optional): The name of the key for the
         input text field in the document. Defaults to 'text_field'.
 
         Returns:
-        ElasticsearchEmbeddings: An instance of the ElasticsearchEmbeddings class.
+        AsyncElasticsearchEmbeddings: An instance of the AsyncElasticsearchEmbeddings class.
 
         Example:
             .. code-block:: python
 
-                from elasticsearch import Elasticsearch
+                from elasticsearch import AsyncElasticsearch
 
-                from langchain_elasticsearch.embeddings import ElasticsearchEmbeddings
+                from langchain_elasticsearch.embeddings import AsyncElasticsearchEmbeddings
 
                 # Define the model ID and input field name (if different from default)
                 model_id = "your_model_id"
@@ -185,12 +175,12 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                 input_field = "your_input_field"
 
                 # Create Elasticsearch connection
-                es_connection = Elasticsearch(
+                es_connection = AsyncElasticsearch(
                     hosts=["localhost:9200"], http_auth=("user", "password")
                 )
 
-                # Instantiate ElasticsearchEmbeddings using the existing connection
-                embeddings = ElasticsearchEmbeddings.from_es_connection(
+                # Instantiate AsyncElasticsearchEmbeddings using the existing connection
+                embeddings = AsyncElasticsearchEmbeddings.from_es_connection(
                     model_id,
                     es_connection,
                     input_field=input_field,
@@ -200,16 +190,9 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                     "This is an example document.",
                     "Another example document to generate embeddings for.",
                 ]
-                embeddings_generator.embed_documents(documents)
+                await embeddings.aembed_documents(documents)
         """
-        from elasticsearch._async.client.ml import MlClient
-
-        # Create an MlClient from the given Elasticsearch connection
-        client = MlClient(es_connection)
-
-        # Return a new instance of the ElasticsearchEmbeddings class with
-        # the MlClient, model_id, and input_field
-        return cls(client, model_id, input_field=input_field)
+        return cls(es_connection, model_id, input_field=input_field)
 
     async def _embedding_func(self, texts: List[str]) -> List[List[float]]:
         """
@@ -222,7 +205,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
             List[List[float]]: A list of embeddings, one for each text in the input
                 list.
         """
-        response = await self.client.infer_trained_model(
+        response = await self.client.ml.infer_trained_model(
             model_id=self.model_id, docs=[{self.input_field: text} for text in texts]
         )
 
