@@ -44,8 +44,8 @@ class ElasticsearchEmbeddings(Embeddings):
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
         """
-        # Apply User-Agent for telemetry (applies to both passed and
-        # internally created clients)
+        # Apply User-Agent for telemetry
+        # (applies to both passed and internally created clients)
         self.client = with_user_agent_header(client, "langchain-py-e")
         self.model_id = model_id
         self.input_field = input_field
@@ -72,8 +72,7 @@ class ElasticsearchEmbeddings(Embeddings):
                 document. Defaults to 'text_field'.
             es_url: (str, optional): URL of the Elasticsearch instance to connect to.
             es_cloud_id: (str, optional): The Elasticsearch cloud ID to connect to.
-            es_api_key: (str, optional): API key to use when connecting to
-                Elasticsearch.
+            es_api_key: (str, optional): API key to use connecting to Elasticsearch.
             es_user: (str, optional): Elasticsearch username.
             es_password: (str, optional): Elasticsearch password.
             es_params: (dict, optional): Additional parameters for the
@@ -82,7 +81,8 @@ class ElasticsearchEmbeddings(Embeddings):
         Example:
             .. code-block:: python
 
-                from langchain_elasticserach.embeddings import ElasticsearchEmbeddings
+            from langchain_elasticserach.embeddings import ElasticsearchEmbeddings
+
 
                 # Define the model ID and input field name (if different from default)
                 model_id = "your_model_id"
@@ -128,6 +128,7 @@ class ElasticsearchEmbeddings(Embeddings):
                 ]
                 embeddings_generator.embed_documents(documents)
         """
+
         # Connect to Elasticsearch using create_elasticsearch_client for consistency
         es_connection = create_elasticsearch_client(
             url=es_url,

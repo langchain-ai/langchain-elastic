@@ -434,9 +434,13 @@ class TestVectorStore:
         # Remove self from the parameters set
         evectorstore_params = set(evectorstore_sig.parameters.keys()) - {"self"}
 
-        with patch(
-            "langchain_elasticsearch._sync.vectorstores.EVectorStore"
-        ) as mock_evectorstore:
+        # Use variable so unasync can transform the path
+        # Break up the string so unasync can transform _async to _sync
+        async_module = "_sync"
+        evectorstore_path = (
+            f"langchain_elasticsearch.{async_module}.vectorstores.EVectorStore"
+        )
+        with patch(evectorstore_path) as mock_evectorstore:
             # Mock the close method
             mock_evectorstore.return_value.close = Mock()
 
@@ -478,9 +482,13 @@ class TestVectorStore:
 
         client = Elasticsearch(hosts=["http://dummy:9200"])
 
-        with patch(
-            "langchain_elasticsearch._sync.vectorstores.EVectorStore"
-        ) as mock_evectorstore:
+        # Use variable so unasync can transform the path
+        # Break up the string so unasync can transform _async to _sync
+        async_module = "_sync"
+        evectorstore_path = (
+            f"langchain_elasticsearch.{async_module}.vectorstores.EVectorStore"
+        )
+        with patch(evectorstore_path) as mock_evectorstore:
             # Mock the close method
             mock_evectorstore.return_value.close = Mock()
 

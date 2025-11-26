@@ -38,7 +38,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         Initialize the ElasticsearchEmbeddings instance.
 
         Args:
-            client (AsyncElasticsearch): An Elasticsearch client object.
+            client (Elasticsearch): An Elasticsearch client object.
             model_id (str): The model_id of the model deployed in the Elasticsearch
                 cluster.
             input_field (str): The name of the key for the input text field in the
@@ -81,9 +81,8 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         Example:
             .. code-block:: python
 
-                from langchain_elasticserach.embeddings import (
-                    AsyncElasticsearchEmbeddings,
-                )
+            from langchain_elasticserach.embeddings import ElasticsearchEmbeddings
+
 
                 # Define the model ID and input field name (if different from default)
                 model_id = "your_model_id"
@@ -93,7 +92,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                 # Provide either es_url (local) or es_cloud_id (cloud).
                 # For authentication, provide either es_api_key or
                 # (es_user + es_password).
-                embeddings = AsyncElasticsearchEmbeddings.from_credentials(
+                embeddings = ElasticsearchEmbeddings.from_credentials(
                     model_id,
                     input_field=input_field,
                     es_cloud_id="foo",
@@ -101,14 +100,14 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                 )
 
                 # Or use local URL with API key:
-                embeddings = AsyncElasticsearchEmbeddings.from_credentials(
+                embeddings = ElasticsearchEmbeddings.from_credentials(
                     model_id,
                     es_url="http://localhost:9200",
                     es_api_key="bar"
                 )
 
                 # Or use username/password authentication:
-                embeddings = AsyncElasticsearchEmbeddings.from_credentials(
+                embeddings = ElasticsearchEmbeddings.from_credentials(
                     model_id,
                     es_url="http://localhost:9200",
                     es_user="elastic",
@@ -117,7 +116,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
 
                 # Note: To use environment variables, read them yourself:
                 # import os
-                # embeddings = AsyncElasticsearchEmbeddings.from_credentials(
+                # embeddings = ElasticsearchEmbeddings.from_credentials(
                 #     model_id,
                 #     es_cloud_id=os.environ.get("ES_CLOUD_ID"),
                 #     es_api_key=os.environ.get("ES_API_KEY"),
@@ -127,10 +126,10 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                     "This is an example document.",
                     "Another example document to generate embeddings for.",
                 ]
-                await embeddings.aembed_documents(documents)
+                embeddings_generator.embed_documents(documents)
         """
-        # Connect to Elasticsearch using create_async_elasticsearch_client
-        # for consistency
+        
+        # Connect to Elasticsearch using create_elasticsearch_client for consistency
         es_connection = create_async_elasticsearch_client(
             url=es_url,
             cloud_id=es_cloud_id,
@@ -156,22 +155,19 @@ class AsyncElasticsearchEmbeddings(Embeddings):
 
         Args:
         model_id (str): The model_id of the model deployed in the Elasticsearch cluster.
-        es_connection (elasticsearch.AsyncElasticsearch): An existing Elasticsearch
+        es_connection (elasticsearch.Elasticsearch): An existing Elasticsearch
         connection object. input_field (str, optional): The name of the key for the
         input text field in the document. Defaults to 'text_field'.
 
         Returns:
-        AsyncElasticsearchEmbeddings: An instance of the
-            AsyncElasticsearchEmbeddings class.
+        ElasticsearchEmbeddings: An instance of the ElasticsearchEmbeddings class.
 
         Example:
             .. code-block:: python
 
-                from elasticsearch import AsyncElasticsearch
+                from elasticsearch import Elasticsearch
 
-                from langchain_elasticsearch.embeddings import (
-                    AsyncElasticsearchEmbeddings,
-                )
+                from langchain_elasticsearch.embeddings import ElasticsearchEmbeddings
 
                 # Define the model ID and input field name (if different from default)
                 model_id = "your_model_id"
@@ -179,12 +175,12 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                 input_field = "your_input_field"
 
                 # Create Elasticsearch connection
-                es_connection = AsyncElasticsearch(
+                es_connection = Elasticsearch(
                     hosts=["localhost:9200"], http_auth=("user", "password")
                 )
 
-                # Instantiate AsyncElasticsearchEmbeddings using the existing connection
-                embeddings = AsyncElasticsearchEmbeddings.from_es_connection(
+                # Instantiate ElasticsearchEmbeddings using the existing connection
+                embeddings = ElasticsearchEmbeddings.from_es_connection(
                     model_id,
                     es_connection,
                     input_field=input_field,
@@ -194,7 +190,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                     "This is an example document.",
                     "Another example document to generate embeddings for.",
                 ]
-                await embeddings.aembed_documents(documents)
+                embeddings_generator.embed_documents(documents)
         """
         return cls(es_connection, model_id, input_field=input_field)
 
