@@ -438,9 +438,9 @@ class TestVectorStore:
 
         # Use variable so unasync can transform the path
         # Break up the string so unasync can transform _async to _sync
-        async_module = "_async"
+        async_or_sync_module = "_async"
         evectorstore_path = (
-            f"langchain_elasticsearch.{async_module}.vectorstores.EVectorStore"
+            f"langchain_elasticsearch.{async_or_sync_module}.vectorstores.EVectorStore"
         )
         with patch(evectorstore_path) as mock_evectorstore:
             # Mock the close method
@@ -486,9 +486,9 @@ class TestVectorStore:
 
         # Use variable so unasync can transform the path
         # Break up the string so unasync can transform _async to _sync
-        async_module = "_async"
+        async_or_sync_module = "_async"
         evectorstore_path = (
-            f"langchain_elasticsearch.{async_module}.vectorstores.EVectorStore"
+            f"langchain_elasticsearch.{async_or_sync_module}.vectorstores.EVectorStore"
         )
         with patch(evectorstore_path) as mock_evectorstore:
             # Mock the close method
