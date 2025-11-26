@@ -128,7 +128,7 @@ class AsyncElasticsearchEmbeddings(Embeddings):
                 ]
                 embeddings_generator.embed_documents(documents)
         """
-        
+
         # Connect to Elasticsearch using create_elasticsearch_client for consistency
         es_connection = create_async_elasticsearch_client(
             url=es_url,
