@@ -38,7 +38,8 @@ class ElasticsearchEmbeddings(Embeddings):
         Initialize the ElasticsearchEmbeddings instance.
 
         Args:
-            client (Elasticsearch): An Elasticsearch client object.
+            client (Elasticsearch or AsyncElasticsearch): An Elasticsearch client
+                object or an AsyncElasticsearch client object.
             model_id (str): The model_id of the model deployed in the Elasticsearch
                 cluster.
             input_field (str): The name of the key for the input text field in the
