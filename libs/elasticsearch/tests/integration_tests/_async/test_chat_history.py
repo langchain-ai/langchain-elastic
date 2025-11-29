@@ -2,8 +2,15 @@ import uuid
 from typing import AsyncIterator
 
 import pytest
-from langchain.memory import ConversationBufferMemory
+from elasticsearch import AsyncElasticsearch
 from langchain_core.messages import AIMessage, HumanMessage, message_to_dict
+from langchain_classic.memory import ConversationBufferMemory
+
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore:Please see the migration guide.*:langchain_core._api.deprecation.LangChainDeprecationWarning"
+    )
+]
 
 from langchain_elasticsearch.chat_history import AsyncElasticsearchChatMessageHistory
 
@@ -23,11 +30,11 @@ To run against Elastic Cloud, set the following environment variables:
 
 class TestElasticsearch:
     @pytest.fixture
-    async def elasticsearch_connection(self) -> AsyncIterator[dict]:
+    async def elasticsearch_connection(self) -> AsyncIterator[AsyncElasticsearch]:
         params = read_env()
         es = create_es_client(params)
 
-        yield params
+        yield es
 
         await clear_test_indices(es)
         await es.close()
@@ -38,12 +45,14 @@ class TestElasticsearch:
         return f"test_{uuid.uuid4().hex}"
 
     async def test_memory_with_message_store(
-        self, elasticsearch_connection: dict, index_name: str
+        self, elasticsearch_connection: AsyncElasticsearch, index_name: str
     ) -> None:
         """Test the memory with a message store."""
         # setup Elasticsearch as a message store
         message_history = AsyncElasticsearchChatMessageHistory(
-            **elasticsearch_connection, index=index_name, session_id="test-session"
+            es_connection=elasticsearch_connection,
+            index=index_name,
+            session_id="test-session",
         )
 
         memory = ConversationBufferMemory(

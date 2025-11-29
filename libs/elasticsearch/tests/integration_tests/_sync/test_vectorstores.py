@@ -14,6 +14,11 @@ from tests.fake_embeddings import ConsistentFakeEmbeddings
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 logging.basicConfig(level=logging.DEBUG)
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore:Deprecated field \\[rank\\] used, replaced by \\[retriever\\]:elasticsearch.ElasticsearchWarning"
+    )
+]
 
 """
 cd tests/integration_tests
@@ -104,7 +109,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = retriever.get_relevant_documents(query=query_string)
+        output = retriever.invoke(query_string)
 
         assert output == [
             top3[0][0],
@@ -145,7 +150,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = retriever.get_relevant_documents(query=query_string)
+        output = retriever.invoke(query_string)
 
         assert output == [
             top3[0][0],
@@ -1061,7 +1066,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = retriever.get_relevant_documents(query=query_string)
+        output = retriever.invoke(query_string)
 
         assert output == [
             top3[0][0],

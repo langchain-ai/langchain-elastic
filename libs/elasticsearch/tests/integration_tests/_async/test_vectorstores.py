@@ -14,6 +14,11 @@ from tests.fake_embeddings import AsyncConsistentFakeEmbeddings
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 logging.basicConfig(level=logging.DEBUG)
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore:Deprecated field \\[rank\\] used, replaced by \\[retriever\\]:elasticsearch.ElasticsearchWarning"
+    )
+]
 
 """
 cd tests/integration_tests
@@ -27,6 +32,28 @@ To run against Elastic Cloud, set the following environment variables:
 
 
 class TestElasticsearch:
+    @pytest.fixture(autouse=True)
+    async def _close_async_stores(self, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[None]:
+        created: list[AsyncElasticsearchStore] = []
+        original_init = AsyncElasticsearchStore.__init__
+
+        def wrapped_init(self, *args: Any, **kwargs: Any) -> None:  # type: ignore[misc]
+            original_init(self, *args, **kwargs)
+            created.append(self)
+
+        monkeypatch.setattr(AsyncElasticsearchStore, "__init__", wrapped_init)
+        try:
+            yield
+        finally:
+            for store in created:
+                aclose = getattr(store, "aclose", None)
+                if aclose:
+                    try:
+                        await aclose()
+                    except Exception:
+                        pass
+            monkeypatch.setattr(AsyncElasticsearchStore, "__init__", original_init)
+
     @pytest.fixture
     async def es_params(self) -> AsyncIterator[dict]:
         params = read_env()
@@ -104,7 +131,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = await retriever.aget_relevant_documents(query=query_string)
+        output = await retriever.ainvoke(query_string)
 
         assert output == [
             top3[0][0],
@@ -145,7 +172,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = await retriever.aget_relevant_documents(query=query_string)
+        output = await retriever.ainvoke(query_string)
 
         assert output == [
             top3[0][0],
@@ -1081,7 +1108,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = await retriever.aget_relevant_documents(query=query_string)
+        output = await retriever.ainvoke(query_string)
 
         assert output == [
             top3[0][0],

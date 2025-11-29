@@ -1,5 +1,6 @@
+import json
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import ANY, MagicMock, patch
 
@@ -7,7 +8,6 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
 from elasticsearch import NotFoundError
-from langchain.embeddings.cache import _value_serializer
 from langchain_core.load import dumps
 from langchain_core.outputs import Generation
 
@@ -15,6 +15,11 @@ from langchain_elasticsearch import (
     ElasticsearchCache,
     ElasticsearchEmbeddingsCache,
 )
+
+
+def _value_serializer(value: List[float]) -> bytes:
+    """Serialize embedding values to bytes (replaces private langchain function)."""
+    return json.dumps(value).encode()
 
 
 def serialize_encode_vector(vector: Any) -> str:
