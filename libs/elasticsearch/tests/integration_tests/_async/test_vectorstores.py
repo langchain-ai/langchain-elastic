@@ -583,7 +583,7 @@ class TestElasticsearch:
         )
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
-        # baz is more similar to foo when using AsyncConsistentFakeEmbeddings
+        # baz is more similar to foo when using this embedding
         assert mmr_output[1].page_content == texts[2]
 
         mmr_output = await docsearch.amax_marginal_relevance_search(
