@@ -422,11 +422,11 @@ class TestVectorStore:
 
     @pytest.mark.asyncio
     async def test_parameter_forwarding_to_evectorstore(self) -> None:
-        """Test to catch missing AsyncEVectorStore parameters.
+        """Test to catch missing EVectorStore parameters.
 
-        This test compares the AsyncEVectorStore constructor signature against what
-        AsyncElasticsearchStore actually forwards. If AsyncEVectorStore adds new
-        parameters, this test will fail and alert us to update AsyncElasticsearchStore.
+        This test compares the EVectorStore constructor signature against what
+        ElasticsearchStore actually forwards. If EVectorStore adds new
+        parameters, this test will fail and alert us to update ElasticsearchStore.
         """
 
         client = AsyncElasticsearch(hosts=["http://dummy:9200"])
@@ -436,10 +436,14 @@ class TestVectorStore:
         # Remove self from the parameters set
         evectorstore_params = set(evectorstore_sig.parameters.keys()) - {"self"}
 
-        with patch(
-            "langchain_elasticsearch._async.vectorstores.EVectorStore"
-        ) as mock_evectorstore:
-            # Mock the close method to be async
+        # Use variable so unasync can transform the path
+        # Break up the string so unasync can transform _async to _sync
+        async_or_sync_module = "_async"
+        evectorstore_path = (
+            f"langchain_elasticsearch.{async_or_sync_module}.vectorstores.EVectorStore"
+        )
+        with patch(evectorstore_path) as mock_evectorstore:
+            # Mock the close method
             mock_evectorstore.return_value.close = AsyncMock()
 
             store = AsyncElasticsearchStore(
@@ -457,8 +461,8 @@ class TestVectorStore:
             missing_params = evectorstore_params - forwarded_params
             if missing_params:
                 pytest.fail(
-                    f"AsyncElasticsearchStore is missing these EVectorStore parameters:"
-                    f"{missing_params}. Please add them to AsyncElasticsearchStore "
+                    f"ElasticsearchStore is missing these EVectorStore parameters:"
+                    f"{missing_params}. Please add them to ElasticsearchStore "
                     f"and forward them to EVectorStore."
                 )
 
@@ -466,7 +470,7 @@ class TestVectorStore:
             unexpected_params = forwarded_params - evectorstore_params
             if unexpected_params:
                 pytest.fail(
-                    f"AsyncElasticsearchStore is forwarding unexpected parameters to "
+                    f"ElasticsearchStore is forwarding unexpected parameters to "
                     f"EVectorStore: {unexpected_params}. These parameters don't exist "
                     f"in EVectorStore.__init__."
                 )
@@ -476,14 +480,18 @@ class TestVectorStore:
     @pytest.mark.asyncio
     async def test_parameter_forwarding_defaults(self) -> None:
         """Test that default parameter values are properly forwarded to
-        AsyncEVectorStore."""
+        EVectorStore."""
 
         client = AsyncElasticsearch(hosts=["http://dummy:9200"])
 
-        with patch(
-            "langchain_elasticsearch._async.vectorstores.EVectorStore"
-        ) as mock_evectorstore:
-            # Mock the close method to be async
+        # Use variable so unasync can transform the path
+        # Break up the string so unasync can transform _async to _sync
+        async_or_sync_module = "_async"
+        evectorstore_path = (
+            f"langchain_elasticsearch.{async_or_sync_module}.vectorstores.EVectorStore"
+        )
+        with patch(evectorstore_path) as mock_evectorstore:
+            # Mock the close method
             mock_evectorstore.return_value.close = AsyncMock()
 
             # Test with minimal parameters (should use defaults)

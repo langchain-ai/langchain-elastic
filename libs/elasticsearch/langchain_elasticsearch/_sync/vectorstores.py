@@ -61,9 +61,11 @@ def _convert_retrieval_strategy(
     elif isinstance(langchain_strategy, BM25RetrievalStrategy):
         return BM25Strategy(k1=langchain_strategy.k1, b=langchain_strategy.b)
     else:
+        # Use variable so unasync can transform the class reference
+        strategy_class = RetrievalStrategy
         raise TypeError(
             f"Strategy {langchain_strategy} not supported. To provide a "
-            f"custom strategy, please subclass {RetrievalStrategy}."
+            f"custom strategy, please subclass {strategy_class}."
         )
 
 
