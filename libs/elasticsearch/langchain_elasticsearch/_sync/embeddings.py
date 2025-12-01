@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import Any, Dict, List, Optional
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers.vectorstore import EmbeddingService
 from langchain_core.embeddings import Embeddings
-from langchain_core.utils import get_from_env
 
-if TYPE_CHECKING:
-    from elasticsearch._sync.client.ml import MlClient
+from langchain_elasticsearch._utilities import (
+    with_user_agent_header,
+)
+from langchain_elasticsearch.client import create_elasticsearch_client
 
 
 class ElasticsearchEmbeddings(Embeddings):
@@ -28,7 +29,7 @@ class ElasticsearchEmbeddings(Embeddings):
 
     def __init__(
         self,
-        client: MlClient,
+        client: Elasticsearch,
         model_id: str,
         *,
         input_field: str = "text_field",
@@ -37,13 +38,16 @@ class ElasticsearchEmbeddings(Embeddings):
         Initialize the ElasticsearchEmbeddings instance.
 
         Args:
-            client (MlClient): An Elasticsearch ML client object.
+            client (Elasticsearch or AsyncElasticsearch): An Elasticsearch client
+                object or an AsyncElasticsearch client object.
             model_id (str): The model_id of the model deployed in the Elasticsearch
                 cluster.
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
         """
-        self.client = client
+        # Apply User-Agent for telemetry
+        # (applies to both passed and internally created clients)
+        self.client = with_user_agent_header(client, "langchain-py-e")
         self.model_id = model_id
         self.input_field = input_field
 
@@ -52,8 +56,12 @@ class ElasticsearchEmbeddings(Embeddings):
         cls,
         model_id: str,
         *,
+        es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_api_key: Optional[str] = None,
+        es_user: Optional[str] = None,
+        es_password: Optional[str] = None,
+        es_params: Optional[Dict[str, Any]] = None,
         input_field: str = "text_field",
     ) -> ElasticsearchEmbeddings:
         """Instantiate embeddings from Elasticsearch credentials.
@@ -63,30 +71,57 @@ class ElasticsearchEmbeddings(Embeddings):
                 cluster.
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
+            es_url: (str, optional): URL of the Elasticsearch instance to connect to.
             es_cloud_id: (str, optional): The Elasticsearch cloud ID to connect to.
+            es_api_key: (str, optional): API key to use connecting to Elasticsearch.
             es_user: (str, optional): Elasticsearch username.
             es_password: (str, optional): Elasticsearch password.
+            es_params: (dict, optional): Additional parameters for the
+                Elasticsearch client.
 
         Example:
             .. code-block:: python
 
-                from langchain_elasticserach.embeddings import ElasticsearchEmbeddings
+            from langchain_elasticserach.embeddings import ElasticsearchEmbeddings
+
 
                 # Define the model ID and input field name (if different from default)
                 model_id = "your_model_id"
                 # Optional, only if different from 'text_field'
                 input_field = "your_input_field"
 
-                # Credentials can be passed in two ways. Either set the env vars
-                # ES_CLOUD_ID, ES_USER, ES_PASSWORD and they will be automatically
-                # pulled in, or pass them in directly as kwargs.
+                # Provide either es_url (local) or es_cloud_id (cloud).
+                # For authentication, provide either es_api_key or
+                # (es_user + es_password).
                 embeddings = ElasticsearchEmbeddings.from_credentials(
                     model_id,
                     input_field=input_field,
-                    # es_cloud_id="foo",
-                    # es_user="bar",
-                    # es_password="baz",
+                    es_cloud_id="foo",
+                    es_api_key="bar",
                 )
+
+                # Or use local URL with API key:
+                embeddings = ElasticsearchEmbeddings.from_credentials(
+                    model_id,
+                    es_url="http://localhost:9200",
+                    es_api_key="bar"
+                )
+
+                # Or use username/password authentication:
+                embeddings = ElasticsearchEmbeddings.from_credentials(
+                    model_id,
+                    es_url="http://localhost:9200",
+                    es_user="elastic",
+                    es_password="password"
+                )
+
+                # Note: To use environment variables, read them yourself:
+                # import os
+                # embeddings = ElasticsearchEmbeddings.from_credentials(
+                #     model_id,
+                #     es_cloud_id=os.environ.get("ES_CLOUD_ID"),
+                #     es_api_key=os.environ.get("ES_API_KEY"),
+                # )
 
                 documents = [
                     "This is an example document.",
@@ -94,15 +129,17 @@ class ElasticsearchEmbeddings(Embeddings):
                 ]
                 embeddings_generator.embed_documents(documents)
         """
-        from elasticsearch._sync.client.ml import MlClient
 
-        es_cloud_id = es_cloud_id or get_from_env("es_cloud_id", "ES_CLOUD_ID")
-        es_api_key = es_api_key or get_from_env("es_api_key", "ES_API_KEY")
-
-        # Connect to Elasticsearch
-        es_connection = Elasticsearch(cloud_id=es_cloud_id, api_key=es_api_key)
-        client = MlClient(es_connection)
-        return cls(client, model_id, input_field=input_field)
+        # Connect to Elasticsearch using create_elasticsearch_client for consistency
+        es_connection = create_elasticsearch_client(
+            url=es_url,
+            cloud_id=es_cloud_id,
+            api_key=es_api_key,
+            username=es_user,
+            password=es_password,
+            params=es_params,
+        )
+        return cls(es_connection, model_id, input_field=input_field)
 
     @classmethod
     def from_es_connection(
@@ -115,9 +152,7 @@ class ElasticsearchEmbeddings(Embeddings):
         Instantiate embeddings from an existing Elasticsearch connection.
 
         This method provides a way to create an instance of the ElasticsearchEmbeddings
-        class using an existing Elasticsearch connection. The connection object is used
-        to create an MlClient, which is then used to initialize the
-        ElasticsearchEmbeddings instance.
+        class using an existing Elasticsearch connection.
 
         Args:
         model_id (str): The model_id of the model deployed in the Elasticsearch cluster.
@@ -158,14 +193,7 @@ class ElasticsearchEmbeddings(Embeddings):
                 ]
                 embeddings_generator.embed_documents(documents)
         """
-        from elasticsearch._sync.client.ml import MlClient
-
-        # Create an MlClient from the given Elasticsearch connection
-        client = MlClient(es_connection)
-
-        # Return a new instance of the ElasticsearchEmbeddings class with
-        # the MlClient, model_id, and input_field
-        return cls(client, model_id, input_field=input_field)
+        return cls(es_connection, model_id, input_field=input_field)
 
     def _embedding_func(self, texts: List[str]) -> List[List[float]]:
         """
@@ -178,7 +206,7 @@ class ElasticsearchEmbeddings(Embeddings):
             List[List[float]]: A list of embeddings, one for each text in the input
                 list.
         """
-        response = self.client.infer_trained_model(
+        response = self.client.ml.infer_trained_model(
             model_id=self.model_id, docs=[{self.input_field: text} for text in texts]
         )
 

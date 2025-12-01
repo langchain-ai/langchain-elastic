@@ -102,6 +102,7 @@ class ElasticsearchCache(BaseCache):
             username=es_user,
             password=es_password,
             params=es_params,
+            user_agent="langchain-py-c",
         )
         self._is_alias: Optional[bool] = None
 
@@ -259,6 +260,7 @@ class ElasticsearchEmbeddingsCache(ByteStore):
             username=es_user,
             password=es_password,
             params=es_params,
+            user_agent="langchain-py-ec",
         )
         self._is_alias: Optional[bool] = None
 

@@ -2,6 +2,11 @@ from typing import Any, Dict, Optional
 
 from elasticsearch import AsyncElasticsearch, Elasticsearch
 
+from langchain_elasticsearch._utilities import (
+    async_with_user_agent_header,
+    with_user_agent_header,
+)
+
 
 def create_elasticsearch_client(
     url: Optional[str] = None,
@@ -10,6 +15,7 @@ def create_elasticsearch_client(
     username: Optional[str] = None,
     password: Optional[str] = None,
     params: Optional[Dict[str, Any]] = None,
+    user_agent: Optional[str] = None,
 ) -> Elasticsearch:
     if url and cloud_id:
         raise ValueError(
@@ -35,6 +41,10 @@ def create_elasticsearch_client(
 
     es_client = Elasticsearch(**connection_params)
 
+    # Set User-Agent before connection test if provided
+    if user_agent:
+        es_client = with_user_agent_header(es_client, user_agent)
+
     es_client.info()  # test connection
 
     return es_client
@@ -47,6 +57,7 @@ def create_async_elasticsearch_client(
     username: Optional[str] = None,
     password: Optional[str] = None,
     params: Optional[Dict[str, Any]] = None,
+    user_agent: Optional[str] = None,
 ) -> AsyncElasticsearch:
     if url and cloud_id:
         raise ValueError(
@@ -71,4 +82,9 @@ def create_async_elasticsearch_client(
         connection_params.update(params)
 
     es_client = AsyncElasticsearch(**connection_params)
+
+    # Set User-Agent if provided
+    if user_agent:
+        es_client = async_with_user_agent_header(es_client, user_agent)
+
     return es_client
