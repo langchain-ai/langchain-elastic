@@ -2,8 +2,8 @@ from typing import Dict, Generator, Union
 
 import pytest
 from elasticsearch.helpers import BulkIndexError
-from langchain.embeddings.cache import _value_serializer
-from langchain.globals import set_llm_cache
+from langchain_classic.embeddings.cache import _value_serializer
+from langchain_core.globals import set_llm_cache
 from langchain_core.language_models import BaseChatModel
 
 from langchain_elasticsearch import (
