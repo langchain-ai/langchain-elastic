@@ -413,7 +413,7 @@ class ElasticsearchStore(VectorStore):
             )
         else:
             raise ValueError(
-                "Either 'client' or credentials (es_url, es_cloud_id, etc.) must be provided."
+                "Provide either 'client' or credentials (es_url, es_cloud_id, etc.)"
             )
 
         self._store = EVectorStore(
