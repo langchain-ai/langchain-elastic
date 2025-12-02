@@ -97,8 +97,8 @@ class ElasticsearchStore(VectorStore):
             and the strategy, will raise an error.
 
     Key init args — client params:
-        es_connection: Optional[Elasticsearch]
-            Pre-existing Elasticsearch connection.
+        client: Optional[Elasticsearch or AsyncElasticsearch]
+            Pre-existing Elasticsearch connection. Either provide this OR credentials.
         es_url: Optional[str]
             URL of the Elasticsearch instance to connect to.
         es_cloud_id: Optional[str]
@@ -124,10 +124,37 @@ class ElasticsearchStore(VectorStore):
                 es_url="http://localhost:9200",
             )
 
+    Instantiate with API key (URL):
+        .. code-block:: python
+
+            from langchain_elasticsearch import ElasticsearchStore
+            from langchain_openai import OpenAIEmbeddings
+
+            store = ElasticsearchStore(
+                index_name="langchain-demo",
+                embedding=OpenAIEmbeddings(),
+                es_url="http://localhost:9200",
+                es_api_key="your-api-key"
+            )
+
+    Instantiate with username/password (URL):
+        .. code-block:: python
+
+            from langchain_elasticsearch import ElasticsearchStore
+            from langchain_openai import OpenAIEmbeddings
+
+            store = ElasticsearchStore(
+                index_name="langchain-demo",
+                embedding=OpenAIEmbeddings(),
+                es_url="http://localhost:9200",
+                es_user="elastic",
+                es_password="password"
+            )
+
     If you want to use a cloud hosted Elasticsearch instance, you can pass in the
     cloud_id argument instead of the es_url argument.
 
-    Instantiate from cloud:
+    Instantiate from cloud (with username/password):
         .. code-block:: python
 
             from langchain_elasticsearch.vectorstores import ElasticsearchStore
@@ -136,28 +163,66 @@ class ElasticsearchStore(VectorStore):
             store = ElasticsearchStore(
                 embedding=OpenAIEmbeddings(),
                 index_name="langchain-demo",
-                es_cloud_id="<cloud_id>"
+                es_cloud_id="<cloud_id>",
                 es_user="elastic",
                 es_password="<password>"
             )
 
+    Instantiate from cloud (with API key):
+        .. code-block:: python
+
+            from langchain_elasticsearch.vectorstores import ElasticsearchStore
+            from langchain_openai import OpenAIEmbeddings
+
+            store = ElasticsearchStore(
+                embedding=OpenAIEmbeddings(),
+                index_name="langchain-demo",
+                es_cloud_id="<cloud_id>",
+                es_api_key="your-api-key"
+            )
+
     You can also connect to an existing Elasticsearch instance by passing in a
-    pre-existing Elasticsearch connection via the es_connection argument.
+    pre-existing Elasticsearch connection via the client argument.
 
     Instantiate from existing connection:
         .. code-block:: python
 
             from langchain_elasticsearch.vectorstores import ElasticsearchStore
             from langchain_openai import OpenAIEmbeddings
-
             from elasticsearch import Elasticsearch
 
-            es_connection = Elasticsearch("http://localhost:9200")
+            client = Elasticsearch("http://localhost:9200")
 
             store = ElasticsearchStore(
                 embedding=OpenAIEmbeddings(),
                 index_name="langchain-demo",
-                es_connection=es_connection
+                client=client
+            )
+
+    Class methods (afrom_texts, afrom_documents) accept the same connection options:
+
+    Instantiate from texts with credentials:
+        .. code-block:: python
+
+            from langchain_elasticsearch import ElasticsearchStore
+
+            store = await ElasticsearchStore.afrom_texts(
+                texts=["text1", "text2"],
+                index_name="langchain-demo",
+                es_url="http://localhost:9200"
+            )
+
+    Instantiate from texts with client:
+        .. code-block:: python
+
+            from langchain_elasticsearch import ElasticsearchStore
+            from elasticsearch import Elasticsearch
+
+            client = Elasticsearch("http://localhost:9200")
+            store = await ElasticsearchStore.afrom_texts(
+                texts=["text1", "text2"],
+                index_name="langchain-demo",
+                client=client
             )
 
     Add Documents:
@@ -301,7 +366,7 @@ class ElasticsearchStore(VectorStore):
         index_name: str,
         *,
         embedding: Optional[Embeddings] = None,
-        es_connection: Optional[Elasticsearch] = None,
+        client: Optional[Elasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
@@ -334,7 +399,10 @@ class ElasticsearchStore(VectorStore):
         if embedding:
             embedding_service = EmbeddingServiceAdapter(embedding)
 
-        if not es_connection:
+        # Accept either client OR credentials (one required)
+        if client is not None:
+            es_connection = client
+        elif es_url is not None or es_cloud_id is not None:
             es_connection = create_elasticsearch_client(
                 url=es_url,
                 cloud_id=es_cloud_id,
@@ -342,6 +410,10 @@ class ElasticsearchStore(VectorStore):
                 username=es_user,
                 password=es_password,
                 params=es_params,
+            )
+        else:
+            raise ValueError(
+                "Either 'client' or credentials (es_url, es_cloud_id, etc.) must be provided."
             )
 
         self._store = EVectorStore(
@@ -369,25 +441,6 @@ class ElasticsearchStore(VectorStore):
     @property
     def embeddings(self) -> Optional[Embeddings]:
         return self.embedding
-
-    @staticmethod
-    def connect_to_elasticsearch(
-        *,
-        es_url: Optional[str] = None,
-        cloud_id: Optional[str] = None,
-        api_key: Optional[str] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        es_params: Optional[Dict[str, Any]] = None,
-    ) -> Elasticsearch:
-        return create_elasticsearch_client(
-            url=es_url,
-            cloud_id=cloud_id,
-            api_key=api_key,
-            username=username,
-            password=password,
-            params=es_params,
-        )
 
     def similarity_search(
         self,
@@ -712,7 +765,8 @@ class ElasticsearchStore(VectorStore):
             es_user: Username to use when connecting to Elasticsearch.
             es_password: Password to use when connecting to Elasticsearch.
             es_api_key: API key to use when connecting to Elasticsearch.
-            es_connection: Optional pre-existing Elasticsearch connection.
+            client: Optional pre-existing client connection.
+                Alternatively, provide credentials (es_url, es_cloud_id, etc.).
             vector_query_field: Optional. Name of the field to
                                 store the embedding vectors in.
             query_field: Optional. Name of the field to store the texts in.
@@ -773,7 +827,8 @@ class ElasticsearchStore(VectorStore):
             es_user: Username to use when connecting to Elasticsearch.
             es_password: Password to use when connecting to Elasticsearch.
             es_api_key: API key to use when connecting to Elasticsearch.
-            es_connection: Optional pre-existing Elasticsearch connection.
+            client: Optional pre-existing client connection.
+                Alternatively, provide credentials (es_url, es_cloud_id, etc.).
             vector_query_field: Optional. Name of the field
                                 to store the embedding vectors in.
             query_field: Optional. Name of the field to store the texts in.
