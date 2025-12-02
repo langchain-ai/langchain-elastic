@@ -738,6 +738,7 @@ class AsyncElasticsearchStore(VectorStore):
         embedding: Optional[Embeddings] = None,
         metadatas: Optional[List[Dict[str, Any]]] = None,
         bulk_kwargs: Optional[Dict] = None,
+        client: Optional[AsyncElasticsearch] = None,
         **kwargs: Any,
     ) -> "AsyncElasticsearchStore":
         """Construct ElasticsearchStore wrapper from raw documents.
@@ -785,7 +786,7 @@ class AsyncElasticsearchStore(VectorStore):
         if index_name is None:
             raise ValueError("Please provide an index_name.")
 
-        elasticsearchStore = cls(embedding=embedding, **kwargs)
+        elasticsearchStore = cls(embedding=embedding, client=client, **kwargs)
 
         # Encode the provided texts and add them to the newly created index.
         await elasticsearchStore.aadd_texts(
@@ -800,6 +801,7 @@ class AsyncElasticsearchStore(VectorStore):
         documents: List[Document],
         embedding: Optional[Embeddings] = None,
         bulk_kwargs: Optional[Dict] = None,
+        client: Optional[AsyncElasticsearch] = None,
         **kwargs: Any,
     ) -> "AsyncElasticsearchStore":
         """Construct ElasticsearchStore wrapper from documents.
@@ -842,7 +844,7 @@ class AsyncElasticsearchStore(VectorStore):
         if index_name is None:
             raise ValueError("Please provide an index_name.")
 
-        elasticsearchStore = cls(embedding=embedding, **kwargs)
+        elasticsearchStore = cls(embedding=embedding, client=client, **kwargs)
 
         # Encode the provided texts and add them to the newly created index.
         await elasticsearchStore.aadd_documents(documents, bulk_kwargs=bulk_kwargs)
