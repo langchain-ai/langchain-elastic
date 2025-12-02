@@ -495,9 +495,7 @@ class TestVectorStore:
             mock_evectorstore.return_value.close = AsyncMock()
 
             # Test with minimal parameters (should use defaults)
-            store = AsyncElasticsearchStore(
-                index_name="test_index", client=client
-            )
+            store = AsyncElasticsearchStore(index_name="test_index", client=client)
 
             # Verify EVectorStore was called with default values
             mock_evectorstore.assert_called_once()
