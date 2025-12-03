@@ -198,7 +198,7 @@ class TestVectorStore:
     @pytest.fixture
     def store(self) -> Generator:
         client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
-        store = ElasticsearchStore(index_name="test_index", es_connection=client)
+        store = ElasticsearchStore(index_name="test_index", client=client)
         try:
             yield store
         finally:
@@ -211,7 +211,7 @@ class TestVectorStore:
             index_name="test_index",
             embedding=embeddings,
             strategy=ApproxRetrievalStrategy(hybrid=True),
-            es_connection=client,
+            client=client,
         )
         try:
             yield store
@@ -446,7 +446,7 @@ class TestVectorStore:
 
             store = ElasticsearchStore(
                 index_name="test_index",
-                es_connection=client,
+                client=client,
                 num_dimensions=1536,
             )
 
@@ -493,7 +493,7 @@ class TestVectorStore:
             mock_evectorstore.return_value.close = Mock()
 
             # Test with minimal parameters (should use defaults)
-            store = ElasticsearchStore(index_name="test_index", es_connection=client)
+            store = ElasticsearchStore(index_name="test_index", client=client)
 
             # Verify EVectorStore was called with default values
             mock_evectorstore.assert_called_once()
