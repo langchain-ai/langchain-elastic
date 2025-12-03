@@ -73,16 +73,16 @@ class AsyncElasticsearchStore(VectorStore):
     """`Elasticsearch` vector store.
 
      Setup:
-        Install ``langchain_elasticsearch`` and running the Elasticsearch docker container.
+        Install `langchain_elasticsearch` and running the Elasticsearch docker container.
 
-        .. code-block:: bash
-
-            pip install -qU langchain_elasticsearch
-            docker run -p 9200:9200 \
-              -e "discovery.type=single-node" \
-              -e "xpack.security.enabled=false" \
-              -e "xpack.security.http.ssl.enabled=false" \
-              docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+        ```bash
+        pip install -qU langchain_elasticsearch
+        docker run -p 9200:9200 \
+          -e "discovery.type=single-node" \
+          -e "xpack.security.enabled=false" \
+          -e "xpack.security.http.ssl.enabled=false" \
+          docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+        ```
 
     Key init args — indexing params:
         index_name: str
@@ -113,211 +113,211 @@ class AsyncElasticsearchStore(VectorStore):
             Additional parameters for the Elasticsearch client.
 
     Instantiate:
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch import ElasticsearchStore
+        from langchain_openai import OpenAIEmbeddings
 
-            from langchain_elasticsearch import ElasticsearchStore
-            from langchain_openai import OpenAIEmbeddings
-
-            vector_store = ElasticsearchStore(
-                index_name="langchain-demo",
-                embedding=OpenAIEmbeddings(),
-                es_url="http://localhost:9200",
-            )
+        vector_store = ElasticsearchStore(
+            index_name="langchain-demo",
+            embedding=OpenAIEmbeddings(),
+            es_url="http://localhost:9200",
+        )
+        ```
 
     Instantiate with API key (URL):
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch import ElasticsearchStore
+        from langchain_openai import OpenAIEmbeddings
 
-            from langchain_elasticsearch import ElasticsearchStore
-            from langchain_openai import OpenAIEmbeddings
-
-            store = ElasticsearchStore(
-                index_name="langchain-demo",
-                embedding=OpenAIEmbeddings(),
-                es_url="http://localhost:9200",
-                es_api_key="your-api-key"
-            )
+        store = ElasticsearchStore(
+            index_name="langchain-demo",
+            embedding=OpenAIEmbeddings(),
+            es_url="http://localhost:9200",
+            es_api_key="your-api-key"
+        )
+        ```
 
     Instantiate with username/password (URL):
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch import ElasticsearchStore
+        from langchain_openai import OpenAIEmbeddings
 
-            from langchain_elasticsearch import ElasticsearchStore
-            from langchain_openai import OpenAIEmbeddings
-
-            store = ElasticsearchStore(
-                index_name="langchain-demo",
-                embedding=OpenAIEmbeddings(),
-                es_url="http://localhost:9200",
-                es_user="elastic",
-                es_password="password"
-            )
+        store = ElasticsearchStore(
+            index_name="langchain-demo",
+            embedding=OpenAIEmbeddings(),
+            es_url="http://localhost:9200",
+            es_user="elastic",
+            es_password="password"
+        )
+        ```
 
     If you want to use a cloud hosted Elasticsearch instance, you can pass in the
     cloud_id argument instead of the es_url argument.
 
     Instantiate from cloud (with username/password):
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch.vectorstores import ElasticsearchStore
+        from langchain_openai import OpenAIEmbeddings
 
-            from langchain_elasticsearch.vectorstores import ElasticsearchStore
-            from langchain_openai import OpenAIEmbeddings
-
-            store = ElasticsearchStore(
-                embedding=OpenAIEmbeddings(),
-                index_name="langchain-demo",
-                es_cloud_id="<cloud_id>",
-                es_user="elastic",
-                es_password="<password>"
-            )
+        store = ElasticsearchStore(
+            embedding=OpenAIEmbeddings(),
+            index_name="langchain-demo",
+            es_cloud_id="<cloud_id>",
+            es_user="elastic",
+            es_password="<password>"
+        )
+        ```
 
     Instantiate from cloud (with API key):
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch.vectorstores import ElasticsearchStore
+        from langchain_openai import OpenAIEmbeddings
 
-            from langchain_elasticsearch.vectorstores import ElasticsearchStore
-            from langchain_openai import OpenAIEmbeddings
-
-            store = ElasticsearchStore(
-                embedding=OpenAIEmbeddings(),
-                index_name="langchain-demo",
-                es_cloud_id="<cloud_id>",
-                es_api_key="your-api-key"
-            )
+        store = ElasticsearchStore(
+            embedding=OpenAIEmbeddings(),
+            index_name="langchain-demo",
+            es_cloud_id="<cloud_id>",
+            es_api_key="your-api-key"
+        )
+        ```
 
     You can also connect to an existing Elasticsearch instance by passing in a
     pre-existing Elasticsearch connection via the client argument.
 
     Instantiate from existing connection:
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch.vectorstores import ElasticsearchStore
+        from langchain_openai import OpenAIEmbeddings
+        from elasticsearch import Elasticsearch
 
-            from langchain_elasticsearch.vectorstores import ElasticsearchStore
-            from langchain_openai import OpenAIEmbeddings
-            from elasticsearch import Elasticsearch
+        client = Elasticsearch("http://localhost:9200")
 
-            client = Elasticsearch("http://localhost:9200")
-
-            store = ElasticsearchStore(
-                embedding=OpenAIEmbeddings(),
-                index_name="langchain-demo",
-                client=client
-            )
+        store = ElasticsearchStore(
+            embedding=OpenAIEmbeddings(),
+            index_name="langchain-demo",
+            client=client
+        )
+        ```
 
     Class methods (afrom_texts, afrom_documents) accept the same connection options:
 
     Instantiate from texts with credentials:
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch import ElasticsearchStore
 
-            from langchain_elasticsearch import ElasticsearchStore
-
-            store = await ElasticsearchStore.afrom_texts(
-                texts=["text1", "text2"],
-                index_name="langchain-demo",
-                es_url="http://localhost:9200"
-            )
+        store = await ElasticsearchStore.afrom_texts(
+            texts=["text1", "text2"],
+            index_name="langchain-demo",
+            es_url="http://localhost:9200"
+        )
+        ```
 
     Instantiate from texts with client:
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch import ElasticsearchStore
+        from elasticsearch import Elasticsearch
 
-            from langchain_elasticsearch import ElasticsearchStore
-            from elasticsearch import Elasticsearch
-
-            client = Elasticsearch("http://localhost:9200")
-            store = await ElasticsearchStore.afrom_texts(
-                texts=["text1", "text2"],
-                index_name="langchain-demo",
-                client=client
-            )
+        client = Elasticsearch("http://localhost:9200")
+        store = await ElasticsearchStore.afrom_texts(
+            texts=["text1", "text2"],
+            index_name="langchain-demo",
+            client=client
+        )
+        ```
 
     Add Documents:
-        .. code-block:: python
+        ```python
+        from langchain_core.documents import Document
 
-            from langchain_core.documents import Document
+        document_1 = Document(page_content="foo", metadata={"baz": "bar"})
+        document_2 = Document(page_content="thud", metadata={"bar": "baz"})
+        document_3 = Document(page_content="i will be deleted :(")
 
-            document_1 = Document(page_content="foo", metadata={"baz": "bar"})
-            document_2 = Document(page_content="thud", metadata={"bar": "baz"})
-            document_3 = Document(page_content="i will be deleted :(")
-
-            documents = [document_1, document_2, document_3]
-            ids = ["1", "2", "3"]
-            vector_store.add_documents(documents=documents, ids=ids)
+        documents = [document_1, document_2, document_3]
+        ids = ["1", "2", "3"]
+        vector_store.add_documents(documents=documents, ids=ids)
+        ```
 
     Delete Documents:
-        .. code-block:: python
-
-            vector_store.delete(ids=["3"])
+        ```python
+        vector_store.delete(ids=["3"])
+        ```
 
     Search:
-        .. code-block:: python
+        ```python
+        results = vector_store.similarity_search(query="thud",k=1)
+        for doc in results:
+            print(f"* {doc.page_content} [{doc.metadata}]")
+        ```
 
-            results = vector_store.similarity_search(query="thud",k=1)
-            for doc in results:
-                print(f"* {doc.page_content} [{doc.metadata}]")
-
-        .. code-block:: python
-
-            * thud [{'bar': 'baz'}]
+        ```python
+        * thud [{'bar': 'baz'}]
+        ```
 
     Search with filter:
-        .. code-block:: python
+        ```python
+        results = vector_store.similarity_search(query="thud",k=1,filter=[{"term": {"metadata.bar.keyword": "baz"}}])
+        for doc in results:
+            print(f"* {doc.page_content} [{doc.metadata}]")
+        ```
 
-            results = vector_store.similarity_search(query="thud",k=1,filter=[{"term": {"metadata.bar.keyword": "baz"}}])
-            for doc in results:
-                print(f"* {doc.page_content} [{doc.metadata}]")
-
-        .. code-block:: python
-
-            * thud [{'bar': 'baz'}]
+        ```python
+        * thud [{'bar': 'baz'}]
+        ```
 
     Search with score:
-        .. code-block:: python
+        ```python
+        results = vector_store.similarity_search_with_score(query="qux",k=1)
+        for doc, score in results:
+            print(f"* [SIM={score:3f}] {doc.page_content} [{doc.metadata}]")
+        ```
 
-            results = vector_store.similarity_search_with_score(query="qux",k=1)
-            for doc, score in results:
-                print(f"* [SIM={score:3f}] {doc.page_content} [{doc.metadata}]")
-
-        .. code-block:: python
-
-            * [SIM=0.916092] foo [{'baz': 'bar'}]
+        ```python
+        * [SIM=0.916092] foo [{'baz': 'bar'}]
+        ```
 
     Async:
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch import AsyncElasticsearchStore
 
-            from langchain_elasticsearch import AsyncElasticsearchStore
+        vector_store = AsyncElasticsearchStore(...)
 
-            vector_store = AsyncElasticsearchStore(...)
+        # add documents
+        await vector_store.aadd_documents(documents=documents, ids=ids)
 
-            # add documents
-            await vector_store.aadd_documents(documents=documents, ids=ids)
+        # delete documents
+        await vector_store.adelete(ids=["3"])
 
-            # delete documents
-            await vector_store.adelete(ids=["3"])
+        # search
+        results = vector_store.asimilarity_search(query="thud",k=1)
 
-            # search
-            results = vector_store.asimilarity_search(query="thud",k=1)
+        # search with score
+        results = await vector_store.asimilarity_search_with_score(query="qux",k=1)
+        for doc,score in results:
+            print(f"* [SIM={score:3f}] {doc.page_content} [{doc.metadata}]")
+        ```
 
-            # search with score
-            results = await vector_store.asimilarity_search_with_score(query="qux",k=1)
-            for doc,score in results:
-                print(f"* [SIM={score:3f}] {doc.page_content} [{doc.metadata}]")
-
-        .. code-block:: python
-
-            * [SIM=0.916092] foo [{'baz': 'bar'}]
+        ```python
+        * [SIM=0.916092] foo [{'baz': 'bar'}]
+        ```
 
     Use as Retriever:
 
-        .. code-block:: bash
+        ```bash
+        pip install "elasticsearch[vectorstore_mmr]"
+        ```
 
-            pip install "elasticsearch[vectorstore_mmr]"
+        ```python
+        retriever = vector_store.as_retriever(
+            search_type="mmr",
+            search_kwargs={"k": 1, "fetch_k": 2, "lambda_mult": 0.5},
+        )
+        retriever.invoke("thud")
+        ```
 
-        .. code-block:: python
-
-            retriever = vector_store.as_retriever(
-                search_type="mmr",
-                search_kwargs={"k": 1, "fetch_k": 2, "lambda_mult": 0.5},
-            )
-            retriever.invoke("thud")
-
-        .. code-block:: python
-
-            [Document(metadata={'bar': 'baz'}, page_content='thud')]
+        ```python
+        [Document(metadata={'bar': 'baz'}, page_content='thud')]
+        ```
 
     **Advanced Uses:**
 
@@ -329,35 +329,35 @@ class AsyncElasticsearchStore(VectorStore):
     can pass in the ExactRetrievalStrategy to the ElasticsearchStore constructor.
 
     Use ExactRetrievalStrategy:
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch.vectorstores import ElasticsearchStore
+        from langchain_openai import OpenAIEmbeddings
 
-            from langchain_elasticsearch.vectorstores import ElasticsearchStore
-            from langchain_openai import OpenAIEmbeddings
-
-            store = ElasticsearchStore(
-                embedding=OpenAIEmbeddings(),
-                index_name="langchain-demo",
-                es_url="http://localhost:9200",
-                strategy=ElasticsearchStore.ExactRetrievalStrategy()
-            )
+        store = ElasticsearchStore(
+            embedding=OpenAIEmbeddings(),
+            index_name="langchain-demo",
+            es_url="http://localhost:9200",
+            strategy=ElasticsearchStore.ExactRetrievalStrategy()
+        )
+        ```
 
     Both strategies require that you know the similarity metric you want to use
     when creating the index. The default is cosine similarity, but you can also
     use dot product or euclidean distance.
 
     Use dot product similarity:
-        .. code-block:: python
+        ```python
+        from langchain_elasticsearch.vectorstores import ElasticsearchStore
+        from langchain_openai import OpenAIEmbeddings
+        from langchain_elasticsearch import DistanceStrategy
 
-            from langchain_elasticsearch.vectorstores import ElasticsearchStore
-            from langchain_openai import OpenAIEmbeddings
-            from langchain_elasticsearch import DistanceStrategy
-
-            store = ElasticsearchStore(
-                "langchain-demo",
-                embedding=OpenAIEmbeddings(),
-                es_url="http://localhost:9200",
-                distance_strategy="DOT_PRODUCT"
-            )
+        store = ElasticsearchStore(
+            "langchain-demo",
+            embedding=OpenAIEmbeddings(),
+            es_url="http://localhost:9200",
+            distance_strategy="DOT_PRODUCT"
+        )
+        ```
 
     """  # noqa: E501
 
@@ -744,19 +744,19 @@ class AsyncElasticsearchStore(VectorStore):
         """Construct ElasticsearchStore wrapper from raw documents.
 
         Example:
-            .. code-block:: python
+            ```python
+            from langchain_elasticsearch.vectorstores import ElasticsearchStore
+            from langchain_openai import OpenAIEmbeddings
 
-                from langchain_elasticsearch.vectorstores import ElasticsearchStore
-                from langchain_openai import OpenAIEmbeddings
-
-                db = ElasticsearchStore.from_texts(
-                    texts,
-                    // embeddings optional if using
-                    // a strategy that doesn't require inference
-                    embeddings,
-                    index_name="langchain-demo",
-                    es_url="http://localhost:9200"
-                )
+            db = ElasticsearchStore.from_texts(
+                texts,
+                // embeddings optional if using
+                // a strategy that doesn't require inference
+                embeddings,
+                index_name="langchain-demo",
+                es_url="http://localhost:9200"
+            )
+            ```
 
         Args:
             texts: List of texts to add to the Elasticsearch index.
@@ -807,17 +807,17 @@ class AsyncElasticsearchStore(VectorStore):
         """Construct ElasticsearchStore wrapper from documents.
 
         Example:
-            .. code-block:: python
+            ```python
+            from langchain_elasticsearch.vectorstores import ElasticsearchStore
+            from langchain_openai import OpenAIEmbeddings
 
-                from langchain_elasticsearch.vectorstores import ElasticsearchStore
-                from langchain_openai import OpenAIEmbeddings
-
-                db = ElasticsearchStore.from_documents(
-                    texts,
-                    embeddings,
-                    index_name="langchain-demo",
-                    es_url="http://localhost:9200"
-                )
+            db = ElasticsearchStore.from_documents(
+                texts,
+                embeddings,
+                index_name="langchain-demo",
+                es_url="http://localhost:9200"
+            )
+            ```
 
         Args:
             texts: List of texts to add to the Elasticsearch index.
