@@ -220,9 +220,9 @@ class TestElasticsearchRetriever:
         with pytest.raises(ValueError):
             AsyncElasticsearchRetriever(
                 content_field="text",
-                document_mapper=lambda x: x,  # type: ignore[arg-type]
+                document_mapper=lambda x: x,  # type: ignore[arg-type,return-value]
                 index_name="foo",
-                body_func=lambda x: x,  # type: ignore[arg-type]
+                body_func=lambda x: x,  # type: ignore[arg-type,return-value]
                 client=es_client,
             )
 
@@ -235,6 +235,6 @@ class TestElasticsearchRetriever:
         with pytest.raises(ValueError):
             AsyncElasticsearchRetriever(
                 index_name="foo",
-                body_func=lambda x: x,  # type: ignore[arg-type]
+                body_func=lambda x: x,  # type: ignore[arg-type,return-value]
                 client=es_client,
             )
