@@ -2,7 +2,7 @@
 
 import re
 import uuid
-from typing import Any, Dict
+from typing import Any, Dict, Mapping
 
 import pytest
 from elasticsearch import AsyncElasticsearch
@@ -195,7 +195,7 @@ class TestElasticsearchRetriever:
         def body_func(query: str) -> Dict:
             return {"query": {"match": {text_field: {"query": query}}}}
 
-        def id_as_content(hit: Dict) -> Document:
+        def id_as_content(hit: Mapping[str, Any]) -> Document:
             return Document(page_content=hit["_id"], metadata=meta)
 
         retriever = AsyncElasticsearchRetriever(
@@ -220,9 +220,9 @@ class TestElasticsearchRetriever:
         with pytest.raises(ValueError):
             AsyncElasticsearchRetriever(
                 content_field="text",
-                document_mapper=lambda x: x,
+                document_mapper=lambda x: x,  # type: ignore[arg-type]
                 index_name="foo",
-                body_func=lambda x: x,
+                body_func=lambda x: x,  # type: ignore[arg-type]
                 client=es_client,
             )
 
@@ -235,6 +235,6 @@ class TestElasticsearchRetriever:
         with pytest.raises(ValueError):
             AsyncElasticsearchRetriever(
                 index_name="foo",
-                body_func=lambda x: x,
+                body_func=lambda x: x,  # type: ignore[arg-type]
                 client=es_client,
             )
