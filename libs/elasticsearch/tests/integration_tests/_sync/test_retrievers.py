@@ -54,11 +54,11 @@ class TestElasticsearchRetriever:
             index_name=index_name,
             body_func=lambda _: {"query": {"match_all": {}}},
             content_field="text",
-            es_client=es_client,
+            client=es_client,
         )
 
-        assert retriever.es_client
-        user_agent = retriever.es_client._headers["User-Agent"]
+        assert retriever.client
+        user_agent = retriever.client._headers["User-Agent"]
         assert (
             re.match(r"^langchain-py-r/\d+\.\d+\.\d+(?:rc\d+)?$", user_agent)
             is not None
@@ -87,20 +87,20 @@ class TestElasticsearchRetriever:
         # Map test utility format to retriever format
         config = {}
         if "es_url" in env_config:
-            config["url"] = env_config["es_url"]
+            config["es_url"] = env_config["es_url"]
         if "es_api_key" in env_config:
-            config["api_key"] = env_config["es_api_key"]
+            config["es_api_key"] = env_config["es_api_key"]
         if "es_cloud_id" in env_config:
-            config["cloud_id"] = env_config["es_cloud_id"]
+            config["es_cloud_id"] = env_config["es_cloud_id"]
 
-        retriever = ElasticsearchRetriever.from_es_params(
+        retriever = ElasticsearchRetriever(
             index_name=index_name,
             body_func=body_func,
             content_field=text_field,
             **config,  # type: ignore[arg-type]
         )
 
-        index_test_data(retriever.es_client, index_name, text_field)
+        index_test_data(retriever.client, index_name, text_field)
         result = retriever.get_relevant_documents("foo")
 
         assert {r.page_content for r in result} == {"foo", "foo bar", "foo baz"}
@@ -123,7 +123,7 @@ class TestElasticsearchRetriever:
             index_name=index_name,
             body_func=body_func,
             content_field=text_field,
-            es_client=es_client,
+            client=es_client,
         )
 
         index_test_data(es_client, index_name, text_field)
@@ -160,7 +160,7 @@ class TestElasticsearchRetriever:
             index_name=[index_name_1, index_name_2],
             content_field={index_name_1: text_field_1, index_name_2: text_field_2},
             body_func=body_func,
-            es_client=es_client,
+            client=es_client,
         )
 
         index_test_data(es_client, index_name_1, text_field_1)
@@ -194,7 +194,7 @@ class TestElasticsearchRetriever:
             index_name=index_name,
             body_func=body_func,
             document_mapper=id_as_content,
-            es_client=es_client,
+            client=es_client,
         )
 
         index_test_data(es_client, index_name, text_field)
@@ -213,7 +213,7 @@ class TestElasticsearchRetriever:
                 document_mapper=lambda x: x,
                 index_name="foo",
                 body_func=lambda x: x,
-                es_client=es_client,
+                client=es_client,
             )
 
     @pytest.mark.sync
@@ -226,5 +226,5 @@ class TestElasticsearchRetriever:
             ElasticsearchRetriever(
                 index_name="foo",
                 body_func=lambda x: x,
-                es_client=es_client,
+                client=es_client,
             )
