@@ -16,21 +16,24 @@ class ElasticsearchRetriever(BaseRetriever):
     """`Elasticsearch` retriever.
 
     Setup:
-        Install `langchain_elasticsearch` and start Elasticsearch locally using the start-local script.
+        Install `langchain_elasticsearch` and start Elasticsearch locally using
+        the start-local script.
 
         ```bash
         pip install -qU langchain_elasticsearch
         curl -fsSL https://elastic.co/start-local | sh
         ```
 
-        This will create an `elastic-start-local` folder. To start Elasticsearch and Kibana:
+        This will create an `elastic-start-local` folder. To start Elasticsearch
+        and Kibana:
         ```bash
         cd elastic-start-local
         ./start.sh
         ```
 
-        Elasticsearch will be available at `http://localhost:9200`. The password for the `elastic` user
-        and API key are stored in the `.env` file in the `elastic-start-local` folder.
+        Elasticsearch will be available at `http://localhost:9200`. The password
+        for the `elastic` user and API key are stored in the `.env` file in the
+        `elastic-start-local` folder.
 
     Key init args — query params:
         index_name: Union[str, Sequence[str]]
@@ -360,7 +363,8 @@ class ElasticsearchRetriever(BaseRetriever):
             )
         else:
             raise ValueError(
-                "Either 'client' or credentials (es_url, es_cloud_id, etc.) must be provided."
+                "Either 'client' or credentials (es_url, es_cloud_id, etc.) "
+                "must be provided."
             )
 
         # Apply user agent
