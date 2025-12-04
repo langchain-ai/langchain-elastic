@@ -223,6 +223,7 @@ class ElasticsearchRetriever(BaseRetriever):
         ```
 
 
+
     Use custom document mapper:
         ```python
         from langchain_elasticsearch import ElasticsearchRetriever

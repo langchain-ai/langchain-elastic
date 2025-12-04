@@ -177,7 +177,7 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         from elasticsearch import Elasticsearch
 
         client = Elasticsearch("http://localhost:9200")
-        
+
         # Index sample documents
         client.index(
             index="some-index",
@@ -221,7 +221,8 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         ```python
         * Python is a popular programming language
         ```
-     
+
+
 
     Use custom document mapper:
         ```python
