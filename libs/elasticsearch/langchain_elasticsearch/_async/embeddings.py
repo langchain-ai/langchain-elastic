@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers.vectorstore import AsyncEmbeddingService
@@ -13,187 +13,202 @@ from langchain_elasticsearch.client import create_async_elasticsearch_client
 
 
 class AsyncElasticsearchEmbeddings(Embeddings):
-    """Elasticsearch embedding models.
+    """`Elasticsearch` embedding models.
 
     This class provides an interface to generate embeddings using a model deployed
-    in an Elasticsearch cluster. It requires an Elasticsearch connection object
-    and the model_id of the model deployed in the cluster.
+    in an Elasticsearch cluster. It requires an Elasticsearch connection and the
+    model_id of the model deployed in the cluster.
 
     In Elasticsearch you need to have an embedding model loaded and deployed.
     - https://www.elastic.co/guide/en/elasticsearch/reference/current/infer-trained-model.html
     - https://www.elastic.co/guide/en/machine-learning/current/ml-nlp-deploy-models.html
 
+    Setup:
+        Install `langchain_elasticsearch` and start Elasticsearch locally using
+        the start-local script.
+
+        ```bash
+        pip install -qU langchain_elasticsearch
+        curl -fsSL https://elastic.co/start-local | sh
+        ```
+
+        This will create an `elastic-start-local` folder. To start Elasticsearch
+        and Kibana:
+        ```bash
+        cd elastic-start-local
+        ./start.sh
+        ```
+
+        Elasticsearch will be available at `http://localhost:9200`. The password
+        for the `elastic` user and API key are stored in the `.env` file in the
+        `elastic-start-local` folder.
+
+    Key init args:
+        model_id: str
+            The model_id of the model deployed in the Elasticsearch cluster.
+        input_field: str
+            The name of the key for the input text field in the document.
+            Defaults to 'text_field'.
+
+    Key init args — client params:
+        client: Optional[AsyncElasticsearch or Elasticsearch]
+            Pre-existing Elasticsearch connection. Either provide this OR credentials.
+        es_url: Optional[str]
+            URL of the Elasticsearch instance to connect to.
+        es_cloud_id: Optional[str]
+            Cloud ID of the Elasticsearch instance to connect to.
+        es_user: Optional[str]
+            Username to use when connecting to Elasticsearch.
+        es_api_key: Optional[str]
+            API key to use when connecting to Elasticsearch.
+        es_password: Optional[str]
+            Password to use when connecting to Elasticsearch.
+
+    Instantiate:
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddings
+
+        embeddings = ElasticsearchEmbeddings(
+            model_id="your_model_id",
+            es_url="http://localhost:9200"
+        )
+        ```
+
+    Instantiate with API key (URL):
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddings
+
+        embeddings = ElasticsearchEmbeddings(
+            model_id="your_model_id",
+            es_url="http://localhost:9200",
+            es_api_key="your-api-key"
+        )
+        ```
+
+    Instantiate with username/password (URL):
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddings
+
+        embeddings = ElasticsearchEmbeddings(
+            model_id="your_model_id",
+            es_url="http://localhost:9200",
+            es_user="elastic",
+            es_password="password"
+        )
+        ```
+
+    If you want to use a cloud hosted Elasticsearch instance, you can pass in the
+    es_cloud_id argument instead of the es_url argument.
+
+    Instantiate from cloud (with username/password):
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddings
+
+        embeddings = ElasticsearchEmbeddings(
+            model_id="your_model_id",
+            es_cloud_id="<cloud_id>",
+            es_user="elastic",
+            es_password="<password>"
+        )
+        ```
+
+    Instantiate from cloud (with API key):
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddings
+
+        embeddings = ElasticsearchEmbeddings(
+            model_id="your_model_id",
+            es_cloud_id="<cloud_id>",
+            es_api_key="your-api-key"
+        )
+        ```
+
+    You can also connect to an existing Elasticsearch instance by passing in a
+    pre-existing Elasticsearch connection via the client argument.
+
+    Instantiate from existing connection:
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddings
+        from elasticsearch import Elasticsearch
+
+        client = Elasticsearch("http://localhost:9200")
+        embeddings = ElasticsearchEmbeddings(
+            model_id="your_model_id",
+            client=client
+        )
+        ```
+
+    Generate embeddings:
+        ```python
+        documents = [
+            "This is an example document.",
+            "Another example document to generate embeddings for.",
+        ]
+        embeddings_list = embeddings.embed_documents(documents)
+        ```
+
+    Generate query embedding:
+        ```python
+        query_embedding = embeddings.embed_query("What is this about?")
+        ```
+
     For synchronous applications, use the `ElasticsearchEmbeddings` class.
-    For asyhchronous applications, use the `AsyncElasticsearchEmbeddings` class.
+    For asynchronous applications, use the `AsyncElasticsearchEmbeddings` class.
     """  # noqa: E501
 
     def __init__(
         self,
-        client: AsyncElasticsearch,
         model_id: str,
         *,
         input_field: str = "text_field",
-    ):
-        """
-        Initialize the ElasticsearchEmbeddings instance.
-
-        Args:
-            client (Elasticsearch or AsyncElasticsearch): An Elasticsearch client
-                object or an AsyncElasticsearch client object.
-            model_id (str): The model_id of the model deployed in the Elasticsearch
-                cluster.
-            input_field (str): The name of the key for the input text field in the
-                document. Defaults to 'text_field'.
-        """
-        # Apply User-Agent for telemetry
-        # (applies to both passed and internally created clients)
-        self.client = async_with_user_agent_header(client, "langchain-py-e")
-        self.model_id = model_id
-        self.input_field = input_field
-
-    @classmethod
-    def from_credentials(
-        cls,
-        model_id: str,
-        *,
+        client: Optional[AsyncElasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
-        es_api_key: Optional[str] = None,
         es_user: Optional[str] = None,
+        es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
-        es_params: Optional[Dict[str, Any]] = None,
-        input_field: str = "text_field",
-    ) -> AsyncElasticsearchEmbeddings:
-        """Instantiate embeddings from Elasticsearch credentials.
+    ):
+        """Initialize the ElasticsearchEmbeddings instance.
 
         Args:
             model_id (str): The model_id of the model deployed in the Elasticsearch
                 cluster.
             input_field (str): The name of the key for the input text field in the
                 document. Defaults to 'text_field'.
-            es_url: (str, optional): URL of the Elasticsearch instance to connect to.
-            es_cloud_id: (str, optional): The Elasticsearch cloud ID to connect to.
-            es_api_key: (str, optional): API key to use connecting to Elasticsearch.
-            es_user: (str, optional): Elasticsearch username.
-            es_password: (str, optional): Elasticsearch password.
-            es_params: (dict, optional): Additional parameters for the
-                Elasticsearch client.
-
-        Example:
-            .. code-block:: python
-
-            from langchain_elasticserach.embeddings import ElasticsearchEmbeddings
-
-
-                # Define the model ID and input field name (if different from default)
-                model_id = "your_model_id"
-                # Optional, only if different from 'text_field'
-                input_field = "your_input_field"
-
-                # Provide either es_url (local) or es_cloud_id (cloud).
-                # For authentication, provide either es_api_key or
-                # (es_user + es_password).
-                embeddings = ElasticsearchEmbeddings.from_credentials(
-                    model_id,
-                    input_field=input_field,
-                    es_cloud_id="foo",
-                    es_api_key="bar",
-                )
-
-                # Or use local URL with API key:
-                embeddings = ElasticsearchEmbeddings.from_credentials(
-                    model_id,
-                    es_url="http://localhost:9200",
-                    es_api_key="bar"
-                )
-
-                # Or use username/password authentication:
-                embeddings = ElasticsearchEmbeddings.from_credentials(
-                    model_id,
-                    es_url="http://localhost:9200",
-                    es_user="elastic",
-                    es_password="password"
-                )
-
-                # Note: To use environment variables, read them yourself:
-                # import os
-                # embeddings = ElasticsearchEmbeddings.from_credentials(
-                #     model_id,
-                #     es_cloud_id=os.environ.get("ES_CLOUD_ID"),
-                #     es_api_key=os.environ.get("ES_API_KEY"),
-                # )
-
-                documents = [
-                    "This is an example document.",
-                    "Another example document to generate embeddings for.",
-                ]
-                embeddings_generator.embed_documents(documents)
+            client (AsyncElasticsearch or Elasticsearch, optional):
+                Pre-existing Elasticsearch connection. Either provide this OR
+                credentials.
+            es_url (str, optional): URL of the Elasticsearch instance to connect to.
+            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+            es_user (str, optional): Username to use when connecting to
+                Elasticsearch.
+            es_api_key (str, optional): API key to use when connecting to
+                Elasticsearch.
+            es_password (str, optional): Password to use when connecting to
+                Elasticsearch.
         """
+        # Accept either client OR credentials (one required)
+        if client is not None:
+            es_connection = client
+        elif es_url is not None or es_cloud_id is not None:
+            es_connection = create_async_elasticsearch_client(
+                url=es_url,
+                cloud_id=es_cloud_id,
+                api_key=es_api_key,
+                username=es_user,
+                password=es_password,
+            )
+        else:
+            raise ValueError(
+                "Either 'client' or credentials (es_url, es_cloud_id, etc.) "
+                "must be provided."
+            )
 
-        # Connect to Elasticsearch using create_elasticsearch_client for consistency
-        es_connection = create_async_elasticsearch_client(
-            url=es_url,
-            cloud_id=es_cloud_id,
-            api_key=es_api_key,
-            username=es_user,
-            password=es_password,
-            params=es_params,
-        )
-        return cls(es_connection, model_id, input_field=input_field)
-
-    @classmethod
-    def from_es_connection(
-        cls,
-        model_id: str,
-        es_connection: AsyncElasticsearch,
-        input_field: str = "text_field",
-    ) -> AsyncElasticsearchEmbeddings:
-        """
-        Instantiate embeddings from an existing Elasticsearch connection.
-
-        This method provides a way to create an instance of the ElasticsearchEmbeddings
-        class using an existing Elasticsearch connection.
-
-        Args:
-        model_id (str): The model_id of the model deployed in the Elasticsearch cluster.
-        es_connection (elasticsearch.Elasticsearch): An existing Elasticsearch
-        connection object. input_field (str, optional): The name of the key for the
-        input text field in the document. Defaults to 'text_field'.
-
-        Returns:
-        ElasticsearchEmbeddings: An instance of the ElasticsearchEmbeddings class.
-
-        Example:
-            .. code-block:: python
-
-                from elasticsearch import Elasticsearch
-
-                from langchain_elasticsearch.embeddings import ElasticsearchEmbeddings
-
-                # Define the model ID and input field name (if different from default)
-                model_id = "your_model_id"
-                # Optional, only if different from 'text_field'
-                input_field = "your_input_field"
-
-                # Create Elasticsearch connection
-                es_connection = Elasticsearch(
-                    hosts=["localhost:9200"], http_auth=("user", "password")
-                )
-
-                # Instantiate ElasticsearchEmbeddings using the existing connection
-                embeddings = ElasticsearchEmbeddings.from_es_connection(
-                    model_id,
-                    es_connection,
-                    input_field=input_field,
-                )
-
-                documents = [
-                    "This is an example document.",
-                    "Another example document to generate embeddings for.",
-                ]
-                embeddings_generator.embed_documents(documents)
-        """
-        return cls(es_connection, model_id, input_field=input_field)
+        # Apply User-Agent for telemetry
+        # (applies to both passed and internally created clients)
+        self.client = async_with_user_agent_header(es_connection, "langchain-py-e")
+        self.model_id = model_id
+        self.input_field = input_field
 
     async def _embedding_func(self, texts: List[str]) -> List[List[float]]:
         """
