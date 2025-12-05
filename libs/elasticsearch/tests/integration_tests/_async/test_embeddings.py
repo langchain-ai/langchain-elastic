@@ -27,7 +27,7 @@ async def test_elasticsearch_embedding_documents() -> None:
         )
 
     documents = ["foo bar", "bar foo", "foo"]
-    embedding = AsyncElasticsearchEmbeddings.from_es_connection(MODEL_ID, client)
+    embedding = AsyncElasticsearchEmbeddings(model_id=MODEL_ID, client=client)
     output = await embedding.aembed_documents(documents)
     await client.close()
     assert len(output) == 3
@@ -47,7 +47,7 @@ async def test_elasticsearch_embedding_query() -> None:
         )
 
     document = "foo bar"
-    embedding = AsyncElasticsearchEmbeddings.from_es_connection(MODEL_ID, client)
+    embedding = AsyncElasticsearchEmbeddings(model_id=MODEL_ID, client=client)
     output = await embedding.aembed_query(document)
     await client.close()
     assert len(output) == NUM_DIMENSIONS
