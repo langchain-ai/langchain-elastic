@@ -198,7 +198,7 @@ class TestVectorStore:
     @pytest.fixture
     def store(self) -> Generator:
         client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
-        store = ElasticsearchStore(index_name="test_index", es_connection=client)
+        store = ElasticsearchStore(index_name="test_index", client=client)
         try:
             yield store
         finally:
@@ -211,7 +211,7 @@ class TestVectorStore:
             index_name="test_index",
             embedding=embeddings,
             strategy=ApproxRetrievalStrategy(hybrid=True),
-            es_connection=client,
+            client=client,
         )
         try:
             yield store
@@ -434,15 +434,19 @@ class TestVectorStore:
         # Remove self from the parameters set
         evectorstore_params = set(evectorstore_sig.parameters.keys()) - {"self"}
 
-        with patch(
-            "langchain_elasticsearch._sync.vectorstores.EVectorStore"
-        ) as mock_evectorstore:
+        # Use variable so unasync can transform the path
+        # Break up the string so unasync can transform _async to _sync
+        async_or_sync_module = "_sync"
+        evectorstore_path = (
+            f"langchain_elasticsearch.{async_or_sync_module}.vectorstores.EVectorStore"
+        )
+        with patch(evectorstore_path) as mock_evectorstore:
             # Mock the close method
             mock_evectorstore.return_value.close = Mock()
 
             store = ElasticsearchStore(
                 index_name="test_index",
-                es_connection=client,
+                client=client,
                 num_dimensions=1536,
             )
 
@@ -478,14 +482,18 @@ class TestVectorStore:
 
         client = Elasticsearch(hosts=["http://dummy:9200"])
 
-        with patch(
-            "langchain_elasticsearch._sync.vectorstores.EVectorStore"
-        ) as mock_evectorstore:
+        # Use variable so unasync can transform the path
+        # Break up the string so unasync can transform _async to _sync
+        async_or_sync_module = "_sync"
+        evectorstore_path = (
+            f"langchain_elasticsearch.{async_or_sync_module}.vectorstores.EVectorStore"
+        )
+        with patch(evectorstore_path) as mock_evectorstore:
             # Mock the close method
             mock_evectorstore.return_value.close = Mock()
 
             # Test with minimal parameters (should use defaults)
-            store = ElasticsearchStore(index_name="test_index", es_connection=client)
+            store = ElasticsearchStore(index_name="test_index", client=client)
 
             # Verify EVectorStore was called with default values
             mock_evectorstore.assert_called_once()

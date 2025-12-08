@@ -16,63 +16,202 @@ logger = logging.getLogger(__name__)
 
 
 class ElasticsearchChatMessageHistory(BaseChatMessageHistory):
-    """Chat message history that stores history in Elasticsearch.
+    """`Elasticsearch` chat message history.
 
-    Args:
-        es_url: URL of the Elasticsearch instance to connect to.
-        es_cloud_id: Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Username to use when connecting to Elasticsearch.
-        es_password: Password to use when connecting to Elasticsearch.
-        es_api_key: API key to use when connecting to Elasticsearch.
-        es_connection: Optional pre-existing Elasticsearch connection.
-        esnsure_ascii: Used to escape ASCII symbols in json.dumps. Defaults to True.
-        index: Name of the index to use.
-        session_id: Arbitrary key that is used to store the messages
-            of a single chat session.
+    Stores chat message history in Elasticsearch for persistence across sessions.
+
+    Setup:
+        Install `langchain_elasticsearch` and start Elasticsearch locally using
+        the start-local script.
+
+        ```bash
+        pip install -qU langchain_elasticsearch
+        curl -fsSL https://elastic.co/start-local | sh
+        ```
+
+        This will create an `elastic-start-local` folder. To start Elasticsearch
+        and Kibana:
+        ```bash
+        cd elastic-start-local
+        ./start.sh
+        ```
+
+        Elasticsearch will be available at `http://localhost:9200`. The password
+        for the `elastic` user and API key are stored in the `.env` file in the
+        `elastic-start-local` folder.
+
+    Key init args:
+        index: str
+            Name of the Elasticsearch index to use for storing messages.
+        session_id: str
+            Arbitrary key that is used to store the messages of a single chat
+            session.
+        ensure_ascii: Optional[bool]
+            Used to escape ASCII symbols in json.dumps. Defaults to True.
+
+    Key init args — client params:
+        client: Optional[AsyncElasticsearch or Elasticsearch]
+            Pre-existing Elasticsearch connection. Either provide this OR
+            credentials.
+        es_url: Optional[str]
+            URL of the Elasticsearch instance to connect to.
+        es_cloud_id: Optional[str]
+            Cloud ID of the Elasticsearch instance to connect to.
+        es_user: Optional[str]
+            Username to use when connecting to Elasticsearch.
+        es_api_key: Optional[str]
+            API key to use when connecting to Elasticsearch.
+        es_password: Optional[str]
+            Password to use when connecting to Elasticsearch.
+
+    Instantiate:
+        ```python
+        from langchain_elasticsearch import ElasticsearchChatMessageHistory
+
+        history = ElasticsearchChatMessageHistory(
+            index="chat-history",
+            session_id="user-123",
+            es_url="http://localhost:9200"
+        )
+        ```
+
+    Instantiate with API key (URL):
+        ```python
+        from langchain_elasticsearch import ElasticsearchChatMessageHistory
+
+        history = ElasticsearchChatMessageHistory(
+            index="chat-history",
+            session_id="user-123",
+            es_url="http://localhost:9200",
+            es_api_key="your-api-key"
+        )
+        ```
+
+    Instantiate with username/password (URL):
+        ```python
+        from langchain_elasticsearch import ElasticsearchChatMessageHistory
+
+        history = ElasticsearchChatMessageHistory(
+            index="chat-history",
+            session_id="user-123",
+            es_url="http://localhost:9200",
+            es_user="elastic",
+            es_password="password"
+        )
+        ```
+
+    If you want to use a cloud hosted Elasticsearch instance, you can pass in the
+    es_cloud_id argument instead of the es_url argument.
+
+    Instantiate from cloud (with API key):
+        ```python
+        from langchain_elasticsearch import ElasticsearchChatMessageHistory
+
+        history = ElasticsearchChatMessageHistory(
+            index="chat-history",
+            session_id="user-123",
+            es_cloud_id="<cloud_id>",
+            es_api_key="your-api-key"
+        )
+        ```
+
+    You can also connect to an existing Elasticsearch instance by passing in a
+    pre-existing Elasticsearch connection via the client argument.
+
+    Instantiate from existing connection:
+        ```python
+        from langchain_elasticsearch import ElasticsearchChatMessageHistory
+        from elasticsearch import Elasticsearch
+
+        client = Elasticsearch("http://localhost:9200")
+        history = ElasticsearchChatMessageHistory(
+            index="chat-history",
+            session_id="user-123",
+            client=client
+        )
+        ```
+
+    Add messages:
+        ```python
+        from langchain_core.messages import HumanMessage, AIMessage
+
+        history.add_message(HumanMessage(content="Hello!"))
+        history.add_message(AIMessage(content="Hi there! How can I help?"))
+        ```
+
+    Get messages:
+        ```python
+        messages = history.messages
+        for msg in messages:
+            print(f"{msg.type}: {msg.content}")
+        ```
+
+    Clear history:
+        ```python
+        history.clear()
+        ```
 
     For synchronous applications, use the `ElasticsearchChatMessageHistory` class.
-    For asyhchronous applications, use the `AsyncElasticsearchChatMessageHistory` class.
-    """
+    For asynchronous applications, use the `AsyncElasticsearchChatMessageHistory`
+    class.
+    """  # noqa: E501
 
     def __init__(
         self,
         index: str,
         session_id: str,
         *,
-        es_connection: Optional["Elasticsearch"] = None,
+        ensure_ascii: Optional[bool] = True,
+        client: Optional["Elasticsearch"] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
-        esnsure_ascii: Optional[bool] = True,
     ):
+        """Initialize the ElasticsearchChatMessageHistory instance.
+
+        Args:
+            index (str): Name of the Elasticsearch index to use for storing
+                messages.
+            session_id (str): Arbitrary key that is used to store the messages
+                of a single chat session.
+            ensure_ascii (bool, optional): Used to escape ASCII symbols in
+                json.dumps. Defaults to True.
+            client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+                connection. Either provide this OR credentials.
+            es_url (str, optional): URL of the Elasticsearch instance to
+                connect to.
+            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+            es_user (str, optional): Username to use when connecting to
+                Elasticsearch.
+            es_api_key (str, optional): API key to use when connecting to
+                Elasticsearch.
+            es_password (str, optional): Password to use when connecting to
+                Elasticsearch.
+        """
         self.index: str = index
         self.session_id: str = session_id
-        self.ensure_ascii = esnsure_ascii
+        self.ensure_ascii = ensure_ascii
 
-        # Initialize Elasticsearch client from passed client arg or connection info
-        if es_connection is not None:
-            self.client = es_connection
+        # Accept either client OR credentials (one required)
+        if client is not None:
+            es_connection = client
         elif es_url is not None or es_cloud_id is not None:
-            try:
-                self.client = create_elasticsearch_client(
-                    url=es_url,
-                    username=es_user,
-                    password=es_password,
-                    cloud_id=es_cloud_id,
-                    api_key=es_api_key,
-                )
-            except Exception as err:
-                logger.error(f"Error connecting to Elasticsearch: {err}")
-                raise err
+            es_connection = create_elasticsearch_client(
+                url=es_url,
+                username=es_user,
+                password=es_password,
+                cloud_id=es_cloud_id,
+                api_key=es_api_key,
+            )
         else:
             raise ValueError(
-                """Either provide a pre-existing Elasticsearch connection, \
-                or valid credentials for creating a new connection."""
+                "Either 'client' or credentials (es_url, es_cloud_id, etc.) "
+                "must be provided."
             )
 
-        self.client = with_user_agent_header(self.client, "langchain-py-ms")
+        self.client = with_user_agent_header(es_connection, "langchain-py-ms")
         self.created = False
 
     def create_if_missing(self) -> None:

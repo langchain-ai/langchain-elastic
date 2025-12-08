@@ -544,7 +544,7 @@ class TestElasticsearch:
         mmr_output = docsearch.max_marginal_relevance_search(texts[0], k=2, fetch_k=3)
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
-        # baz is more similar to foo when using ConsistentFakeEmbeddings
+        # baz is more similar to foo when using this embedding
         assert mmr_output[1].page_content == texts[2]
 
         mmr_output = docsearch.max_marginal_relevance_search(

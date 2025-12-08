@@ -29,7 +29,7 @@ jobs:
         # Starting new jobs is also relatively slow,
         # so linting on fewer versions makes CI faster.
         python-version:
-          - "3.9"
+          - "3.10"
           - "3.13"
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +40,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           poetry-version: ${{ env.POETRY_VERSION }}
           working-directory: ${{ inputs.working-directory }}
-          cache-key: lint-with-extras
+          cache-key: lint-with-extras-codegen
 
       - name: Check Poetry File
         shell: bash
@@ -55,12 +55,14 @@ jobs:
         # This helps catch errors that require dependencies to be spotted, for example:
         # https://github.com/langchain-ai/langchain/pull/10249/files#diff-935185cd488d015f026dcd9e19616ff62863e8cde8c0bee70318d3ccbca98341
         #
+        # Also installs codegen dependencies (unasync) needed for run_unasync_check.
+        #
         # If you change this configuration, make sure to change the `cache-key`
         # in the `poetry_setup` action above to stop using the old cache.
         # It doesn't matter how you change it, any change will cause a cache-bust.
         working-directory: ${{ inputs.working-directory }}
         run: |
-          poetry install --with lint,typing
+          poetry install --with lint,typing,codegen
 
       - name: Get .mypy_cache to speed up mypy
         uses: actions/cache@v4
@@ -95,3 +97,8 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
         run: |
           make lint_tests
+
+      - name: Check that sync files match unasync-generated files
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          make run_unasync_check
