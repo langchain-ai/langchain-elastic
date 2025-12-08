@@ -72,17 +72,25 @@ def _convert_retrieval_strategy(
 class ElasticsearchStore(VectorStore):
     """`Elasticsearch` vector store.
 
-     Setup:
-        Install `langchain_elasticsearch` and running the Elasticsearch docker container.
+    Setup:
+        Install `langchain_elasticsearch` and start Elasticsearch locally using
+        the start-local script.
 
         ```bash
         pip install -qU langchain_elasticsearch
-        docker run -p 9200:9200 \
-          -e "discovery.type=single-node" \
-          -e "xpack.security.enabled=false" \
-          -e "xpack.security.http.ssl.enabled=false" \
-          docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+        curl -fsSL https://elastic.co/start-local | sh
         ```
+
+        This will create an `elastic-start-local` folder. To start Elasticsearch
+        and Kibana:
+        ```bash
+        cd elastic-start-local
+        ./start.sh
+        ```
+
+        Elasticsearch will be available at `http://localhost:9200`. The password
+        for the `elastic` user and API key are stored in the `.env` file in the
+        `elastic-start-local` folder.
 
     Key init args — indexing params:
         index_name: str
