@@ -371,7 +371,6 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         # Apply user agent
         es_connection = async_with_user_agent_header(es_connection, "langchain-py-r")
 
-        # Pass ALL Pydantic fields to super().__init__() so Pydantic sets them
         super().__init__(
             client=es_connection,
             index_name=index_name,
