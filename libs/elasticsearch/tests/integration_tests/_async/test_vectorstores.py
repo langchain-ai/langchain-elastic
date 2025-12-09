@@ -823,38 +823,51 @@ class TestElasticsearch:
         # 2. check query result is okay
         es_output = await docsearch.client.search(
             index=index_name,
-            query={
-                "bool": {
-                    "filter": [],
-                    "must": [{"match": {"text": {"query": "foo"}}}],
+            retriever={
+                "rrf": {
+                    "retrievers": [
+                        {
+                            "standard": {
+                                "query": {
+                                    "bool": {
+                                        "filter": [],
+                                        "must": [{"match": {"text": {"query": "foo"}}}],
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "knn": {
+                                "field": "vector",
+                                "filter": [],
+                                "k": 3,
+                                "num_candidates": 50,
+                                "query_vector": [
+                                    0.06,
+                                    0.07,
+                                    0.01,
+                                    0.08,
+                                    0.03,
+                                    0.07,
+                                    0.09,
+                                    0.03,
+                                    0.09,
+                                    0.09,
+                                    0.04,
+                                    0.03,
+                                    0.08,
+                                    0.07,
+                                    0.06,
+                                    0.08,
+                                ],
+                            }
+                        },
+                    ],
+                    "rank_constant": 1,
+                    "rank_window_size": 5,
                 }
             },
-            knn={
-                "field": "vector",
-                "filter": [],
-                "k": 3,
-                "num_candidates": 50,
-                "query_vector": [
-                    0.06,
-                    0.07,
-                    0.01,
-                    0.08,
-                    0.03,
-                    0.07,
-                    0.09,
-                    0.03,
-                    0.09,
-                    0.09,
-                    0.04,
-                    0.03,
-                    0.08,
-                    0.07,
-                    0.06,
-                    0.08,
-                ],
-            },
             size=3,
-            rank={"rrf": {"rank_constant": 1, "rank_window_size": 5}},
         )
 
         assert [o.page_content for o in output] == [
