@@ -46,64 +46,172 @@ async def _manage_cache_index(
 
 
 class AsyncElasticsearchCache(BaseCache):
-    """An Elasticsearch cache integration for LLMs.
+    """`Elasticsearch` LLM cache.
 
-    For synchronous applications, use the ``ElasticsearchCache`` class.
-    For asyhchronous applications, use the ``AsyncElasticsearchCache`` class.
-    """
+    Caches LLM responses in Elasticsearch to avoid repeated calls for identical
+    prompts.
+
+    Setup:
+        Install `langchain_elasticsearch` and start Elasticsearch locally using
+        the start-local script.
+
+        ```bash
+        pip install -qU langchain_elasticsearch
+        curl -fsSL https://elastic.co/start-local | sh
+        ```
+
+        This will create an `elastic-start-local` folder. To start Elasticsearch
+        and Kibana:
+        ```bash
+        cd elastic-start-local
+        ./start.sh
+        ```
+
+        Elasticsearch will be available at `http://localhost:9200`. The password
+        for the `elastic` user and API key are stored in the `.env` file in the
+        `elastic-start-local` folder.
+
+    Key init args:
+        index_name: str
+            The name of the index or alias to use for the cache.
+        store_input: bool
+            Whether to store the LLM input (prompt) in the cache. Default True.
+        store_input_params: bool
+            Whether to store the LLM parameters in the cache. Default True.
+        metadata: Optional[Dict[str, Any]]
+            Additional metadata to store in the cache for filtering.
+
+    Key init args — client params:
+        client: Optional[AsyncElasticsearch or Elasticsearch]
+            Pre-existing Elasticsearch connection. Either provide this OR
+            credentials.
+        es_url: Optional[str]
+            URL of the Elasticsearch instance to connect to.
+        es_cloud_id: Optional[str]
+            Cloud ID of the Elasticsearch instance to connect to.
+        es_user: Optional[str]
+            Username to use when connecting to Elasticsearch.
+        es_api_key: Optional[str]
+            API key to use when connecting to Elasticsearch.
+        es_password: Optional[str]
+            Password to use when connecting to Elasticsearch.
+
+    Instantiate:
+        ```python
+        from langchain_elasticsearch import ElasticsearchCache
+
+        cache = ElasticsearchCache(
+            index_name="llm-cache",
+            es_url="http://localhost:9200"
+        )
+        ```
+
+    Instantiate with API key:
+        ```python
+        from langchain_elasticsearch import ElasticsearchCache
+
+        cache = ElasticsearchCache(
+            index_name="llm-cache",
+            es_url="http://localhost:9200",
+            es_api_key="your-api-key"
+        )
+        ```
+
+    Instantiate from cloud:
+        ```python
+        from langchain_elasticsearch import ElasticsearchCache
+
+        cache = ElasticsearchCache(
+            index_name="llm-cache",
+            es_cloud_id="<cloud_id>",
+            es_api_key="your-api-key"
+        )
+        ```
+
+    Instantiate from existing connection:
+        ```python
+        from langchain_elasticsearch import ElasticsearchCache
+        from elasticsearch import Elasticsearch
+
+        client = Elasticsearch("http://localhost:9200")
+        cache = ElasticsearchCache(
+            index_name="llm-cache",
+            client=client
+        )
+        ```
+
+    Use with LangChain:
+        ```python
+        from langchain.globals import set_llm_cache
+        from langchain_elasticsearch import ElasticsearchCache
+
+        set_llm_cache(ElasticsearchCache(
+            index_name="llm-cache",
+            es_url="http://localhost:9200"
+        ))
+        ```
+
+    For synchronous applications, use the `ElasticsearchCache` class.
+    For asynchronous applications, use the `AsyncElasticsearchCache` class.
+    """  # noqa: E501
 
     def __init__(
         self,
         index_name: str,
+        *,
         store_input: bool = True,
         store_input_params: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
-        *,
+        client: Optional[AsyncElasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
-        es_params: Optional[Dict[str, Any]] = None,
     ):
-        """
-        Initialize the Elasticsearch cache store by specifying the index/alias
-        to use and determining which additional information (like input, input
-        parameters, and any other metadata) should be stored in the cache.
+        """Initialize the Elasticsearch cache store.
 
         Args:
-            index_name (str): The name of the index or the alias to use for the cache.
-                If they do not exist an index is created,
-                according to the default mapping defined by the `mapping` property.
-            store_input (bool): Whether to store the LLM input in the cache, i.e.,
-                the input prompt. Default to True.
-            store_input_params (bool): Whether to store the input parameters in the
-                cache, i.e., the LLM parameters used to generate the LLM response.
-                Default to True.
-            metadata (Optional[dict]): Additional metadata to store in the cache,
-                for filtering purposes. This must be JSON serializable in an
-                Elasticsearch document. Default to None.
-            es_url: URL of the Elasticsearch instance to connect to.
-            es_cloud_id: Cloud ID of the Elasticsearch instance to connect to.
-            es_user: Username to use when connecting to Elasticsearch.
-            es_password: Password to use when connecting to Elasticsearch.
-            es_api_key: API key to use when connecting to Elasticsearch.
-            es_params: Other parameters for the Elasticsearch client.
+            index_name (str): The name of the index or alias to use for the
+                cache. If it doesn't exist, an index is created according to
+                the default mapping.
+            store_input (bool): Whether to store the LLM input (prompt) in the
+                cache. Default True.
+            store_input_params (bool): Whether to store the LLM parameters in
+                the cache. Default True.
+            metadata (dict, optional): Additional metadata to store in the
+                cache for filtering. Must be JSON serializable.
+            client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+                connection. Either provide this OR credentials.
+            es_url (str, optional): URL of the Elasticsearch instance.
+            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+            es_user (str, optional): Username for Elasticsearch.
+            es_api_key (str, optional): API key for Elasticsearch.
+            es_password (str, optional): Password for Elasticsearch.
         """
-
         self._index_name = index_name
         self._store_input = store_input
         self._store_input_params = store_input_params
         self._metadata = metadata
-        self._es_client = create_async_elasticsearch_client(
-            url=es_url,
-            cloud_id=es_cloud_id,
-            api_key=es_api_key,
-            username=es_user,
-            password=es_password,
-            params=es_params,
-            user_agent="langchain-py-c",
-        )
+
+        # Accept either client OR credentials (one required)
+        if client is not None:
+            self._es_client = client
+        elif es_url is not None or es_cloud_id is not None:
+            self._es_client = create_async_elasticsearch_client(
+                url=es_url,
+                cloud_id=es_cloud_id,
+                api_key=es_api_key,
+                username=es_user,
+                password=es_password,
+                user_agent="langchain-py-c",
+            )
+        else:
+            raise ValueError(
+                "Either 'client' or credentials (es_url, es_cloud_id, etc.) "
+                "must be provided."
+            )
+
         self._is_alias: Optional[bool] = None
 
     async def is_alias(self) -> bool:
@@ -202,68 +310,184 @@ class AsyncElasticsearchCache(BaseCache):
 
 
 class AsyncElasticsearchEmbeddingsCache(ByteStore):
-    """An Elasticsearch store for caching embeddings.
+    """`Elasticsearch` embeddings cache.
+
+    Caches embeddings in Elasticsearch to avoid repeated embedding computations.
+
+    Setup:
+        Install `langchain_elasticsearch` and start Elasticsearch locally using
+        the start-local script.
+
+        ```bash
+        pip install -qU langchain_elasticsearch
+        curl -fsSL https://elastic.co/start-local | sh
+        ```
+
+        This will create an `elastic-start-local` folder. To start Elasticsearch
+        and Kibana:
+        ```bash
+        cd elastic-start-local
+        ./start.sh
+        ```
+
+        Elasticsearch will be available at `http://localhost:9200`. The password
+        for the `elastic` user and API key are stored in the `.env` file in the
+        `elastic-start-local` folder.
+
+    Key init args:
+        index_name: str
+            The name of the index or alias to use for the cache.
+        store_input: bool
+            Whether to store the input text in the cache. Default True.
+        metadata: Optional[Dict[str, Any]]
+            Additional metadata to store in the cache for filtering.
+        namespace: Optional[str]
+            A namespace to organize the cache.
+        maximum_duplicates_allowed: int
+            Maximum duplicate keys permitted when using aliases. Default 1.
+
+    Key init args — client params:
+        client: Optional[AsyncElasticsearch or Elasticsearch]
+            Pre-existing Elasticsearch connection. Either provide this OR
+            credentials.
+        es_url: Optional[str]
+            URL of the Elasticsearch instance to connect to.
+        es_cloud_id: Optional[str]
+            Cloud ID of the Elasticsearch instance to connect to.
+        es_user: Optional[str]
+            Username to use when connecting to Elasticsearch.
+        es_api_key: Optional[str]
+            API key to use when connecting to Elasticsearch.
+        es_password: Optional[str]
+            Password to use when connecting to Elasticsearch.
+
+    Instantiate:
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+
+        cache = ElasticsearchEmbeddingsCache(
+            index_name="embeddings-cache",
+            es_url="http://localhost:9200"
+        )
+        ```
+
+    Instantiate with API key:
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+
+        cache = ElasticsearchEmbeddingsCache(
+            index_name="embeddings-cache",
+            es_url="http://localhost:9200",
+            es_api_key="your-api-key"
+        )
+        ```
+
+    Instantiate from cloud:
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+
+        cache = ElasticsearchEmbeddingsCache(
+            index_name="embeddings-cache",
+            es_cloud_id="<cloud_id>",
+            es_api_key="your-api-key"
+        )
+        ```
+
+    Instantiate from existing connection:
+        ```python
+        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+        from elasticsearch import Elasticsearch
+
+        client = Elasticsearch("http://localhost:9200")
+        cache = ElasticsearchEmbeddingsCache(
+            index_name="embeddings-cache",
+            client=client
+        )
+        ```
+
+    Use with CacheBackedEmbeddings:
+        ```python
+        from langchain.embeddings import CacheBackedEmbeddings
+        from langchain_openai import OpenAIEmbeddings
+        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+
+        underlying_embeddings = OpenAIEmbeddings()
+        cache = ElasticsearchEmbeddingsCache(
+            index_name="embeddings-cache",
+            es_url="http://localhost:9200"
+        )
+        cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
+            underlying_embeddings,
+            cache,
+            namespace=underlying_embeddings.model
+        )
+        ```
 
     For synchronous applications, use the `ElasticsearchEmbeddingsCache` class.
-    For asyhchronous applications, use the `AsyncElasticsearchEmbeddingsCache` class.
-    """
+    For asynchronous applications, use the `AsyncElasticsearchEmbeddingsCache`
+    class.
+    """  # noqa: E501
 
     def __init__(
         self,
         index_name: str,
+        *,
         store_input: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
         namespace: Optional[str] = None,
         maximum_duplicates_allowed: int = 1,
-        *,
+        client: Optional[AsyncElasticsearch] = None,
         es_url: Optional[str] = None,
         es_cloud_id: Optional[str] = None,
         es_user: Optional[str] = None,
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
-        es_params: Optional[Dict[str, Any]] = None,
     ):
-        """
-        Initialize the Elasticsearch cache store by specifying the index/alias
-        to use and determining which additional information (like input, input
-        parameters, and any other metadata) should be stored in the cache.
-        Provide a namespace to organize the cache.
-
+        """Initialize the Elasticsearch embeddings cache store.
 
         Args:
-            index_name (str): The name of the index or the alias to use for the cache.
-                If they do not exist an index is created,
-                according to the default mapping defined by the `mapping` property.
-            store_input (bool): Whether to store the input in the cache.
-                Default to True.
-            metadata (Optional[dict]): Additional metadata to store in the cache,
-                for filtering purposes. This must be JSON serializable in an
-                Elasticsearch document. Default to None.
-            namespace (Optional[str]): A namespace to use for the cache.
-            maximum_duplicates_allowed (int): Defines the maximum number of duplicate
-                keys permitted. Must be used in scenarios where the same key appears
-                across multiple indices that share the same alias. Default to 1.
-            es_url: URL of the Elasticsearch instance to connect to.
-            es_cloud_id: Cloud ID of the Elasticsearch instance to connect to.
-            es_user: Username to use when connecting to Elasticsearch.
-            es_password: Password to use when connecting to Elasticsearch.
-            es_api_key: API key to use when connecting to Elasticsearch.
-            es_params: Other parameters for the Elasticsearch client.
+            index_name (str): The name of the index or alias to use for the
+                cache. If it doesn't exist, an index is created according to
+                the default mapping.
+            store_input (bool): Whether to store the input text in the cache.
+                Default True.
+            metadata (dict, optional): Additional metadata to store in the
+                cache for filtering. Must be JSON serializable.
+            namespace (str, optional): A namespace to organize the cache.
+            maximum_duplicates_allowed (int): Maximum duplicate keys permitted
+                when using aliases across multiple indices. Default 1.
+            client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+                connection. Either provide this OR credentials.
+            es_url (str, optional): URL of the Elasticsearch instance.
+            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+            es_user (str, optional): Username for Elasticsearch.
+            es_api_key (str, optional): API key for Elasticsearch.
+            es_password (str, optional): Password for Elasticsearch.
         """
         self._namespace = namespace
         self._maximum_duplicates_allowed = maximum_duplicates_allowed
         self._index_name = index_name
         self._store_input = store_input
         self._metadata = metadata
-        self._es_client = create_async_elasticsearch_client(
-            url=es_url,
-            cloud_id=es_cloud_id,
-            api_key=es_api_key,
-            username=es_user,
-            password=es_password,
-            params=es_params,
-            user_agent="langchain-py-ec",
-        )
+
+        # Accept either client OR credentials (one required)
+        if client is not None:
+            self._es_client = client
+        elif es_url is not None or es_cloud_id is not None:
+            self._es_client = create_async_elasticsearch_client(
+                url=es_url,
+                cloud_id=es_cloud_id,
+                api_key=es_api_key,
+                username=es_user,
+                password=es_password,
+                user_agent="langchain-py-ec",
+            )
+        else:
+            raise ValueError(
+                "Either 'client' or credentials (es_url, es_cloud_id, etc.) "
+                "must be provided."
+            )
+
         self._is_alias: Optional[bool] = None
 
     async def is_alias(self) -> bool:
