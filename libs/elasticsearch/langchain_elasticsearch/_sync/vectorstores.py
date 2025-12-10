@@ -456,6 +456,7 @@ class ElasticsearchStore(VectorStore):
         k: int = 4,
         fetch_k: int = 50,
         filter: Optional[List[dict]] = None,
+        fields: Optional[List[str]] = None,
         *,
         custom_query: Optional[
             Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
@@ -480,11 +481,13 @@ class ElasticsearchStore(VectorStore):
             k=k,
             num_candidates=fetch_k,
             filter=filter,
+            fields=fields,
             custom_query=custom_query,
         )
         docs = _hits_to_docs_scores(
             hits=hits,
             content_field=self.query_field,
+            fields=fields,
             doc_builder=doc_builder,
         )
         return [doc for doc, _score in docs]
@@ -571,6 +574,7 @@ class ElasticsearchStore(VectorStore):
         query: str,
         k: int = 4,
         filter: Optional[List[dict]] = None,
+        fields: Optional[List[str]] = None,
         *,
         custom_query: Optional[
             Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
@@ -595,11 +599,16 @@ class ElasticsearchStore(VectorStore):
             raise ValueError("scores are currently not supported in hybrid mode")
 
         hits = self._store.search(
-            query=query, k=k, filter=filter, custom_query=custom_query
+            query=query,
+            k=k,
+            filter=filter,
+            fields=fields,
+            custom_query=custom_query
         )
         return _hits_to_docs_scores(
             hits=hits,
             content_field=self.query_field,
+            fields=fields,
             doc_builder=doc_builder,
         )
 
@@ -608,6 +617,7 @@ class ElasticsearchStore(VectorStore):
         embedding: List[float],
         k: int = 4,
         filter: Optional[List[Dict]] = None,
+        fields: Optional[List[str]] = None,
         *,
         custom_query: Optional[
             Callable[[Dict[str, Any], Optional[str]], Dict[str, Any]]
@@ -636,11 +646,13 @@ class ElasticsearchStore(VectorStore):
             query_vector=embedding,
             k=k,
             filter=filter,
+            fields=fields,
             custom_query=custom_query,
         )
         return _hits_to_docs_scores(
             hits=hits,
             content_field=self.query_field,
+            fields=fields,
             doc_builder=doc_builder,
         )
 
