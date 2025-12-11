@@ -157,7 +157,12 @@ class TestHitsToDocsScores:
         assert actual == expected
 
 
+@pytest.mark.filterwarnings(
+    "ignore::langchain_core._api.deprecation.LangChainPendingDeprecationWarning"
+)
 class TestConvertStrategy:
+    """Test conversion of deprecated retrieval strategies to new ones."""
+
     def test_dense_approx(self) -> None:
         actual = _convert_retrieval_strategy(
             ApproxRetrievalStrategy(query_model_id="my model", hybrid=True, rrf=False),
