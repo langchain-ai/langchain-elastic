@@ -119,7 +119,7 @@ A caching layer for LLMs that uses Elasticsearch.
 Simple example:
 
 ```python
-from langchain.globals import set_llm_cache
+from langchain_core.globals import set_llm_cache
 
 from langchain_elasticsearch import ElasticsearchCache
 
@@ -151,7 +151,7 @@ The new cache class can be applied also to a pre-existing cache index:
 import json
 from typing import Any, Dict, List
 
-from langchain.globals import set_llm_cache
+from langchain_core.globals import set_llm_cache
 from langchain_core.caches import RETURN_VAL_TYPE
 
 from langchain_elasticsearch import ElasticsearchCache

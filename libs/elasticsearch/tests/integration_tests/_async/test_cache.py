@@ -1,9 +1,9 @@
-from typing import AsyncGenerator, Dict, Union
+import json
+from typing import Any, AsyncGenerator, Dict, List, Union
 
 import pytest
 from elasticsearch.helpers import BulkIndexError
-from langchain.embeddings.cache import _value_serializer
-from langchain.globals import set_llm_cache
+from langchain_core.globals import set_llm_cache
 from langchain_core.language_models import BaseChatModel
 
 from langchain_elasticsearch import (
@@ -12,6 +12,49 @@ from langchain_elasticsearch import (
 )
 
 from ._test_utilities import clear_test_indices, create_es_client, read_env
+
+
+def _value_serializer(value: List[float]) -> bytes:
+    """Serialize embedding values to bytes (replaces private langchain function)."""
+    return json.dumps(value).encode()
+
+
+@pytest.fixture(autouse=True)
+async def _close_async_caches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> AsyncGenerator[None, None]:
+    """Ensure cache clients close cleanly to avoid aiohttp warnings."""
+    created_clients: List = []
+
+    original_cache_init = AsyncElasticsearchCache.__init__
+    original_store_init = AsyncElasticsearchEmbeddingsCache.__init__
+
+    def wrapped_cache_init(self, *args: Any, **kwargs: Any) -> None:
+        original_cache_init(self, *args, **kwargs)
+        created_clients.append(self._es_client)
+
+    def wrapped_store_init(self, *args: Any, **kwargs: Any) -> None:
+        original_store_init(self, *args, **kwargs)
+        created_clients.append(self._es_client)
+
+    monkeypatch.setattr(AsyncElasticsearchCache, "__init__", wrapped_cache_init)
+    monkeypatch.setattr(
+        AsyncElasticsearchEmbeddingsCache, "__init__", wrapped_store_init
+    )
+    try:
+        yield
+    finally:
+        for client in created_clients:
+            close = getattr(client, "close", None)
+            if close:
+                try:
+                    await close()
+                except Exception:
+                    pass
+        monkeypatch.setattr(AsyncElasticsearchCache, "__init__", original_cache_init)
+        monkeypatch.setattr(
+            AsyncElasticsearchEmbeddingsCache, "__init__", original_store_init
+        )
 
 
 @pytest.fixture

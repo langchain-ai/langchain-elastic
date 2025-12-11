@@ -1,9 +1,9 @@
-from typing import Dict, Generator, Union
+import json
+from typing import Dict, Generator, List, Union
 
 import pytest
 from elasticsearch.helpers import BulkIndexError
-from langchain.embeddings.cache import _value_serializer
-from langchain.globals import set_llm_cache
+from langchain_core.globals import set_llm_cache
 from langchain_core.language_models import BaseChatModel
 
 from langchain_elasticsearch import (
@@ -11,7 +11,13 @@ from langchain_elasticsearch import (
     ElasticsearchEmbeddingsCache,
 )
 
+
 from ._test_utilities import clear_test_indices, create_es_client, read_env
+
+
+def _value_serializer(value: List[float]) -> bytes:
+    """Serialize embedding values to bytes (replaces private langchain function)."""
+    return json.dumps(value).encode()
 
 
 @pytest.fixture

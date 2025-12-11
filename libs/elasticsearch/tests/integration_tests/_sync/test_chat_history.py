@@ -2,8 +2,14 @@ import uuid
 from typing import Iterator
 
 import pytest
-from langchain.memory import ConversationBufferMemory
 from langchain_core.messages import AIMessage, HumanMessage, message_to_dict
+from langchain_classic.memory import ConversationBufferMemory
+
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore:Please see the migration guide.*:langchain_core._api.deprecation.LangChainDeprecationWarning"
+    )
+]
 
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
 
