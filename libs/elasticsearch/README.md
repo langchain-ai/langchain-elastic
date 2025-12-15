@@ -69,7 +69,7 @@ def fuzzy_query(search_query: str) -> Dict:
     }
 
 
-fuzzy_retriever = ElasticsearchRetriever.from_es_params(
+fuzzy_retriever = ElasticsearchRetriever(
     es_cloud_id="your-cloud-id",
     es_api_key="your-api-key",
     index_name="your-index-name",
@@ -77,7 +77,7 @@ fuzzy_retriever = ElasticsearchRetriever.from_es_params(
     content_field=text_field,
 )
 
-fuzzy_retriever.get_relevant_documents("fooo")
+fuzzy_retriever.invoke("fooo")
 ```
 
 ### ElasticsearchEmbeddings
