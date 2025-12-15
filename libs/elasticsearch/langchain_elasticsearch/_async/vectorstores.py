@@ -777,8 +777,9 @@ class AsyncElasticsearchStore(VectorStore):
                 Alternatively, provide credentials (`es_url`, `es_cloud_id`, etc.).
             **kwargs: Additional keyword arguments passed to the constructor.
 
-                See `AsyncElasticsearchStore` or `ElasticsearchStore` for supported options including
-                `index_name`, `es_url`, `cloud_id`, `es_user`, `es_password`,
+                See `AsyncElasticsearchStore` or `ElasticsearchStore` for supported
+                options including `index_name`, `es_url`, `cloud_id`, `es_user`,
+                `es_password`,
                 `es_api_key`, `vector_query_field`, `query_field`, and
                 `distance_strategy`.
         """
