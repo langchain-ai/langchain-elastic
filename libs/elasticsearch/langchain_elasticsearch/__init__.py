@@ -12,6 +12,7 @@ from elasticsearch.helpers.vectorstore import (
     SparseVectorStrategy,
 )
 
+from langchain_elasticsearch._utilities import DistanceStrategy
 from langchain_elasticsearch.cache import (
     AsyncElasticsearchCache,
     AsyncElasticsearchEmbeddingsCache,
@@ -62,6 +63,7 @@ __all__ = [
     "DenseVectorScriptScoreStrategy",
     "DenseVectorStrategy",
     "DistanceMetric",
+    "DistanceStrategy",
     "RetrievalStrategy",
     "SparseVectorStrategy",
     # deprecated retrieval strategies

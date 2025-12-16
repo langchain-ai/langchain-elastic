@@ -1,11 +1,13 @@
 """Test Elasticsearch functionality."""
 
+import inspect
 import re
 from typing import Any, Dict, Generator, List, Optional
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers.vectorstore import VectorStore as EVectorStore
 from langchain_core.documents import Document
 
 from langchain_elasticsearch._sync.vectorstores import (
@@ -155,7 +157,12 @@ class TestHitsToDocsScores:
         assert actual == expected
 
 
+@pytest.mark.filterwarnings(
+    "ignore::langchain_core._api.deprecation.LangChainPendingDeprecationWarning"
+)
 class TestConvertStrategy:
+    """Test conversion of deprecated retrieval strategies to new ones."""
+
     def test_dense_approx(self) -> None:
         actual = _convert_retrieval_strategy(
             ApproxRetrievalStrategy(query_model_id="my model", hybrid=True, rrf=False),
@@ -196,7 +203,7 @@ class TestVectorStore:
     @pytest.fixture
     def store(self) -> Generator:
         client = Elasticsearch(hosts=["http://dummy:9200"])  # never connected to
-        store = ElasticsearchStore(index_name="test_index", es_connection=client)
+        store = ElasticsearchStore(index_name="test_index", client=client)
         try:
             yield store
         finally:
@@ -209,7 +216,7 @@ class TestVectorStore:
             index_name="test_index",
             embedding=embeddings,
             strategy=ApproxRetrievalStrategy(hybrid=True),
-            es_connection=client,
+            client=client,
         )
         try:
             yield store
@@ -415,3 +422,93 @@ class TestVectorStore:
 
         with pytest.raises(ValueError):
             hybrid_store.similarity_search_by_vector_with_relevance_scores([1, 2, 3])
+
+    @pytest.mark.sync
+    def test_parameter_forwarding_to_evectorstore(self) -> None:
+        """Test to catch missing EVectorStore parameters.
+
+        This test compares the EVectorStore constructor signature against what
+        ElasticsearchStore actually forwards. If EVectorStore adds new
+        parameters, this test will fail and alert us to update ElasticsearchStore.
+        """
+
+        client = Elasticsearch(hosts=["http://dummy:9200"])
+
+        # Get EVectorStore constructor signature
+        evectorstore_sig = inspect.signature(EVectorStore.__init__)
+        # Remove self from the parameters set
+        evectorstore_params = set(evectorstore_sig.parameters.keys()) - {"self"}
+
+        # Use variable so unasync can transform the path
+        # Break up the string so unasync can transform _async to _sync
+        async_or_sync_module = "_sync"
+        evectorstore_path = (
+            f"langchain_elasticsearch.{async_or_sync_module}.vectorstores.EVectorStore"
+        )
+        with patch(evectorstore_path) as mock_evectorstore:
+            # Mock the close method
+            mock_evectorstore.return_value.close = Mock()
+
+            store = ElasticsearchStore(
+                index_name="test_index",
+                client=client,
+                num_dimensions=1536,
+            )
+
+            # Get what parameters were actually passed to EVectorStore
+            mock_evectorstore.assert_called_once()
+            call_args = mock_evectorstore.call_args
+            forwarded_params = set(call_args.kwargs.keys())
+
+            # Check for missing parameters
+            missing_params = evectorstore_params - forwarded_params
+            if missing_params:
+                pytest.fail(
+                    f"ElasticsearchStore is missing these EVectorStore parameters:"
+                    f"{missing_params}. Please add them to ElasticsearchStore "
+                    f"and forward them to EVectorStore."
+                )
+
+            # Check for unexpected parameters
+            unexpected_params = forwarded_params - evectorstore_params
+            if unexpected_params:
+                pytest.fail(
+                    f"ElasticsearchStore is forwarding unexpected parameters to "
+                    f"EVectorStore: {unexpected_params}. These parameters don't exist "
+                    f"in EVectorStore.__init__."
+                )
+
+            store.close()
+
+    @pytest.mark.sync
+    def test_parameter_forwarding_defaults(self) -> None:
+        """Test that default parameter values are properly forwarded to
+        EVectorStore."""
+
+        client = Elasticsearch(hosts=["http://dummy:9200"])
+
+        # Use variable so unasync can transform the path
+        # Break up the string so unasync can transform _async to _sync
+        async_or_sync_module = "_sync"
+        evectorstore_path = (
+            f"langchain_elasticsearch.{async_or_sync_module}.vectorstores.EVectorStore"
+        )
+        with patch(evectorstore_path) as mock_evectorstore:
+            # Mock the close method
+            mock_evectorstore.return_value.close = Mock()
+
+            # Test with minimal parameters (should use defaults)
+            store = ElasticsearchStore(index_name="test_index", client=client)
+
+            # Verify EVectorStore was called with default values
+            mock_evectorstore.assert_called_once()
+            call_args = mock_evectorstore.call_args
+
+            # Check default values
+            assert call_args.kwargs["index"] == "test_index"
+            assert call_args.kwargs["client"] == client
+            assert call_args.kwargs["vector_field"] == "vector"  # default
+            assert call_args.kwargs["text_field"] == "text"  # default
+            assert call_args.kwargs["num_dimensions"] is None  # default
+
+            store.close()

@@ -9,8 +9,8 @@ from elasticsearch import NotFoundError
 from langchain_core.documents import Document
 
 from langchain_elasticsearch.vectorstores import AsyncElasticsearchStore
+from tests.fake_embeddings import AsyncConsistentFakeEmbeddings
 
-from ...fake_embeddings import AsyncConsistentFakeEmbeddings, AsyncFakeEmbeddings
 from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 logging.basicConfig(level=logging.DEBUG)
@@ -50,7 +50,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             metadatas=metadatas,
             **es_params,
             index_name=index_name,
@@ -104,7 +104,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = await retriever.aget_relevant_documents(query=query_string)
+        output = await retriever.ainvoke(query_string)
 
         assert output == [
             top3[0][0],
@@ -145,7 +145,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = await retriever.aget_relevant_documents(query=query_string)
+        output = await retriever.ainvoke(query_string)
 
         assert output == [
             top3[0][0],
@@ -172,7 +172,24 @@ class TestElasticsearch:
                     "filter": [],
                     "k": 1,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return query_body
@@ -180,7 +197,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
         )
@@ -248,7 +265,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             metadatas=metadatas,
             **es_params,
             index_name=index_name,
@@ -263,7 +280,24 @@ class TestElasticsearch:
                     "filter": [{"term": {"metadata.page": "1"}}],
                     "k": 3,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return query_body
@@ -284,7 +318,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             metadatas=metadatas,
             **es_params,
             index_name=index_name,
@@ -314,7 +348,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ExactRetrievalStrategy(),
@@ -328,16 +362,22 @@ class TestElasticsearch:
                         "source": "cosineSimilarity(params.query_vector, 'vector') + 1.0",  # noqa: E501
                         "params": {
                             "query_vector": [
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                1.0,
-                                0.0,
+                                0.06,
+                                0.07,
+                                0.01,
+                                0.08,
+                                0.03,
+                                0.07,
+                                0.09,
+                                0.03,
+                                0.09,
+                                0.09,
+                                0.04,
+                                0.03,
+                                0.08,
+                                0.07,
+                                0.06,
+                                0.08,
                             ]
                         },
                     },
@@ -365,7 +405,7 @@ class TestElasticsearch:
         metadatas = [{"page": i} for i in range(len(texts))]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             metadatas=metadatas,
@@ -383,16 +423,22 @@ class TestElasticsearch:
                             "source": "cosineSimilarity(params.query_vector, 'vector') + 1.0",  # noqa: E501
                             "params": {
                                 "query_vector": [
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    0.0,
+                                    0.06,
+                                    0.07,
+                                    0.01,
+                                    0.08,
+                                    0.03,
+                                    0.07,
+                                    0.09,
+                                    0.03,
+                                    0.09,
+                                    0.09,
+                                    0.04,
+                                    0.03,
+                                    0.08,
+                                    0.07,
+                                    0.06,
+                                    0.08,
                                 ]
                             },
                         },
@@ -418,7 +464,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ExactRetrievalStrategy(),
@@ -439,16 +485,22 @@ class TestElasticsearch:
             """,
                             "params": {
                                 "query_vector": [
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    1.0,
-                                    0.0,
+                                    0.06,
+                                    0.07,
+                                    0.01,
+                                    0.08,
+                                    0.03,
+                                    0.07,
+                                    0.09,
+                                    0.03,
+                                    0.09,
+                                    0.09,
+                                    0.04,
+                                    0.03,
+                                    0.08,
+                                    0.07,
+                                    0.06,
+                                    0.08,
                                 ]
                             },
                         },
@@ -472,7 +524,7 @@ class TestElasticsearch:
             texts = ["foo", "bar", "baz"]
             await AsyncElasticsearchStore.afrom_texts(
                 texts,
-                AsyncFakeEmbeddings(),
+                AsyncConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=AsyncElasticsearchStore.ExactRetrievalStrategy(),
@@ -487,7 +539,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ExactRetrievalStrategy(),
@@ -504,7 +556,8 @@ class TestElasticsearch:
         )
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
-        assert mmr_output[1].page_content == texts[1]
+        # baz is more similar to foo when using this embedding
+        assert mmr_output[1].page_content == texts[2]
 
         mmr_output = await docsearch.amax_marginal_relevance_search(
             texts[0],
@@ -514,7 +567,8 @@ class TestElasticsearch:
         )
         assert len(mmr_output) == 2
         assert mmr_output[0].page_content == texts[0]
-        assert mmr_output[1].page_content == texts[2]
+        # with more diversity, prefer bar over baz
+        assert mmr_output[1].page_content == texts[1]
 
         # if fetch_k < k, then the output will be less than k
         mmr_output = await docsearch.amax_marginal_relevance_search(
@@ -530,7 +584,7 @@ class TestElasticsearch:
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ApproxRetrievalStrategy(hybrid=True),
@@ -540,20 +594,50 @@ class TestElasticsearch:
             query_body: Dict[str, Any], query: Optional[str]
         ) -> Dict[str, Any]:
             assert query_body == {
-                "knn": {
-                    "field": "vector",
-                    "filter": [],
-                    "k": 1,
-                    "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-                },
-                "query": {
-                    "bool": {
-                        "filter": [],
-                        "must": [{"match": {"text": {"query": "foo"}}}],
+                "retriever": {
+                    "rrf": {
+                        "retrievers": [
+                            {
+                                "standard": {
+                                    "query": {
+                                        "bool": {
+                                            "filter": [],
+                                            "must": [
+                                                {"match": {"text": {"query": "foo"}}}
+                                            ],
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "knn": {
+                                    "field": "vector",
+                                    "filter": [],
+                                    "k": 1,
+                                    "num_candidates": 50,
+                                    "query_vector": [
+                                        0.06,
+                                        0.07,
+                                        0.01,
+                                        0.08,
+                                        0.03,
+                                        0.07,
+                                        0.09,
+                                        0.03,
+                                        0.09,
+                                        0.09,
+                                        0.04,
+                                        0.03,
+                                        0.08,
+                                        0.07,
+                                        0.06,
+                                        0.08,
+                                    ],
+                                }
+                            },
+                        ]
                     }
-                },
-                "rank": {"rrf": {}},
+                }
             }
             return query_body
 
@@ -597,7 +681,10 @@ class TestElasticsearch:
             k=1,
             custom_query=assert_query,
         )
-        assert output == [(Document(page_content="foo"), 1.0)]
+        doc, score = output[0]
+
+        assert doc == Document(page_content="foo")
+        assert score == pytest.approx(1.0, rel=0.05)
 
     @pytest.mark.asyncio
     async def test_similarity_search_approx_with_hybrid_search_rrf(
@@ -610,13 +697,13 @@ class TestElasticsearch:
         rrf_test_cases: List[Optional[Union[dict, bool]]] = [
             True,
             False,
-            {"rank_constant": 1, "window_size": 5},
+            {"rank_constant": 1, "rank_window_size": 5},
         ]
         for rrf_test_case in rrf_test_cases:
             texts = ["foo", "bar", "baz"]
             docsearch = await AsyncElasticsearchStore.afrom_texts(
                 texts,
-                AsyncFakeEmbeddings(),
+                AsyncConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=AsyncElasticsearchStore.ApproxRetrievalStrategy(
@@ -629,37 +716,100 @@ class TestElasticsearch:
                 query: Optional[str],
                 rrf: Optional[Union[dict, bool]] = True,
             ) -> dict:
-                cmp_query_body = {
-                    "knn": {
-                        "field": "vector",
-                        "filter": [],
-                        "k": 3,
-                        "num_candidates": 50,
-                        "query_vector": [
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            1.0,
-                            0.0,
-                        ],
-                    },
-                    "query": {
-                        "bool": {
+                if rrf is False:
+                    # When rrf=False, uses old format
+                    cmp_query_body = {
+                        "knn": {
+                            "field": "vector",
                             "filter": [],
-                            "must": [{"match": {"text": {"query": "foo"}}}],
-                        }
-                    },
-                }
+                            "k": 3,
+                            "num_candidates": 50,
+                            "query_vector": [
+                                0.06,
+                                0.07,
+                                0.01,
+                                0.08,
+                                0.03,
+                                0.07,
+                                0.09,
+                                0.03,
+                                0.09,
+                                0.09,
+                                0.04,
+                                0.03,
+                                0.08,
+                                0.07,
+                                0.06,
+                                0.08,
+                            ],
+                        },
+                        "query": {
+                            "bool": {
+                                "filter": [],
+                                "must": [{"match": {"text": {"query": "foo"}}}],
+                            }
+                        },
+                    }
+                else:
+                    # When rrf=True or rrf=dict, uses new retriever format
+                    rrf_config = {}
+                    if isinstance(rrf, dict):
+                        rrf_config = rrf
 
-                if isinstance(rrf, dict):
-                    cmp_query_body["rank"] = {"rrf": rrf}
-                elif isinstance(rrf, bool) and rrf is True:
-                    cmp_query_body["rank"] = {"rrf": {}}
+                    cmp_query_body = {
+                        "retriever": {
+                            "rrf": {
+                                # Dictionary unpacking: spreads rrf_config into dict
+                                # If rrf=True: rrf_config={} adds nothing
+                                # If rrf=dict: rrf_config adds custom RRF parameters
+                                **rrf_config,
+                                "retrievers": [
+                                    {
+                                        "standard": {
+                                            "query": {
+                                                "bool": {
+                                                    "filter": [],
+                                                    "must": [
+                                                        {
+                                                            "match": {
+                                                                "text": {"query": "foo"}
+                                                            }
+                                                        }
+                                                    ],
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "knn": {
+                                            "field": "vector",
+                                            "filter": [],
+                                            "k": 3,
+                                            "num_candidates": 50,
+                                            "query_vector": [
+                                                0.06,
+                                                0.07,
+                                                0.01,
+                                                0.08,
+                                                0.03,
+                                                0.07,
+                                                0.09,
+                                                0.03,
+                                                0.09,
+                                                0.09,
+                                                0.04,
+                                                0.03,
+                                                0.08,
+                                                0.07,
+                                                0.06,
+                                                0.08,
+                                            ],
+                                        }
+                                    },
+                                ],
+                            }
+                        }
+                    }
 
                 assert query_body == cmp_query_body
 
@@ -673,21 +823,51 @@ class TestElasticsearch:
         # 2. check query result is okay
         es_output = await docsearch.client.search(
             index=index_name,
-            query={
-                "bool": {
-                    "filter": [],
-                    "must": [{"match": {"text": {"query": "foo"}}}],
+            retriever={
+                "rrf": {
+                    "retrievers": [
+                        {
+                            "standard": {
+                                "query": {
+                                    "bool": {
+                                        "filter": [],
+                                        "must": [{"match": {"text": {"query": "foo"}}}],
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "knn": {
+                                "field": "vector",
+                                "filter": [],
+                                "k": 3,
+                                "num_candidates": 50,
+                                "query_vector": [
+                                    0.06,
+                                    0.07,
+                                    0.01,
+                                    0.08,
+                                    0.03,
+                                    0.07,
+                                    0.09,
+                                    0.03,
+                                    0.09,
+                                    0.09,
+                                    0.04,
+                                    0.03,
+                                    0.08,
+                                    0.07,
+                                    0.06,
+                                    0.08,
+                                ],
+                            }
+                        },
+                    ],
+                    "rank_constant": 1,
+                    "rank_window_size": 5,
                 }
             },
-            knn={
-                "field": "vector",
-                "filter": [],
-                "k": 3,
-                "num_candidates": 50,
-                "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
-            },
             size=3,
-            rank={"rrf": {"rank_constant": 1, "window_size": 5}},
         )
 
         assert [o.page_content for o in output] == [
@@ -697,7 +877,7 @@ class TestElasticsearch:
         # 3. check rrf default option is okay
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             texts,
-            AsyncFakeEmbeddings(),
+            AsyncConsistentFakeEmbeddings(),
             **es_params,
             index_name=index_name,
             strategy=AsyncElasticsearchStore.ApproxRetrievalStrategy(hybrid=True),
@@ -725,7 +905,24 @@ class TestElasticsearch:
                     "filter": [],
                     "k": 1,
                     "num_candidates": 50,
-                    "query_vector": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                    "query_vector": [
+                        0.06,
+                        0.07,
+                        0.01,
+                        0.08,
+                        0.03,
+                        0.07,
+                        0.09,
+                        0.03,
+                        0.09,
+                        0.09,
+                        0.04,
+                        0.03,
+                        0.08,
+                        0.07,
+                        0.06,
+                        0.08,
+                    ],
                 }
             }
             return {"query": {"match": {"text": {"query": "bar"}}}}
@@ -733,7 +930,7 @@ class TestElasticsearch:
         """Test end to end construction and search with metadata."""
         texts = ["foo", "bar", "baz"]
         docsearch = await AsyncElasticsearchStore.afrom_texts(
-            texts, AsyncFakeEmbeddings(), **es_params, index_name=index_name
+            texts, AsyncConsistentFakeEmbeddings(), **es_params, index_name=index_name
         )
         output = await docsearch.asimilarity_search(
             "foo", k=1, custom_query=my_custom_query
@@ -748,7 +945,7 @@ class TestElasticsearch:
         with pytest.raises(NotFoundError):
             await AsyncElasticsearchStore.afrom_texts(
                 texts=["foo", "bar", "baz"],
-                embedding=AsyncConsistentFakeEmbeddings(10),
+                embedding=AsyncConsistentFakeEmbeddings(),
                 **es_params,
                 index_name=index_name,
                 strategy=AsyncElasticsearchStore.ApproxRetrievalStrategy(
@@ -778,7 +975,7 @@ class TestElasticsearch:
         """Test to make sure the relevance score is scaled to 0-1."""
         texts = ["foo", "bar", "baz"]
         metadatas = [{"page": str(i)} for i in range(len(texts))]
-        embeddings = AsyncFakeEmbeddings()
+        embeddings = AsyncConsistentFakeEmbeddings()
 
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             index_name=index_name,
@@ -792,7 +989,10 @@ class TestElasticsearch:
         output = await docsearch.asimilarity_search_by_vector_with_relevance_scores(
             embedding=embedded_query, k=1
         )
-        assert output == [(Document(page_content="foo", metadata={"page": "0"}), 1.0)]
+        doc, score = output[0]
+
+        assert doc == Document(page_content="foo", metadata={"page": "0"})
+        assert score == pytest.approx(1.0, rel=0.05)
 
     @pytest.mark.asyncio
     async def test_similarity_search_bm25_search(
@@ -870,7 +1070,7 @@ class TestElasticsearch:
         """Test to make sure the relevance threshold is respected."""
         texts = ["foo", "bar", "baz"]
         metadatas = [{"page": str(i)} for i in range(len(texts))]
-        embeddings = AsyncFakeEmbeddings()
+        embeddings = AsyncConsistentFakeEmbeddings()
 
         docsearch = await AsyncElasticsearchStore.afrom_texts(
             index_name=index_name,
@@ -894,7 +1094,7 @@ class TestElasticsearch:
             search_type="similarity_score_threshold",
             search_kwargs={"score_threshold": similarity_of_second_ranked},
         )
-        output = await retriever.aget_relevant_documents(query=query_string)
+        output = await retriever.ainvoke(query_string)
 
         assert output == [
             top3[0][0],
@@ -934,3 +1134,85 @@ class TestElasticsearch:
         await docsearch.adelete([ids[3]])
         output = await docsearch.asimilarity_search("gni", k=10)
         assert len(output) == 0
+
+    @pytest.mark.asyncio
+    async def test_num_dimensions_mismatch_and_match(
+        self, es_params: dict, index_name: str
+    ) -> None:
+        """Test that mismatched num_dimensions causes an error."""
+        texts = ["foo", "bar"]
+
+        # Test 1: Mismatch should fail
+        with pytest.raises(Exception):  # Should fail when trying to add documents
+            docsearch = await AsyncElasticsearchStore.afrom_texts(
+                texts,
+                AsyncConsistentFakeEmbeddings(),  # Creates 16-dimensional vectors
+                num_dimensions=5,  # Mismatch: 5 vs 16
+                **es_params,
+                index_name=f"{index_name}_mismatch",  # Use separate index
+            )
+
+        # Test 2: Match should work
+        docsearch = await AsyncElasticsearchStore.afrom_texts(
+            texts,
+            AsyncConsistentFakeEmbeddings(),  # Creates 16-dimensional vectors
+            num_dimensions=16,  # Match: 16 vs 16
+            **es_params,
+            index_name=f"{index_name}_match",  # Use separate index
+        )
+
+        # Verify it works by doing a search
+        results = await docsearch.asimilarity_search("foo", k=1)
+        assert results == [Document(page_content="foo")]
+
+        await docsearch.aclose()
+
+    @pytest.mark.asyncio
+    async def test_metadata_mappings_integration(
+        self, es_params: dict, index_name: str
+    ) -> None:
+        """Test that metadata_mappings parameter works correctly.
+
+        This test verifies that custom metadata field mappings are properly applied to
+        Elasticsearch index, allowing for proper indexing and searching of metadata.
+        """
+        metadata_mappings = {
+            "category": {"type": "keyword"},
+            "score": {"type": "float"},
+            "tags": {"type": "text"},
+        }
+
+        texts = ["Document about cats", "Document about dogs", "Document about birds"]
+        metadatas = [
+            {"category": "animals", "score": 0.9, "tags": "some tag about cats"},
+            {"category": "animals", "score": 0.8, "tags": "some tag about dogs"},
+            {"category": "animals", "score": 0.7, "tags": "some tag about birds"},
+        ]
+
+        docsearch = await AsyncElasticsearchStore.afrom_texts(
+            texts,
+            AsyncConsistentFakeEmbeddings(),
+            metadatas=metadatas,
+            metadata_mappings=metadata_mappings,
+            num_dimensions=16,
+            **es_params,
+            index_name=index_name,
+        )
+
+        mapping_response = await docsearch.client.indices.get_mapping(index=index_name)
+        mapping_properties = mapping_response[index_name]["mappings"]["properties"]
+
+        assert "metadata" in mapping_properties
+        metadata_props = mapping_properties["metadata"]["properties"]
+
+        assert metadata_props["category"] == {"type": "keyword"}
+        assert metadata_props["score"] == {"type": "float"}
+        assert metadata_props["tags"] == {"type": "text"}
+
+        results = await docsearch.asimilarity_search(
+            "pets", k=3, filter=[{"term": {"metadata.category": "animals"}}]
+        )
+
+        assert len(results) == 3
+
+        await docsearch.aclose()

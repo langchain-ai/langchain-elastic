@@ -1,9 +1,8 @@
 """Test ElasticsearchRetriever functionality."""
 
-import os
 import re
 import uuid
-from typing import Any, Dict
+from typing import Any, Dict, Mapping
 
 import pytest
 from elasticsearch import Elasticsearch
@@ -11,7 +10,7 @@ from langchain_core.documents import Document
 
 from langchain_elasticsearch.retrievers import ElasticsearchRetriever
 
-from ._test_utilities import requests_saving_es_client
+from ._test_utilities import read_env, requests_saving_es_client
 
 """
 cd tests/integration_tests
@@ -55,18 +54,18 @@ class TestElasticsearchRetriever:
             index_name=index_name,
             body_func=lambda _: {"query": {"match_all": {}}},
             content_field="text",
-            es_client=es_client,
+            client=es_client,
         )
 
-        assert retriever.es_client
-        user_agent = retriever.es_client._headers["User-Agent"]
+        assert retriever.client
+        user_agent = retriever.client._headers["User-Agent"]
         assert (
             re.match(r"^langchain-py-r/\d+\.\d+\.\d+(?:rc\d+)?$", user_agent)
             is not None
         ), f"The string '{user_agent}' does not match the expected pattern."
 
         index_test_data(es_client, index_name, "text")
-        retriever.get_relevant_documents("foo")
+        retriever.invoke("foo")
 
         search_request = es_client.transport.requests[-1]  # type: ignore[attr-defined]
         user_agent = search_request["headers"]["User-Agent"]
@@ -84,23 +83,25 @@ class TestElasticsearchRetriever:
         def body_func(query: str) -> Dict:
             return {"query": {"match": {text_field: {"query": query}}}}
 
-        es_url = os.environ.get("ES_URL", "http://localhost:9200")
-        cloud_id = os.environ.get("ES_CLOUD_ID")
-        api_key = os.environ.get("ES_API_KEY")
+        env_config = read_env()
+        # Map test utility format to retriever format
+        config = {}
+        if "es_url" in env_config:
+            config["es_url"] = env_config["es_url"]
+        if "es_api_key" in env_config:
+            config["es_api_key"] = env_config["es_api_key"]
+        if "es_cloud_id" in env_config:
+            config["es_cloud_id"] = env_config["es_cloud_id"]
 
-        config = (
-            {"cloud_id": cloud_id, "api_key": api_key} if cloud_id else {"url": es_url}
-        )
-
-        retriever = ElasticsearchRetriever.from_es_params(
+        retriever = ElasticsearchRetriever(
             index_name=index_name,
             body_func=body_func,
             content_field=text_field,
             **config,  # type: ignore[arg-type]
         )
 
-        index_test_data(retriever.es_client, index_name, text_field)
-        result = retriever.get_relevant_documents("foo")
+        index_test_data(retriever.client, index_name, text_field)
+        result = retriever.invoke("foo")
 
         assert {r.page_content for r in result} == {"foo", "foo bar", "foo baz"}
         assert {r.metadata["_id"] for r in result} == {"3", "1", "5"}
@@ -122,11 +123,11 @@ class TestElasticsearchRetriever:
             index_name=index_name,
             body_func=body_func,
             content_field=text_field,
-            es_client=es_client,
+            client=es_client,
         )
 
         index_test_data(es_client, index_name, text_field)
-        result = retriever.get_relevant_documents("foo")
+        result = retriever.invoke("foo")
 
         assert {r.page_content for r in result} == {"foo", "foo bar", "foo baz"}
         assert {r.metadata["_id"] for r in result} == {"3", "1", "5"}
@@ -159,12 +160,12 @@ class TestElasticsearchRetriever:
             index_name=[index_name_1, index_name_2],
             content_field={index_name_1: text_field_1, index_name_2: text_field_2},
             body_func=body_func,
-            es_client=es_client,
+            client=es_client,
         )
 
         index_test_data(es_client, index_name_1, text_field_1)
         index_test_data(es_client, index_name_2, text_field_2)
-        result = retriever.get_relevant_documents("foo")
+        result = retriever.invoke("foo")
 
         # matches from both indices
         assert sorted([(r.page_content, r.metadata["_index"]) for r in result]) == [
@@ -186,18 +187,18 @@ class TestElasticsearchRetriever:
         def body_func(query: str) -> Dict:
             return {"query": {"match": {text_field: {"query": query}}}}
 
-        def id_as_content(hit: Dict) -> Document:
+        def id_as_content(hit: Mapping[str, Any]) -> Document:
             return Document(page_content=hit["_id"], metadata=meta)
 
         retriever = ElasticsearchRetriever(
             index_name=index_name,
             body_func=body_func,
             document_mapper=id_as_content,
-            es_client=es_client,
+            client=es_client,
         )
 
         index_test_data(es_client, index_name, text_field)
-        result = retriever.get_relevant_documents("foo")
+        result = retriever.invoke("foo")
 
         assert [r.page_content for r in result] == ["3", "1", "5"]
         assert [r.metadata for r in result] == [meta, meta, meta]
@@ -209,10 +210,10 @@ class TestElasticsearchRetriever:
         with pytest.raises(ValueError):
             ElasticsearchRetriever(
                 content_field="text",
-                document_mapper=lambda x: x,
+                document_mapper=lambda x: x,  # type: ignore[arg-type,return-value]
                 index_name="foo",
-                body_func=lambda x: x,
-                es_client=es_client,
+                body_func=lambda x: x,  # type: ignore[arg-type,return-value]
+                client=es_client,
             )
 
     @pytest.mark.sync
@@ -224,6 +225,6 @@ class TestElasticsearchRetriever:
         with pytest.raises(ValueError):
             ElasticsearchRetriever(
                 index_name="foo",
-                body_func=lambda x: x,
-                es_client=es_client,
+                body_func=lambda x: x,  # type: ignore[arg-type,return-value]
+                client=es_client,
             )

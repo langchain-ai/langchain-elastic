@@ -3,11 +3,10 @@
 import os
 
 import pytest
-from elasticsearch import Elasticsearch
 
 from langchain_elasticsearch.embeddings import ElasticsearchEmbeddings
 
-from ._test_utilities import model_is_deployed
+from ._test_utilities import create_es_client, model_is_deployed
 
 # deployed with
 # https://www.elastic.co/guide/en/machine-learning/current/ml-nlp-text-emb-vector-search-example.html
@@ -20,7 +19,7 @@ ES_URL = os.environ.get("ES_URL", "http://localhost:9200")
 @pytest.mark.sync
 def test_elasticsearch_embedding_documents() -> None:
     """Test Elasticsearch embedding documents."""
-    client = Elasticsearch(hosts=[ES_URL])
+    client = create_es_client()
     if not (model_is_deployed(client, MODEL_ID)):
         client.close()
         pytest.skip(
@@ -28,7 +27,7 @@ def test_elasticsearch_embedding_documents() -> None:
         )
 
     documents = ["foo bar", "bar foo", "foo"]
-    embedding = ElasticsearchEmbeddings.from_es_connection(MODEL_ID, client)
+    embedding = ElasticsearchEmbeddings(model_id=MODEL_ID, client=client)
     output = embedding.embed_documents(documents)
     client.close()
     assert len(output) == 3
@@ -40,7 +39,7 @@ def test_elasticsearch_embedding_documents() -> None:
 @pytest.mark.sync
 def test_elasticsearch_embedding_query() -> None:
     """Test Elasticsearch embedding query."""
-    client = Elasticsearch(hosts=[ES_URL])
+    client = create_es_client()
     if not (model_is_deployed(client, MODEL_ID)):
         client.close()
         pytest.skip(
@@ -48,7 +47,7 @@ def test_elasticsearch_embedding_query() -> None:
         )
 
     document = "foo bar"
-    embedding = ElasticsearchEmbeddings.from_es_connection(MODEL_ID, client)
+    embedding = ElasticsearchEmbeddings(model_id=MODEL_ID, client=client)
     output = embedding.embed_query(document)
     client.close()
     assert len(output) == NUM_DIMENSIONS
