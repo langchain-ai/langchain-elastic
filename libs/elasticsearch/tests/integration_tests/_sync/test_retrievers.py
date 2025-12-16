@@ -65,7 +65,7 @@ class TestElasticsearchRetriever:
         ), f"The string '{user_agent}' does not match the expected pattern."
 
         index_test_data(es_client, index_name, "text")
-        retriever.get_relevant_documents("foo")
+        retriever.invoke("foo")
 
         search_request = es_client.transport.requests[-1]  # type: ignore[attr-defined]
         user_agent = search_request["headers"]["User-Agent"]
@@ -101,7 +101,7 @@ class TestElasticsearchRetriever:
         )
 
         index_test_data(retriever.client, index_name, text_field)
-        result = retriever.get_relevant_documents("foo")
+        result = retriever.invoke("foo")
 
         assert {r.page_content for r in result} == {"foo", "foo bar", "foo baz"}
         assert {r.metadata["_id"] for r in result} == {"3", "1", "5"}
@@ -127,7 +127,7 @@ class TestElasticsearchRetriever:
         )
 
         index_test_data(es_client, index_name, text_field)
-        result = retriever.get_relevant_documents("foo")
+        result = retriever.invoke("foo")
 
         assert {r.page_content for r in result} == {"foo", "foo bar", "foo baz"}
         assert {r.metadata["_id"] for r in result} == {"3", "1", "5"}
@@ -165,7 +165,7 @@ class TestElasticsearchRetriever:
 
         index_test_data(es_client, index_name_1, text_field_1)
         index_test_data(es_client, index_name_2, text_field_2)
-        result = retriever.get_relevant_documents("foo")
+        result = retriever.invoke("foo")
 
         # matches from both indices
         assert sorted([(r.page_content, r.metadata["_index"]) for r in result]) == [
@@ -198,7 +198,7 @@ class TestElasticsearchRetriever:
         )
 
         index_test_data(es_client, index_name, text_field)
-        result = retriever.get_relevant_documents("foo")
+        result = retriever.invoke("foo")
 
         assert [r.page_content for r in result] == ["3", "1", "5"]
         assert [r.metadata for r in result] == [meta, meta, meta]

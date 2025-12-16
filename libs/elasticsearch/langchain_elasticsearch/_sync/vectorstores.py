@@ -768,24 +768,18 @@ class ElasticsearchStore(VectorStore):
             texts: List of texts to add to the Elasticsearch index.
             embedding: Embedding function to use to embed the texts.
             metadatas: Optional list of metadatas associated with the texts.
-            index_name: Name of the Elasticsearch index to create.
-            es_url: URL of the Elasticsearch instance to connect to.
-            cloud_id: Cloud ID of the Elasticsearch instance to connect to.
-            es_user: Username to use when connecting to Elasticsearch.
-            es_password: Password to use when connecting to Elasticsearch.
-            es_api_key: API key to use when connecting to Elasticsearch.
-            client: Optional pre-existing client connection.
-                Alternatively, provide credentials (es_url, es_cloud_id, etc.).
-            vector_query_field: Optional. Name of the field to
-                                store the embedding vectors in.
-            query_field: Optional. Name of the field to store the texts in.
-            distance_strategy: Optional. Name of the distance
-                                strategy to use. Defaults to "COSINE".
-                                can be one of "COSINE",
-                                "EUCLIDEAN_DISTANCE", "DOT_PRODUCT",
-                                "MAX_INNER_PRODUCT".
             bulk_kwargs: Optional. Additional arguments to pass to
-                        Elasticsearch bulk.
+                Elasticsearch bulk.
+            client: Optional pre-existing client connection.
+
+                Alternatively, provide credentials (`es_url`, `es_cloud_id`, etc.).
+            **kwargs: Additional keyword arguments passed to the constructor.
+
+                See `AsyncElasticsearchStore` or `ElasticsearchStore` for supported
+                options including `index_name`, `es_url`, `cloud_id`, `es_user`,
+                `es_password`,
+                `es_api_key`, `vector_query_field`, `query_field`, and
+                `distance_strategy`.
         """
 
         index_name = kwargs.get("index_name")
@@ -826,24 +820,20 @@ class ElasticsearchStore(VectorStore):
             ```
 
         Args:
-            texts: List of texts to add to the Elasticsearch index.
+            documents: List of documents to add to the Elasticsearch index.
             embedding: Embedding function to use to embed the texts.
-                      Do not provide if using a strategy
-                      that doesn't require inference.
-            metadatas: Optional list of metadatas associated with the texts.
-            index_name: Name of the Elasticsearch index to create.
-            es_url: URL of the Elasticsearch instance to connect to.
-            cloud_id: Cloud ID of the Elasticsearch instance to connect to.
-            es_user: Username to use when connecting to Elasticsearch.
-            es_password: Password to use when connecting to Elasticsearch.
-            es_api_key: API key to use when connecting to Elasticsearch.
-            client: Optional pre-existing client connection.
-                Alternatively, provide credentials (es_url, es_cloud_id, etc.).
-            vector_query_field: Optional. Name of the field
-                                to store the embedding vectors in.
-            query_field: Optional. Name of the field to store the texts in.
+                Do not provide if using a strategy
+                that doesn't require inference.
             bulk_kwargs: Optional. Additional arguments to pass to
-                        Elasticsearch bulk.
+                Elasticsearch bulk.
+            client: Optional pre-existing client connection.
+
+                Alternatively, provide credentials (`es_url`, `es_cloud_id`, etc.).
+            **kwargs: Additional keyword arguments passed to the constructor.
+
+                See `AsyncElasticsearchStore` for supported options including
+                `index_name`, `es_url`, `cloud_id`, `es_user`, `es_password`,
+                `es_api_key`, `vector_query_field`, and `query_field`.
         """
 
         index_name = kwargs.get("index_name")
@@ -934,6 +924,6 @@ class ElasticsearchStore(VectorStore):
             k1: Optional. This corresponds to the BM25 parameter, k1. Default is None,
                 which uses the default setting of Elasticsearch.
             b: Optional. This corresponds to the BM25 parameter, b. Default is None,
-               which uses the default setting of Elasticsearch.
+                which uses the default setting of Elasticsearch.
         """
         return BM25RetrievalStrategy(k1=k1, b=b)
