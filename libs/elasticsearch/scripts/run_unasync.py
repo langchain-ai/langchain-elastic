@@ -7,7 +7,7 @@ from pathlib import Path
 import unasync
 
 
-def main(check=False):
+def main(check: bool = False) -> None:
     # the list of directories that need to be processed with unasync
     # each entry has two paths:
     #   - the source path with the async sources
