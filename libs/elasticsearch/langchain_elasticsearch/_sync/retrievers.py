@@ -301,7 +301,7 @@ class ElasticsearchRetriever(BaseRetriever):
         # Create a chain that retrieves documents and then generates a response
         def format_docs(docs):
             # Format documents for the prompt
-            return "\n\n".join(doc.page_content for doc in docs)
+            return "\\n\\n".join(doc.page_content for doc in docs)
 
         system_prompt = (
             "You are an assistant for question-answering tasks. "
@@ -309,7 +309,7 @@ class ElasticsearchRetriever(BaseRetriever):
             "the question. If you don't know the answer, say that you "
             "don't know. Use three sentences maximum and keep the "
             "answer concise."
-            "\n\n"
+            "\\n\\n"
             "Context: {context}"
         )
 
