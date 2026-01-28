@@ -41,28 +41,28 @@ class ElasticsearchChatMessageHistory(BaseChatMessageHistory):
         `elastic-start-local` folder.
 
     Key init args:
-        index: str
+        - `index` (str):
             Name of the Elasticsearch index to use for storing messages.
-        session_id: str
+        - `session_id` (str):
             Arbitrary key that is used to store the messages of a single chat
             session.
-        ensure_ascii: Optional[bool]
+        - `ensure_ascii` (Optional[bool]):
             Used to escape ASCII symbols in json.dumps. Defaults to True.
 
-    Key init args — client params:
-        client: Optional[AsyncElasticsearch or Elasticsearch]
-            Pre-existing Elasticsearch connection. Either provide this OR
-            credentials.
-        es_url: Optional[str]
-            URL of the Elasticsearch instance to connect to.
-        es_cloud_id: Optional[str]
-            Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Optional[str]
-            Username to use when connecting to Elasticsearch.
-        es_api_key: Optional[str]
-            API key to use when connecting to Elasticsearch.
-        es_password: Optional[str]
-            Password to use when connecting to Elasticsearch.
+        - **Client params:**
+            - `client` (Optional[AsyncElasticsearch or Elasticsearch]):
+                Pre-existing Elasticsearch connection. Either provide this OR
+                credentials.
+            - `es_url` (Optional[str]):
+                URL of the Elasticsearch instance to connect to.
+            - `es_cloud_id` (Optional[str]):
+                Cloud ID of the Elasticsearch instance to connect to.
+            - `es_user` (Optional[str]):
+                Username to use when connecting to Elasticsearch.
+            - `es_api_key` (Optional[str]):
+                API key to use when connecting to Elasticsearch.
+            - `es_password` (Optional[str]):
+                Password to use when connecting to Elasticsearch.
 
     Instantiate:
         ```python
@@ -75,61 +75,61 @@ class ElasticsearchChatMessageHistory(BaseChatMessageHistory):
         )
         ```
 
-    Instantiate with API key (URL):
-        ```python
-        from langchain_elasticsearch import ElasticsearchChatMessageHistory
+        **Instantiate with API key (URL):**
+            ```python
+            from langchain_elasticsearch import ElasticsearchChatMessageHistory
 
-        history = ElasticsearchChatMessageHistory(
-            index="chat-history",
-            session_id="user-123",
-            es_url="http://localhost:9200",
-            es_api_key="your-api-key"
-        )
+            history = ElasticsearchChatMessageHistory(
+                index="chat-history",
+                session_id="user-123",
+                es_url="http://localhost:9200",
+                es_api_key="your-api-key"
+            )
+            ```
+
+        **Instantiate with username/password (URL):**
+            ```python
+            from langchain_elasticsearch import ElasticsearchChatMessageHistory
+
+            history = ElasticsearchChatMessageHistory(
+                index="chat-history",
+                session_id="user-123",
+                es_url="http://localhost:9200",
+                es_user="elastic",
+                es_password="password"
+            )
         ```
 
-    Instantiate with username/password (URL):
-        ```python
-        from langchain_elasticsearch import ElasticsearchChatMessageHistory
+        If you want to use a cloud hosted Elasticsearch instance, you can pass in the
+        es_cloud_id argument instead of the es_url argument.
 
-        history = ElasticsearchChatMessageHistory(
-            index="chat-history",
-            session_id="user-123",
-            es_url="http://localhost:9200",
-            es_user="elastic",
-            es_password="password"
-        )
-        ```
+        **Instantiate from cloud (with API key):**
+            ```python
+            from langchain_elasticsearch import ElasticsearchChatMessageHistory
 
-    If you want to use a cloud hosted Elasticsearch instance, you can pass in the
-    es_cloud_id argument instead of the es_url argument.
+            history = ElasticsearchChatMessageHistory(
+                index="chat-history",
+                session_id="user-123",
+                es_cloud_id="<cloud_id>",
+                es_api_key="your-api-key"
+            )
+            ```
 
-    Instantiate from cloud (with API key):
-        ```python
-        from langchain_elasticsearch import ElasticsearchChatMessageHistory
+        You can also connect to an existing Elasticsearch instance by passing in a
+        pre-existing Elasticsearch connection via the client argument.
 
-        history = ElasticsearchChatMessageHistory(
-            index="chat-history",
-            session_id="user-123",
-            es_cloud_id="<cloud_id>",
-            es_api_key="your-api-key"
-        )
-        ```
+        **Instantiate from existing connection:**
+            ```python
+            from langchain_elasticsearch import ElasticsearchChatMessageHistory
+            from elasticsearch import Elasticsearch
 
-    You can also connect to an existing Elasticsearch instance by passing in a
-    pre-existing Elasticsearch connection via the client argument.
-
-    Instantiate from existing connection:
-        ```python
-        from langchain_elasticsearch import ElasticsearchChatMessageHistory
-        from elasticsearch import Elasticsearch
-
-        client = Elasticsearch("http://localhost:9200")
-        history = ElasticsearchChatMessageHistory(
-            index="chat-history",
-            session_id="user-123",
-            client=client
-        )
-        ```
+            client = Elasticsearch("http://localhost:9200")
+            history = ElasticsearchChatMessageHistory(
+                index="chat-history",
+                session_id="user-123",
+                client=client
+            )
+            ```
 
     Add messages:
         ```python
