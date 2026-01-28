@@ -72,29 +72,29 @@ class ElasticsearchCache(BaseCache):
         `elastic-start-local` folder.
 
     Key init args:
-        index_name: str
+        - `index_name` (str):
             The name of the index or alias to use for the cache.
-        store_input: bool
+        - `store_input` (bool):
             Whether to store the LLM input (prompt) in the cache. Default True.
-        store_input_params: bool
+        - `store_input_params` (bool):
             Whether to store the LLM parameters in the cache. Default True.
-        metadata: Optional[Dict[str, Any]]
+        - `metadata` (Optional[Dict[str, Any]]):
             Additional metadata to store in the cache for filtering.
 
-    Key init args — client params:
-        client: Optional[AsyncElasticsearch or Elasticsearch]
-            Pre-existing Elasticsearch connection. Either provide this OR
-            credentials.
-        es_url: Optional[str]
-            URL of the Elasticsearch instance to connect to.
-        es_cloud_id: Optional[str]
-            Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Optional[str]
-            Username to use when connecting to Elasticsearch.
-        es_api_key: Optional[str]
-            API key to use when connecting to Elasticsearch.
-        es_password: Optional[str]
-            Password to use when connecting to Elasticsearch.
+        - **Client params:**
+            - `client` (Optional[AsyncElasticsearch or Elasticsearch]):
+                Pre-existing Elasticsearch connection. Either provide this OR
+                credentials.
+            - `es_url` (Optional[str]):
+                URL of the Elasticsearch instance to connect to.
+            - `es_cloud_id` (Optional[str]):
+                Cloud ID of the Elasticsearch instance to connect to.
+            - `es_user` (Optional[str]):
+                Username to use when connecting to Elasticsearch.
+            - `es_api_key` (Optional[str]):
+                API key to use when connecting to Elasticsearch.
+            - `es_password` (Optional[str]):
+                Password to use when connecting to Elasticsearch.
 
     Instantiate:
         ```python
@@ -333,31 +333,31 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         `elastic-start-local` folder.
 
     Key init args:
-        index_name: str
+        - `index_name` (str):
             The name of the index or alias to use for the cache.
-        store_input: bool
+        - `store_input` (bool):
             Whether to store the input text in the cache. Default True.
-        metadata: Optional[Dict[str, Any]]
+        - `metadata` (Optional[Dict[str, Any]]):
             Additional metadata to store in the cache for filtering.
-        namespace: Optional[str]
+        - `namespace` (Optional[str]):
             A namespace to organize the cache.
-        maximum_duplicates_allowed: int
+        - `maximum_duplicates_allowed` (int):
             Maximum duplicate keys permitted when using aliases. Default 1.
 
-    Key init args — client params:
-        client: Optional[AsyncElasticsearch or Elasticsearch]
-            Pre-existing Elasticsearch connection. Either provide this OR
-            credentials.
-        es_url: Optional[str]
-            URL of the Elasticsearch instance to connect to.
-        es_cloud_id: Optional[str]
-            Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Optional[str]
-            Username to use when connecting to Elasticsearch.
-        es_api_key: Optional[str]
-            API key to use when connecting to Elasticsearch.
-        es_password: Optional[str]
-            Password to use when connecting to Elasticsearch.
+        - **Client params:**
+            - `client` (Optional[AsyncElasticsearch or Elasticsearch]):
+                Pre-existing Elasticsearch connection. Either provide this OR
+                credentials.
+            - `es_url` (Optional[str]):
+                URL of the Elasticsearch instance to connect to.
+            - `es_cloud_id` (Optional[str]):
+                Cloud ID of the Elasticsearch instance to connect to.
+            - `es_user` (Optional[str]):
+                Username to use when connecting to Elasticsearch.
+            - `es_api_key` (Optional[str]):
+                API key to use when connecting to Elasticsearch.
+            - `es_password` (Optional[str]):
+                Password to use when connecting to Elasticsearch.
 
     Instantiate:
         ```python
@@ -369,39 +369,39 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         )
         ```
 
-    Instantiate with API key:
-        ```python
-        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+        **Instantiate with API key:**
+            ```python
+            from langchain_elasticsearch import ElasticsearchEmbeddingsCache
 
-        cache = ElasticsearchEmbeddingsCache(
-            index_name="embeddings-cache",
-            es_url="http://localhost:9200",
-            es_api_key="your-api-key"
-        )
-        ```
+            cache = ElasticsearchEmbeddingsCache(
+                index_name="embeddings-cache",
+                es_url="http://localhost:9200",
+                es_api_key="your-api-key"
+            )
+            ```
 
-    Instantiate from cloud:
-        ```python
-        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+        **Instantiate from cloud:**
+            ```python
+            from langchain_elasticsearch import ElasticsearchEmbeddingsCache
 
-        cache = ElasticsearchEmbeddingsCache(
-            index_name="embeddings-cache",
-            es_cloud_id="<cloud_id>",
-            es_api_key="your-api-key"
-        )
-        ```
+            cache = ElasticsearchEmbeddingsCache(
+                index_name="embeddings-cache",
+                es_cloud_id="<cloud_id>",
+                es_api_key="your-api-key"
+            )
+            ```
 
-    Instantiate from existing connection:
-        ```python
-        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
-        from elasticsearch import Elasticsearch
+        **Instantiate from existing connection:**
+            ```python
+            from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+            from elasticsearch import Elasticsearch
 
-        client = Elasticsearch("http://localhost:9200")
-        cache = ElasticsearchEmbeddingsCache(
-            index_name="embeddings-cache",
-            client=client
-        )
-        ```
+            client = Elasticsearch("http://localhost:9200")
+            cache = ElasticsearchEmbeddingsCache(
+                index_name="embeddings-cache",
+                client=client
+            )
+            ```
 
     Use with CacheBackedEmbeddings:
         ```python
