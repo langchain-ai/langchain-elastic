@@ -49,19 +49,6 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         - `input_field` (str): The name of the key for the input text field in the
           document. Defaults to 'text_field'.
 
-        - **Client params:**
-            - `client` (Optional[AsyncElasticsearch or Elasticsearch]): Pre-existing
-              Elasticsearch connection. Either provide this OR credentials.
-            - `es_url` (Optional[str]): URL of the Elasticsearch instance to connect to.
-            - `es_cloud_id` (Optional[str]): Cloud ID of the Elasticsearch instance to
-              connect to.
-            - `es_user` (Optional[str]): Username to use when connecting to
-              Elasticsearch.
-            - `es_api_key` (Optional[str]): API key to use when connecting to
-              Elasticsearch.
-            - `es_password` (Optional[str]): Password to use when connecting to
-              Elasticsearch.
-
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchEmbeddings

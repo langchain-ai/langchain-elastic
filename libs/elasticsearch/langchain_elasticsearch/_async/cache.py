@@ -75,26 +75,9 @@ class AsyncElasticsearchCache(BaseCache):
         - `index_name` (str):
             The name of the index or alias to use for the cache.
         - `store_input` (bool):
-            Whether to store the LLM input (prompt) in the cache. Default True.
+            Whether to store the LLM input (prompt) in the cache. Default is True.
         - `store_input_params` (bool):
-            Whether to store the LLM parameters in the cache. Default True.
-        - `metadata` (Optional[Dict[str, Any]]):
-            Additional metadata to store in the cache for filtering.
-
-        - **Client params:**
-            - `client` (Optional[AsyncElasticsearch or Elasticsearch]):
-                Pre-existing Elasticsearch connection. Either provide this OR
-                credentials.
-            - `es_url` (Optional[str]):
-                URL of the Elasticsearch instance to connect to.
-            - `es_cloud_id` (Optional[str]):
-                Cloud ID of the Elasticsearch instance to connect to.
-            - `es_user` (Optional[str]):
-                Username to use when connecting to Elasticsearch.
-            - `es_api_key` (Optional[str]):
-                API key to use when connecting to Elasticsearch.
-            - `es_password` (Optional[str]):
-                Password to use when connecting to Elasticsearch.
+            Whether to store the LLM parameters in the cache. Default is True.
 
     Instantiate:
         ```python
@@ -338,28 +321,9 @@ class AsyncElasticsearchEmbeddingsCache(ByteStore):
         - `index_name` (str):
             The name of the index or alias to use for the cache.
         - `store_input` (bool):
-            Whether to store the input text in the cache. Default True.
-        - `metadata` (Optional[Dict[str, Any]]):
-            Additional metadata to store in the cache for filtering.
-        - `namespace` (Optional[str]):
-            A namespace to organize the cache.
+            Whether to store the input text in the cache. Default is True.
         - `maximum_duplicates_allowed` (int):
-            Maximum duplicate keys permitted when using aliases. Default 1.
-
-        - **Client params:**
-            - `client` (Optional[AsyncElasticsearch or Elasticsearch]):
-                Pre-existing Elasticsearch connection. Either provide this OR
-                credentials.
-            - `es_url` (Optional[str]):
-                URL of the Elasticsearch instance to connect to.
-            - `es_cloud_id` (Optional[str]):
-                Cloud ID of the Elasticsearch instance to connect to.
-            - `es_user` (Optional[str]):
-                Username to use when connecting to Elasticsearch.
-            - `es_api_key` (Optional[str]):
-                API key to use when connecting to Elasticsearch.
-            - `es_password` (Optional[str]):
-                Password to use when connecting to Elasticsearch.
+            Maximum duplicate keys permitted when using aliases. Default is 1.
 
     Instantiate:
         ```python
@@ -450,12 +414,12 @@ class AsyncElasticsearchEmbeddingsCache(ByteStore):
                 cache. If it doesn't exist, an index is created according to
                 the default mapping.
             store_input (bool): Whether to store the input text in the cache.
-                Default True.
+                Default is True.
             metadata (dict, optional): Additional metadata to store in the
                 cache for filtering. Must be JSON serializable.
             namespace (str, optional): A namespace to organize the cache.
             maximum_duplicates_allowed (int): Maximum duplicate keys permitted
-                when using aliases across multiple indices. Default 1.
+                when using aliases across multiple indices. Default is 1.
             client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
                 connection. Either provide this OR credentials.
             es_url (str, optional): URL of the Elasticsearch instance.
