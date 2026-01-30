@@ -40,13 +40,6 @@ class AsyncElasticsearchChatMessageHistory(BaseChatMessageHistory):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args:
-        - `index` (str):
-            Name of the Elasticsearch index to use for storing messages.
-        - `session_id` (str):
-            Arbitrary key that is used to store the messages of a single chat
-            session.
-
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchChatMessageHistory

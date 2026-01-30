@@ -92,14 +92,6 @@ class AsyncElasticsearchStore(VectorStore):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args:
-        - `index_name`: (str): Name of the index to create.
-        - `embedding`: (Embeddings): Embedding function to use.
-        - `vector_query_field`: (str): Name of the field containing the vector query. Default is "vector".
-        - `query_field`: (str): Name of the field containing the text query. Default is "text".
-        - `strategy`: (Union[BaseRetrievalStrategy, AsyncRetrievalStrategy]):
-            Retrieval strategy to use. Default is ApproxRetrievalStrategy().
-
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchStore

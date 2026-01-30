@@ -71,14 +71,6 @@ class ElasticsearchCache(BaseCache):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args:
-        - `index_name` (str):
-            The name of the index or alias to use for the cache.
-        - `store_input` (bool):
-            Whether to store the LLM input (prompt) in the cache. Default is True.
-        - `store_input_params` (bool):
-            Whether to store the LLM parameters in the cache. Default is True.
-
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchCache
@@ -314,14 +306,6 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         Elasticsearch will be available at `http://localhost:9200`. The password
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
-
-    Key init args:
-        - `index_name` (str):
-            The name of the index or alias to use for the cache.
-        - `store_input` (bool):
-            Whether to store the input text in the cache. Default is True.
-        - `maximum_duplicates_allowed` (int):
-            Maximum duplicate keys permitted when using aliases. Default is 1.
 
     Instantiate:
         ```python

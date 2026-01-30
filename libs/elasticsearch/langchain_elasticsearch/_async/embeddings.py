@@ -43,12 +43,6 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args:
-        - `model_id` (str): The model_id of the model deployed in the Elasticsearch
-          cluster.
-        - `input_field` (str): The name of the key for the input text field in the
-          document. Defaults to 'text_field'.
-
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchEmbeddings

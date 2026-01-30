@@ -35,17 +35,6 @@ class ElasticsearchRetriever(BaseRetriever):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args:
-        - `index_name` (Union[str, Sequence[str]]):
-            The name of the index to query. Can also be a list of names.
-        - `body_func` (Callable[[str], Dict]):
-            Function that creates an Elasticsearch DSL query body
-            from a search string.
-            The returned query body must fit what you would normally send in a POST
-            request to the _search endpoint.
-            If applicable, it also includes parameters
-            like the `size` parameter etc.
-
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchRetriever
