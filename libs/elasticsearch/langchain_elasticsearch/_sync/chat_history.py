@@ -40,6 +40,27 @@ class ElasticsearchChatMessageHistory(BaseChatMessageHistory):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
+    Initialize the ElasticsearchChatMessageHistory instance.
+
+    Args:
+        index (str): Name of the Elasticsearch index to use for storing
+            messages.
+        session_id (str): Arbitrary key that is used to store the messages
+            of a single chat session.
+        ensure_ascii (bool, optional): Used to escape ASCII symbols in
+            json.dumps. Defaults to True.
+        client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+            connection. Either provide this OR credentials.
+        es_url (str, optional): URL of the Elasticsearch instance to
+            connect to.
+        es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+        es_user (str, optional): Username to use when connecting to
+            Elasticsearch.
+        es_api_key (str, optional): API key to use when connecting to
+            Elasticsearch.
+        es_password (str, optional): Password to use when connecting to
+            Elasticsearch.
+
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchChatMessageHistory
@@ -145,27 +166,6 @@ class ElasticsearchChatMessageHistory(BaseChatMessageHistory):
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
     ):
-        """Initialize the ElasticsearchChatMessageHistory instance.
-
-        Args:
-            index (str): Name of the Elasticsearch index to use for storing
-                messages.
-            session_id (str): Arbitrary key that is used to store the messages
-                of a single chat session.
-            ensure_ascii (bool, optional): Used to escape ASCII symbols in
-                json.dumps. Defaults to True.
-            client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
-                connection. Either provide this OR credentials.
-            es_url (str, optional): URL of the Elasticsearch instance to
-                connect to.
-            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
-            es_user (str, optional): Username to use when connecting to
-                Elasticsearch.
-            es_api_key (str, optional): API key to use when connecting to
-                Elasticsearch.
-            es_password (str, optional): Password to use when connecting to
-                Elasticsearch.
-        """
         self.index: str = index
         self.session_id: str = session_id
         self.ensure_ascii = ensure_ascii

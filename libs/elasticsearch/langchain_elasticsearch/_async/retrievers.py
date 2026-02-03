@@ -35,6 +35,33 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
+    Initialize the AsyncElasticsearchRetriever instance.
+
+    Args:
+        index_name (Union[str, Sequence[str]]): The name of the index to query.
+            Can also be a list of names.
+        body_func (Callable[[str], Dict]): Function that creates an Elasticsearch
+            DSL query body from a search string. The returned query body must fit
+            what you would normally send in a POST request to the _search
+            endpoint. If applicable, it also includes parameters like the size
+            parameter.
+        content_field (Optional[Union[str, Mapping[str, str]]]): The document field
+            name that contains the page content. If multiple indices are queried,
+            specify a dict {index_name: field_name} here.
+        document_mapper (Optional[Callable[[Mapping], Document]]): Function that
+            maps Elasticsearch hits to LangChain Documents. If not provided, it
+            will be automatically created based on content_field.
+        client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+            connection. Either provide this OR credentials.
+        es_url (str, optional): URL of the Elasticsearch instance to connect to.
+        es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance to
+            connect to.
+        es_user (str, optional): Username to use when connecting to Elasticsearch.
+        es_api_key (str, optional): API key to use when connecting to
+            Elasticsearch.
+        es_password (str, optional): Password to use when connecting to
+            Elasticsearch.
+
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchRetriever
@@ -322,33 +349,6 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
     ) -> None:
-        """Initialize the AsyncElasticsearchRetriever instance.
-
-        Args:
-            index_name (Union[str, Sequence[str]]): The name of the index to query.
-                Can also be a list of names.
-            body_func (Callable[[str], Dict]): Function that creates an Elasticsearch
-                DSL query body from a search string. The returned query body must fit
-                what you would normally send in a POST request to the _search
-                endpoint. If applicable, it also includes parameters like the size
-                parameter.
-            content_field (Optional[Union[str, Mapping[str, str]]]): The document field
-                name that contains the page content. If multiple indices are queried,
-                specify a dict {index_name: field_name} here.
-            document_mapper (Optional[Callable[[Mapping], Document]]): Function that
-                maps Elasticsearch hits to LangChain Documents. If not provided, it
-                will be automatically created based on content_field.
-            client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
-                connection. Either provide this OR credentials.
-            es_url (str, optional): URL of the Elasticsearch instance to connect to.
-            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance to
-                connect to.
-            es_user (str, optional): Username to use when connecting to Elasticsearch.
-            es_api_key (str, optional): API key to use when connecting to
-                Elasticsearch.
-            es_password (str, optional): Password to use when connecting to
-                Elasticsearch.
-        """
         # Create client from credentials if needed (BEFORE super().__init__)
         if client is not None:
             es_connection = client

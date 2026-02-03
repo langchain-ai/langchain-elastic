@@ -71,6 +71,26 @@ class ElasticsearchCache(BaseCache):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
+    Initialize the Elasticsearch cache store.
+
+    Args:
+        index_name (str): The name of the index or alias to use for the
+            cache. If it doesn't exist, an index is created according to
+            the default mapping.
+        store_input (bool): Whether to store the LLM input (prompt) in the
+            cache. Default True.
+        store_input_params (bool): Whether to store the LLM parameters in
+            the cache. Default True.
+        metadata (dict, optional): Additional metadata to store in the
+            cache for filtering. Must be JSON serializable.
+        client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+            connection. Either provide this OR credentials.
+        es_url (str, optional): URL of the Elasticsearch instance.
+        es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+        es_user (str, optional): Username for Elasticsearch.
+        es_api_key (str, optional): API key for Elasticsearch.
+        es_password (str, optional): Password for Elasticsearch.
+
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchCache
@@ -144,26 +164,6 @@ class ElasticsearchCache(BaseCache):
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
     ):
-        """Initialize the Elasticsearch cache store.
-
-        Args:
-            index_name (str): The name of the index or alias to use for the
-                cache. If it doesn't exist, an index is created according to
-                the default mapping.
-            store_input (bool): Whether to store the LLM input (prompt) in the
-                cache. Default True.
-            store_input_params (bool): Whether to store the LLM parameters in
-                the cache. Default True.
-            metadata (dict, optional): Additional metadata to store in the
-                cache for filtering. Must be JSON serializable.
-            client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
-                connection. Either provide this OR credentials.
-            es_url (str, optional): URL of the Elasticsearch instance.
-            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
-            es_user (str, optional): Username for Elasticsearch.
-            es_api_key (str, optional): API key for Elasticsearch.
-            es_password (str, optional): Password for Elasticsearch.
-        """
         self._index_name = index_name
         self._store_input = store_input
         self._store_input_params = store_input_params
@@ -307,6 +307,27 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
+    Initialize the Elasticsearch embeddings cache store.
+
+    Args:
+        index_name (str): The name of the index or alias to use for the
+            cache. If it doesn't exist, an index is created according to
+            the default mapping.
+        store_input (bool): Whether to store the input text in the cache.
+            Default is True.
+        metadata (dict, optional): Additional metadata to store in the
+            cache for filtering. Must be JSON serializable.
+        namespace (str, optional): A namespace to organize the cache.
+        maximum_duplicates_allowed (int): Maximum duplicate keys permitted
+            when using aliases across multiple indices. Default is 1.
+        client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+            connection. Either provide this OR credentials.
+        es_url (str, optional): URL of the Elasticsearch instance.
+        es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+        es_user (str, optional): Username for Elasticsearch.
+        es_api_key (str, optional): API key for Elasticsearch.
+        es_password (str, optional): Password for Elasticsearch.
+
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchEmbeddingsCache
@@ -389,27 +410,6 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
     ):
-        """Initialize the Elasticsearch embeddings cache store.
-
-        Args:
-            index_name (str): The name of the index or alias to use for the
-                cache. If it doesn't exist, an index is created according to
-                the default mapping.
-            store_input (bool): Whether to store the input text in the cache.
-                Default is True.
-            metadata (dict, optional): Additional metadata to store in the
-                cache for filtering. Must be JSON serializable.
-            namespace (str, optional): A namespace to organize the cache.
-            maximum_duplicates_allowed (int): Maximum duplicate keys permitted
-                when using aliases across multiple indices. Default is 1.
-            client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
-                connection. Either provide this OR credentials.
-            es_url (str, optional): URL of the Elasticsearch instance.
-            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
-            es_user (str, optional): Username for Elasticsearch.
-            es_api_key (str, optional): API key for Elasticsearch.
-            es_password (str, optional): Password for Elasticsearch.
-        """
         self._namespace = namespace
         self._maximum_duplicates_allowed = maximum_duplicates_allowed
         self._index_name = index_name

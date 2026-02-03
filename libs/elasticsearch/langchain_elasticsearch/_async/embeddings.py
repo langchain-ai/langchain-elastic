@@ -43,6 +43,25 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
+    Initialize the ElasticsearchEmbeddings instance.
+
+    Args:
+        model_id (str): The model_id of the model deployed in the Elasticsearch
+            cluster.
+        input_field (str): The name of the key for the input text field in the
+            document. Defaults to text_field.
+        client (AsyncElasticsearch or Elasticsearch, optional):
+            Pre-existing Elasticsearch connection. Either provide this OR
+            credentials.
+        es_url (str, optional): URL of the Elasticsearch instance to connect to.
+        es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+        es_user (str, optional): Username to use when connecting to
+            Elasticsearch.
+        es_api_key (str, optional): API key to use when connecting to
+            Elasticsearch.
+        es_password (str, optional): Password to use when connecting to
+            Elasticsearch.
+
     Instantiate:
         ```python
         from langchain_elasticsearch import ElasticsearchEmbeddings
@@ -147,25 +166,6 @@ class AsyncElasticsearchEmbeddings(Embeddings):
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
     ):
-        """Initialize the ElasticsearchEmbeddings instance.
-
-        Args:
-            model_id (str): The model_id of the model deployed in the Elasticsearch
-                cluster.
-            input_field (str): The name of the key for the input text field in the
-                document. Defaults to text_field.
-            client (AsyncElasticsearch or Elasticsearch, optional):
-                Pre-existing Elasticsearch connection. Either provide this OR
-                credentials.
-            es_url (str, optional): URL of the Elasticsearch instance to connect to.
-            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
-            es_user (str, optional): Username to use when connecting to
-                Elasticsearch.
-            es_api_key (str, optional): API key to use when connecting to
-                Elasticsearch.
-            es_password (str, optional): Password to use when connecting to
-                Elasticsearch.
-        """
         # Accept either client OR credentials (one required)
         if client is not None:
             es_connection = client
