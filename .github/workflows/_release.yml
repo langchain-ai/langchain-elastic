@@ -19,6 +19,9 @@ on:
         default: false
         description: "Release from a non-master branch (danger!)"
 
+permissions:
+  contents: read
+
 env:
   PYTHON_VERSION: "3.11"
   POETRY_VERSION: "1.7.1"
@@ -207,6 +210,7 @@ jobs:
       - pre-release-checks
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       # This permission is used for trusted publishing:
       # https://blog.pypi.org/posts/2023-04-20-introducing-trusted-publishers/
       #
