@@ -92,33 +92,49 @@ class ElasticsearchStore(VectorStore):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args — indexing params:
-        index_name: str
-            Name of the index to create.
-        embedding: Embeddings
-            Embedding function to use.
-        custom_index_settings: Optional[Dict[str, Any]]
-            A dictionary of custom settings for the index.
-            This can include configurations like the number of shards, number of replicas,
-            analysis settings, and other index-specific settings. If not provided, default
-            settings will be used. Note that if the same setting is provided by both the user
-            and the strategy, will raise an error.
+    Initialize the AsyncElasticsearchStore instance.
 
-    Key init args — client params:
-        client: Optional[Elasticsearch or AsyncElasticsearch]
-            Pre-existing Elasticsearch connection. Either provide this OR credentials.
-        es_url: Optional[str]
-            URL of the Elasticsearch instance to connect to.
-        es_cloud_id: Optional[str]
+    Args:
+        index_name (str): Name of the index to create.
+        embedding (Embeddings): Embedding function to use.
+        custom_index_settings (Optional[Dict[str, Any]]):
+            A dictionary of custom settings for the index.
+            This can include configurations like the number of shards,
+            number of replicas,analysis settings,
+            and other index-specific settings.
+            If not provided, default settings will be used.
+            Note that if the same setting is provided by both the user
+            and the strategy, will raise an error.
+        client (Optional[Elasticsearch or AsyncElasticsearch]):
+            Pre-existing Elasticsearch connection.
+            Either provide this OR credentials.
+        es_url (Optional[str]): URL of the Elasticsearch instance to connect to.
+        es_cloud_id (Optional[str]):
             Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Optional[str]
+        es_user (Optional[str]):
             Username to use when connecting to Elasticsearch.
-        es_password: Optional[str]
+        es_password (Optional[str]):
             Password to use when connecting to Elasticsearch.
-        es_api_key: Optional[str]
+        es_api_key (Optional[str]):
             API key to use when connecting to Elasticsearch.
-        es_params: Optional[Dict[str, Any]]
+        es_params (Optional[Dict[str, Any]]):
             Additional parameters for the Elasticsearch client.
+        num_dimensions (Optional[int]): Number of dimensions of the embeddings.
+        metadata_mappings (Optional[Dict[str, Any]]):
+            Metadata mappings for the index.
+        vector_query_field (str):
+            Name of the field containing the vector query. Default is vector.
+        query_field (str):
+            Name of the field containing the text query. Default is text.
+        distance_strategy (Optional[Literal[
+            DistanceStrategy.COSINE,
+            DistanceStrategy.DOT_PRODUCT,
+            DistanceStrategy.EUCLIDEAN_DISTANCE,
+            DistanceStrategy.MAX_INNER_PRODUCT,
+        ]]):
+            Distance strategy to use.
+        strategy (Union[BaseRetrievalStrategy, AsyncRetrievalStrategy]):
+            Retrieval strategy to use. Default is ApproxRetrievalStrategy().
 
     Instantiate:
         ```python
@@ -132,7 +148,7 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Instantiate with API key (URL):
+        **Instantiate with API key (URL):**
         ```python
         from langchain_elasticsearch import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -145,7 +161,7 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Instantiate with username/password (URL):
+        **Instantiate with username/password (URL):**
         ```python
         from langchain_elasticsearch import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -159,10 +175,10 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    If you want to use a cloud hosted Elasticsearch instance, you can pass in the
-    cloud_id argument instead of the es_url argument.
+        If you want to use a cloud hosted Elasticsearch instance, you can pass in the
+        cloud_id argument instead of the es_url argument.
 
-    Instantiate from cloud (with username/password):
+        **Instantiate from cloud (with username/password):**
         ```python
         from langchain_elasticsearch.vectorstores import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -176,7 +192,7 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Instantiate from cloud (with API key):
+        **Instantiate from cloud (with API key):**
         ```python
         from langchain_elasticsearch.vectorstores import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -189,10 +205,10 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    You can also connect to an existing Elasticsearch instance by passing in a
-    pre-existing Elasticsearch connection via the client argument.
+        You can also connect to an existing Elasticsearch instance by passing in a
+        pre-existing Elasticsearch connection via the client argument.
 
-    Instantiate from existing connection:
+        **Instantiate from existing connection:**
         ```python
         from langchain_elasticsearch.vectorstores import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -207,9 +223,9 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Class methods (afrom_texts, afrom_documents) accept the same connection options:
+        Class methods (afrom_texts, afrom_documents) accept the same connection options:
 
-    Instantiate from texts with credentials:
+        **Instantiate from texts with credentials:**
         ```python
         from langchain_elasticsearch import ElasticsearchStore
 
@@ -220,7 +236,7 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Instantiate from texts with client:
+        **Instantiate from texts with client:**
         ```python
         from langchain_elasticsearch import ElasticsearchStore
         from elasticsearch import Elasticsearch
@@ -310,7 +326,6 @@ class ElasticsearchStore(VectorStore):
         ```
 
     Use as Retriever:
-
         ```bash
         pip install "elasticsearch[vectorstore_mmr]"
         ```
