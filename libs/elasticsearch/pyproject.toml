@@ -56,7 +56,7 @@ optional = true
 [tool.poetry.group.codegen.dependencies]
 unasync = "^0.6.0"
 
-[tool.ruff]
+[tool.ruff.lint]
 select = [
   "E", # pycodestyle
   "F", # pyflakes
