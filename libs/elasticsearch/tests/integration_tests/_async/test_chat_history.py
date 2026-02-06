@@ -77,10 +77,10 @@ class TestElasticsearch:
 
         assert len(messages) == 14
         for i in range(7):
-            assert messages[i * 2]["data"]["content"] == f"This is me, the AI ({i+1})"
+            assert messages[i * 2]["data"]["content"] == f"This is me, the AI ({i + 1})"
             assert (
                 messages[i * 2 + 1]["data"]["content"]
-                == f"This is me, the human ({i+1})"
+                == f"This is me, the human ({i + 1})"
             )
 
         # remove the record from Elasticsearch, so the next test run won't pick it up
