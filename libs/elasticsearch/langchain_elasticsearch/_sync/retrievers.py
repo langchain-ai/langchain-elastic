@@ -369,13 +369,14 @@ class ElasticsearchRetriever(BaseRetriever):
         # Apply user agent
         es_connection = with_user_agent_header(es_connection, "langchain-py-r")
 
-        super().__init__(
-            client=es_connection,
-            index_name=index_name,
-            body_func=body_func,
-            content_field=content_field,
-            document_mapper=document_mapper,
-        )
+        init_kwargs: Dict[str, Any] = {
+            "client": es_connection,
+            "index_name": index_name,
+            "body_func": body_func,
+            "content_field": content_field,
+            "document_mapper": document_mapper,
+        }
+        super().__init__(**init_kwargs)
 
         # Now Pydantic has set everything, do validation
         if self.content_field is None and self.document_mapper is None:
