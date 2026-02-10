@@ -1,5 +1,16 @@
 import logging
-from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers.vectorstore import (
@@ -506,7 +517,7 @@ class AsyncElasticsearchStore(VectorStore):
 
     async def amax_marginal_relevance_search(
         self,
-        query: str,
+        query: str = "",
         k: int = 4,
         fetch_k: int = 20,
         lambda_mult: float = 0.5,
@@ -525,6 +536,8 @@ class AsyncElasticsearchStore(VectorStore):
 
         Args:
             query (str): Text to look up documents similar to.
+            query_embedding (Optional[List[float]]): Input embedding vector.
+                If given, input query string is ignored.
             k (int): Number of Documents to return. Defaults to 4.
             fetch_k (int): Number of Documents to fetch to pass to MMR algorithm.
             lambda_mult (float): Number between 0 and 1 that determines the degree
@@ -537,14 +550,21 @@ class AsyncElasticsearchStore(VectorStore):
         Returns:
             List[Document]: A list of Documents selected by maximal marginal relevance.
         """
-        if self._embedding_service is None:
-            raise ValueError(
-                "maximal marginal relevance search requires an embedding service."
-            )
+        query_embedding = cast(
+            Optional[List[float]], kwargs.pop("query_embedding", None)
+        )
+        query_for_store: Optional[str] = query if query else None
+
+        if query_for_store is None and query_embedding is None:
+            raise ValueError("specify either query or query_embedding to search")
+
+        if query_embedding is None and self._embedding_service is None:
+            raise ValueError("specify embedding_service to search with query")
 
         hits = await self._store.max_marginal_relevance_search(
             embedding_service=self._embedding_service,
-            query=query,
+            query=query_for_store,
+            query_embedding=query_embedding,
             vector_field=self.vector_query_field,
             k=k,
             num_candidates=fetch_k,
