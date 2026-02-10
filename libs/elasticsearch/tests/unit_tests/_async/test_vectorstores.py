@@ -402,6 +402,33 @@ class TestVectorStore:
         hybrid_store._store.max_marginal_relevance_search.assert_awaited_with(
             embedding_service=AsyncEmbeddingServiceAdapter(embeddings),
             query="qqq",
+            query_embedding=None,
+            vector_field="vector",
+            k=8,
+            num_candidates=19,
+            lambda_mult=0.3,
+            fields=None,
+            custom_query=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_max_marginal_relevance_search_with_query_embedding(
+        self, store: AsyncElasticsearchStore, static_hits: List[Dict]
+    ) -> None:
+        store._store.max_marginal_relevance_search = AsyncMock(  # type: ignore[assignment]
+            return_value=static_hits
+        )
+        actual = await store.amax_marginal_relevance_search(
+            query_embedding=[1.0, 2.0, 3.0],
+            k=8,
+            fetch_k=19,
+            lambda_mult=0.3,
+        )
+        assert actual == [Document("test")]
+        store._store.max_marginal_relevance_search.assert_awaited_with(
+            embedding_service=None,
+            query=None,
+            query_embedding=[1.0, 2.0, 3.0],
             vector_field="vector",
             k=8,
             num_candidates=19,
