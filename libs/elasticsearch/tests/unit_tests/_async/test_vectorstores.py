@@ -438,6 +438,15 @@ class TestVectorStore:
         )
 
     @pytest.mark.asyncio
+    async def test_max_marginal_relevance_search_requires_query_or_embedding(
+        self, store: AsyncElasticsearchStore
+    ) -> None:
+        with pytest.raises(
+            ValueError, match="specify either query or query_embedding to search"
+        ):
+            await store.amax_marginal_relevance_search()
+
+    @pytest.mark.asyncio
     async def test_elasticsearch_hybrid_scores_guard(
         self, hybrid_store: AsyncElasticsearchStore
     ) -> None:

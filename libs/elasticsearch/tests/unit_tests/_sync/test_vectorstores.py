@@ -438,6 +438,15 @@ class TestVectorStore:
         )
 
     @pytest.mark.sync
+    def test_max_marginal_relevance_search_requires_query_or_embedding(
+        self, store: ElasticsearchStore
+    ) -> None:
+        with pytest.raises(
+            ValueError, match="specify either query or query_embedding to search"
+        ):
+            store.max_marginal_relevance_search()
+
+    @pytest.mark.sync
     def test_elasticsearch_hybrid_scores_guard(
         self, hybrid_store: ElasticsearchStore
     ) -> None:
