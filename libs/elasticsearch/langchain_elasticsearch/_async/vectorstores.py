@@ -565,7 +565,6 @@ class AsyncElasticsearchStore(VectorStore):
             raise ValueError("specify embedding_service to search with query")
 
         hits = await self._store.max_marginal_relevance_search(
-            embedding_service=self._embedding_service,
             query=query_for_store,
             query_embedding=query_embedding,
             vector_field=self.vector_query_field,

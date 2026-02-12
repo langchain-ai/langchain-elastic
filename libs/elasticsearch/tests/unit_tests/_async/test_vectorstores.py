@@ -19,7 +19,7 @@ from langchain_elasticsearch._async.vectorstores import (
     _convert_retrieval_strategy,
 )
 from langchain_elasticsearch._utilities import _hits_to_docs_scores
-from langchain_elasticsearch.embeddings import AsyncEmbeddingServiceAdapter, Embeddings
+from langchain_elasticsearch.embeddings import Embeddings
 from langchain_elasticsearch.vectorstores import (
     AsyncElasticsearchStore,
     BM25RetrievalStrategy,
@@ -386,7 +386,6 @@ class TestVectorStore:
     async def test_max_marginal_relevance_search(
         self,
         hybrid_store: AsyncElasticsearchStore,
-        embeddings: Embeddings,
         static_hits: List[Dict],
     ) -> None:
         hybrid_store._store.max_marginal_relevance_search = AsyncMock(  # type: ignore[assignment]
@@ -400,7 +399,6 @@ class TestVectorStore:
         )
         assert actual == [Document("test")]
         hybrid_store._store.max_marginal_relevance_search.assert_awaited_with(
-            embedding_service=AsyncEmbeddingServiceAdapter(embeddings),
             query="qqq",
             query_embedding=None,
             vector_field="vector",
@@ -426,7 +424,6 @@ class TestVectorStore:
         )
         assert actual == [Document("test")]
         store._store.max_marginal_relevance_search.assert_awaited_with(
-            embedding_service=None,
             query=None,
             query_embedding=[1.0, 2.0, 3.0],
             vector_field="vector",
