@@ -9,7 +9,6 @@ from typing import (
     Optional,
     Tuple,
     Union,
-    cast,
 )
 
 from elasticsearch import AsyncElasticsearch
@@ -515,9 +514,10 @@ class AsyncElasticsearchStore(VectorStore):
         )
         return [doc for doc, _score in docs]
 
-    async def amax_marginal_relevance_search(
+    async def amax_marginal_relevance_search(  # type: ignore[override]
         self,
-        query: str = "",
+        query: Optional[str] = None,
+        query_embedding: Optional[List[float]] = None,
         k: int = 4,
         fetch_k: int = 20,
         lambda_mult: float = 0.5,
@@ -535,7 +535,7 @@ class AsyncElasticsearchStore(VectorStore):
             among selected documents.
 
         Args:
-            query (str): Text to look up documents similar to.
+            query (Optional[str]): Text to look up documents similar to.
             query_embedding (Optional[List[float]]): Input embedding vector.
                 If given, input query string is ignored.
             k (int): Number of Documents to return. Defaults to 4.
@@ -550,22 +550,17 @@ class AsyncElasticsearchStore(VectorStore):
         Returns:
             List[Document]: A list of Documents selected by maximal marginal relevance.
         """
-        query_embedding = cast(
-            Optional[List[float]], kwargs.pop("query_embedding", None)
-        )
-        query_for_store = query if query else None
-
         # Require at least one input, either query text or query embedding.
-        if query_for_store is None and query_embedding is None:
+        if query is None and query_embedding is None:
             raise ValueError("specify either query or query_embedding to search")
 
         # If no precomputed query embedding is provided, query text path
         # needs an embedding service to generate the query vector.
-        if query_embedding is None and self._embedding_service is None:
+        if query is not None and self._embedding_service is None:
             raise ValueError("specify embedding_service to search with query")
 
         hits = await self._store.max_marginal_relevance_search(
-            query=query_for_store,
+            query=query,
             query_embedding=query_embedding,
             vector_field=self.vector_query_field,
             k=k,
