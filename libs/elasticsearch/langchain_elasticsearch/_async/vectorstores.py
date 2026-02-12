@@ -553,7 +553,7 @@ class AsyncElasticsearchStore(VectorStore):
         query_embedding = cast(
             Optional[List[float]], kwargs.pop("query_embedding", None)
         )
-        query_for_store: Optional[str] = query if query else None
+        query_for_store = query if query else None
 
         # Require at least one input, either query text or query embedding.
         if query_for_store is None and query_embedding is None:
