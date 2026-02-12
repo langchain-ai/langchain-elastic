@@ -555,9 +555,12 @@ class ElasticsearchStore(VectorStore):
         )
         query_for_store: Optional[str] = query if query else None
 
+        # Require at least one input, either query text or query embedding.
         if query_for_store is None and query_embedding is None:
             raise ValueError("specify either query or query_embedding to search")
 
+        # If no precomputed query embedding is provided, query text path
+        # needs an embedding service to generate the query vector.
         if query_embedding is None and self._embedding_service is None:
             raise ValueError("specify embedding_service to search with query")
 
