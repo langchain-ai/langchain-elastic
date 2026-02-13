@@ -1,5 +1,15 @@
 import logging
-from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers.vectorstore import (
@@ -504,9 +514,10 @@ class AsyncElasticsearchStore(VectorStore):
         )
         return [doc for doc, _score in docs]
 
-    async def amax_marginal_relevance_search(
+    async def amax_marginal_relevance_search(  # type: ignore[override]
         self,
-        query: str,
+        query: Optional[str] = None,
+        query_embedding: Optional[List[float]] = None,
         k: int = 4,
         fetch_k: int = 20,
         lambda_mult: float = 0.5,
@@ -524,7 +535,9 @@ class AsyncElasticsearchStore(VectorStore):
             among selected documents.
 
         Args:
-            query (str): Text to look up documents similar to.
+            query (Optional[str]): Text to look up documents similar to.
+            query_embedding (Optional[List[float]]): Input embedding vector.
+                If given, input query string is ignored.
             k (int): Number of Documents to return. Defaults to 4.
             fetch_k (int): Number of Documents to fetch to pass to MMR algorithm.
             lambda_mult (float): Number between 0 and 1 that determines the degree
@@ -537,14 +550,18 @@ class AsyncElasticsearchStore(VectorStore):
         Returns:
             List[Document]: A list of Documents selected by maximal marginal relevance.
         """
-        if self._embedding_service is None:
-            raise ValueError(
-                "maximal marginal relevance search requires an embedding service."
-            )
+        # Require at least one input, either query text or query embedding.
+        if query is None and query_embedding is None:
+            raise ValueError("specify either query or query_embedding to search")
+
+        # If no precomputed query embedding is provided, query text path
+        # needs an embedding service to generate the query vector.
+        if query is not None and self._embedding_service is None:
+            raise ValueError("specify embedding_service to search with query")
 
         hits = await self._store.max_marginal_relevance_search(
-            embedding_service=self._embedding_service,
             query=query,
+            query_embedding=query_embedding,
             vector_field=self.vector_query_field,
             k=k,
             num_candidates=fetch_k,

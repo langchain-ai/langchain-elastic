@@ -19,7 +19,7 @@ from langchain_elasticsearch._async.vectorstores import (
     _convert_retrieval_strategy,
 )
 from langchain_elasticsearch._utilities import _hits_to_docs_scores
-from langchain_elasticsearch.embeddings import AsyncEmbeddingServiceAdapter, Embeddings
+from langchain_elasticsearch.embeddings import Embeddings
 from langchain_elasticsearch.vectorstores import (
     AsyncElasticsearchStore,
     BM25RetrievalStrategy,
@@ -386,7 +386,6 @@ class TestVectorStore:
     async def test_max_marginal_relevance_search(
         self,
         hybrid_store: AsyncElasticsearchStore,
-        embeddings: Embeddings,
         static_hits: List[Dict],
     ) -> None:
         hybrid_store._store.max_marginal_relevance_search = AsyncMock(  # type: ignore[assignment]
@@ -400,8 +399,8 @@ class TestVectorStore:
         )
         assert actual == [Document("test")]
         hybrid_store._store.max_marginal_relevance_search.assert_awaited_with(
-            embedding_service=AsyncEmbeddingServiceAdapter(embeddings),
             query="qqq",
+            query_embedding=None,
             vector_field="vector",
             k=8,
             num_candidates=19,
@@ -409,6 +408,40 @@ class TestVectorStore:
             fields=None,
             custom_query=None,
         )
+
+    @pytest.mark.asyncio
+    async def test_max_marginal_relevance_search_with_query_embedding(
+        self, store: AsyncElasticsearchStore, static_hits: List[Dict]
+    ) -> None:
+        store._store.max_marginal_relevance_search = AsyncMock(  # type: ignore[assignment]
+            return_value=static_hits
+        )
+        actual = await store.amax_marginal_relevance_search(
+            query_embedding=[1.0, 2.0, 3.0],
+            k=8,
+            fetch_k=19,
+            lambda_mult=0.3,
+        )
+        assert actual == [Document("test")]
+        store._store.max_marginal_relevance_search.assert_awaited_with(
+            query=None,
+            query_embedding=[1.0, 2.0, 3.0],
+            vector_field="vector",
+            k=8,
+            num_candidates=19,
+            lambda_mult=0.3,
+            fields=None,
+            custom_query=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_max_marginal_relevance_search_requires_query_or_embedding(
+        self, store: AsyncElasticsearchStore
+    ) -> None:
+        with pytest.raises(
+            ValueError, match="specify either query or query_embedding to search"
+        ):
+            await store.amax_marginal_relevance_search()
 
     @pytest.mark.asyncio
     async def test_elasticsearch_hybrid_scores_guard(
