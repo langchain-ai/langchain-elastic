@@ -602,6 +602,7 @@ class AsyncElasticsearchStore(VectorStore):
         self,
         query: str,
         k: int = 4,
+        fetch_k: int = 50,
         filter: Optional[List[dict]] = None,
         *,
         custom_query: Optional[
@@ -627,7 +628,7 @@ class AsyncElasticsearchStore(VectorStore):
             raise ValueError("scores are currently not supported in hybrid mode")
 
         hits = await self._store.search(
-            query=query, k=k, filter=filter, custom_query=custom_query
+            query=query, k=k, num_candidates=fetch_k, filter=filter, custom_query=custom_query
         )
         return _hits_to_docs_scores(
             hits=hits,
@@ -639,6 +640,7 @@ class AsyncElasticsearchStore(VectorStore):
         self,
         embedding: List[float],
         k: int = 4,
+        fetch_k: int = 50,
         filter: Optional[List[Dict]] = None,
         *,
         custom_query: Optional[
@@ -667,6 +669,7 @@ class AsyncElasticsearchStore(VectorStore):
             query=None,
             query_vector=embedding,
             k=k,
+            num_candidates=fetch_k,
             filter=filter,
             custom_query=custom_query,
         )
