@@ -1,5 +1,15 @@
 import logging
-from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers.vectorstore import (
@@ -92,33 +102,49 @@ class ElasticsearchStore(VectorStore):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args — indexing params:
-        index_name: str
-            Name of the index to create.
-        embedding: Embeddings
-            Embedding function to use.
-        custom_index_settings: Optional[Dict[str, Any]]
-            A dictionary of custom settings for the index.
-            This can include configurations like the number of shards, number of replicas,
-            analysis settings, and other index-specific settings. If not provided, default
-            settings will be used. Note that if the same setting is provided by both the user
-            and the strategy, will raise an error.
+    Initialize the AsyncElasticsearchStore instance.
 
-    Key init args — client params:
-        client: Optional[Elasticsearch or AsyncElasticsearch]
-            Pre-existing Elasticsearch connection. Either provide this OR credentials.
-        es_url: Optional[str]
-            URL of the Elasticsearch instance to connect to.
-        es_cloud_id: Optional[str]
+    Args:
+        index_name (str): Name of the index to create.
+        embedding (Embeddings): Embedding function to use.
+        custom_index_settings (Optional[Dict[str, Any]]):
+            A dictionary of custom settings for the index.
+            This can include configurations like the number of shards,
+            number of replicas,analysis settings,
+            and other index-specific settings.
+            If not provided, default settings will be used.
+            Note that if the same setting is provided by both the user
+            and the strategy, will raise an error.
+        client (Optional[Elasticsearch or AsyncElasticsearch]):
+            Pre-existing Elasticsearch connection.
+            Either provide this OR credentials.
+        es_url (Optional[str]): URL of the Elasticsearch instance to connect to.
+        es_cloud_id (Optional[str]):
             Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Optional[str]
+        es_user (Optional[str]):
             Username to use when connecting to Elasticsearch.
-        es_password: Optional[str]
+        es_password (Optional[str]):
             Password to use when connecting to Elasticsearch.
-        es_api_key: Optional[str]
+        es_api_key (Optional[str]):
             API key to use when connecting to Elasticsearch.
-        es_params: Optional[Dict[str, Any]]
+        es_params (Optional[Dict[str, Any]]):
             Additional parameters for the Elasticsearch client.
+        num_dimensions (Optional[int]): Number of dimensions of the embeddings.
+        metadata_mappings (Optional[Dict[str, Any]]):
+            Metadata mappings for the index.
+        vector_query_field (str):
+            Name of the field containing the vector query. Default is vector.
+        query_field (str):
+            Name of the field containing the text query. Default is text.
+        distance_strategy (Optional[Literal[
+            DistanceStrategy.COSINE,
+            DistanceStrategy.DOT_PRODUCT,
+            DistanceStrategy.EUCLIDEAN_DISTANCE,
+            DistanceStrategy.MAX_INNER_PRODUCT,
+        ]]):
+            Distance strategy to use.
+        strategy (Union[BaseRetrievalStrategy, AsyncRetrievalStrategy]):
+            Retrieval strategy to use. Default is ApproxRetrievalStrategy().
 
     Instantiate:
         ```python
@@ -132,7 +158,7 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Instantiate with API key (URL):
+        **Instantiate with API key (URL):**
         ```python
         from langchain_elasticsearch import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -145,7 +171,7 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Instantiate with username/password (URL):
+        **Instantiate with username/password (URL):**
         ```python
         from langchain_elasticsearch import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -159,10 +185,10 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    If you want to use a cloud hosted Elasticsearch instance, you can pass in the
-    cloud_id argument instead of the es_url argument.
+        If you want to use a cloud hosted Elasticsearch instance, you can pass in the
+        cloud_id argument instead of the es_url argument.
 
-    Instantiate from cloud (with username/password):
+        **Instantiate from cloud (with username/password):**
         ```python
         from langchain_elasticsearch.vectorstores import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -176,7 +202,7 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Instantiate from cloud (with API key):
+        **Instantiate from cloud (with API key):**
         ```python
         from langchain_elasticsearch.vectorstores import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -189,10 +215,10 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    You can also connect to an existing Elasticsearch instance by passing in a
-    pre-existing Elasticsearch connection via the client argument.
+        You can also connect to an existing Elasticsearch instance by passing in a
+        pre-existing Elasticsearch connection via the client argument.
 
-    Instantiate from existing connection:
+        **Instantiate from existing connection:**
         ```python
         from langchain_elasticsearch.vectorstores import ElasticsearchStore
         from langchain_openai import OpenAIEmbeddings
@@ -207,9 +233,9 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Class methods (afrom_texts, afrom_documents) accept the same connection options:
+        Class methods (afrom_texts, afrom_documents) accept the same connection options:
 
-    Instantiate from texts with credentials:
+        **Instantiate from texts with credentials:**
         ```python
         from langchain_elasticsearch import ElasticsearchStore
 
@@ -220,7 +246,7 @@ class ElasticsearchStore(VectorStore):
         )
         ```
 
-    Instantiate from texts with client:
+        **Instantiate from texts with client:**
         ```python
         from langchain_elasticsearch import ElasticsearchStore
         from elasticsearch import Elasticsearch
@@ -310,7 +336,6 @@ class ElasticsearchStore(VectorStore):
         ```
 
     Use as Retriever:
-
         ```bash
         pip install "elasticsearch[vectorstore_mmr]"
         ```
@@ -489,9 +514,10 @@ class ElasticsearchStore(VectorStore):
         )
         return [doc for doc, _score in docs]
 
-    def max_marginal_relevance_search(
+    def max_marginal_relevance_search(  # type: ignore[override]
         self,
-        query: str,
+        query: Optional[str] = None,
+        query_embedding: Optional[List[float]] = None,
         k: int = 4,
         fetch_k: int = 20,
         lambda_mult: float = 0.5,
@@ -509,7 +535,9 @@ class ElasticsearchStore(VectorStore):
             among selected documents.
 
         Args:
-            query (str): Text to look up documents similar to.
+            query (Optional[str]): Text to look up documents similar to.
+            query_embedding (Optional[List[float]]): Input embedding vector.
+                If given, input query string is ignored.
             k (int): Number of Documents to return. Defaults to 4.
             fetch_k (int): Number of Documents to fetch to pass to MMR algorithm.
             lambda_mult (float): Number between 0 and 1 that determines the degree
@@ -522,14 +550,18 @@ class ElasticsearchStore(VectorStore):
         Returns:
             List[Document]: A list of Documents selected by maximal marginal relevance.
         """
-        if self._embedding_service is None:
-            raise ValueError(
-                "maximal marginal relevance search requires an embedding service."
-            )
+        # Require at least one input, either query text or query embedding.
+        if query is None and query_embedding is None:
+            raise ValueError("specify either query or query_embedding to search")
+
+        # If no precomputed query embedding is provided, query text path
+        # needs an embedding service to generate the query vector.
+        if query is not None and self._embedding_service is None:
+            raise ValueError("specify embedding_service to search with query")
 
         hits = self._store.max_marginal_relevance_search(
-            embedding_service=self._embedding_service,
             query=query,
+            query_embedding=query_embedding,
             vector_field=self.vector_query_field,
             k=k,
             num_candidates=fetch_k,

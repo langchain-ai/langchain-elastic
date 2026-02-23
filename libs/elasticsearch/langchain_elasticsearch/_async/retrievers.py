@@ -35,34 +35,32 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args — query params:
-        index_name: Union[str, Sequence[str]]
-            The name of the index to query. Can also be a list of names.
-        body_func: Callable[[str], Dict]
-            Function to create an Elasticsearch DSL query body from a search string.
-            The returned query body must fit what you would normally send in a POST
-            request to the _search endpoint. If applicable, it also includes parameters
-            like the `size` parameter etc.
-        content_field: Optional[Union[str, Mapping[str, str]]]
-            The document field name that contains the page content. If multiple indices
-            are queried, specify a dict {index_name: field_name} here.
-        document_mapper: Optional[Callable[[Mapping], Document]]
-            Function to map Elasticsearch hits to LangChain Documents. If not provided,
-            will be automatically created based on content_field.
+    Initialize the AsyncElasticsearchRetriever instance.
 
-    Key init args — client params:
-        client: Optional[AsyncElasticsearch or Elasticsearch]
-            Pre-existing Elasticsearch connection. Either provide this OR credentials.
-        es_url: Optional[str]
-            URL of the Elasticsearch instance to connect to.
-        es_cloud_id: Optional[str]
-            Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Optional[str]
-            Username to use when connecting to Elasticsearch.
-        es_api_key: Optional[str]
-            API key to use when connecting to Elasticsearch.
-        es_password: Optional[str]
-            Password to use when connecting to Elasticsearch.
+    Args:
+        index_name (Union[str, Sequence[str]]): The name of the index to query.
+            Can also be a list of names.
+        body_func (Callable[[str], Dict]): Function that creates an Elasticsearch
+            DSL query body from a search string. The returned query body must fit
+            what you would normally send in a POST request to the _search
+            endpoint. If applicable, it also includes parameters like the size
+            parameter.
+        content_field (Optional[Union[str, Mapping[str, str]]]): The document field
+            name that contains the page content. If multiple indices are queried,
+            specify a dict {index_name: field_name} here.
+        document_mapper (Optional[Callable[[Mapping], Document]]): Function that
+            maps Elasticsearch hits to LangChain Documents. If not provided, it
+            will be automatically created based on content_field.
+        client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+            connection. Either provide this OR credentials.
+        es_url (str, optional): URL of the Elasticsearch instance to connect to.
+        es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance to
+            connect to.
+        es_user (str, optional): Username to use when connecting to Elasticsearch.
+        es_api_key (str, optional): API key to use when connecting to
+            Elasticsearch.
+        es_password (str, optional): Password to use when connecting to
+            Elasticsearch.
 
     Instantiate:
         ```python
@@ -79,94 +77,94 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         )
         ```
 
-    Instantiate with API key (URL):
-        ```python
-        from langchain_elasticsearch import ElasticsearchRetriever
+        **Instantiate with API key (URL):**
+            ```python
+            from langchain_elasticsearch import ElasticsearchRetriever
 
-        def body_func(query: str) -> dict:
-            return {"query": {"match": {"text": {"query": query}}}}
+            def body_func(query: str) -> dict:
+                return {"query": {"match": {"text": {"query": query}}}}
 
-        retriever = ElasticsearchRetriever(
-            index_name="langchain-demo",
-            body_func=body_func,
-            content_field="text",
-            es_url="http://localhost:9200",
-            es_api_key="your-api-key"
-        )
-        ```
+            retriever = ElasticsearchRetriever(
+                index_name="langchain-demo",
+                body_func=body_func,
+                content_field="text",
+                es_url="http://localhost:9200",
+                es_api_key="your-api-key"
+            )
+            ```
 
-    Instantiate with username/password (URL):
-        ```python
-        from langchain_elasticsearch import ElasticsearchRetriever
+        **Instantiate with username/password (URL):**
+            ```python
+            from langchain_elasticsearch import ElasticsearchRetriever
 
-        def body_func(query: str) -> dict:
-            return {"query": {"match": {"text": {"query": query}}}}
+            def body_func(query: str) -> dict:
+                return {"query": {"match": {"text": {"query": query}}}}
 
-        retriever = ElasticsearchRetriever(
-            index_name="langchain-demo",
-            body_func=body_func,
-            content_field="text",
-            es_url="http://localhost:9200",
-            es_user="elastic",
-            es_password="password"
-        )
-        ```
+            retriever = ElasticsearchRetriever(
+                index_name="langchain-demo",
+                body_func=body_func,
+                content_field="text",
+                es_url="http://localhost:9200",
+                es_user="elastic",
+                es_password="password"
+            )
+            ```
 
-    If you want to use a cloud hosted Elasticsearch instance, you can pass in the
-    es_cloud_id argument instead of the es_url argument.
+        If you want to use a cloud hosted Elasticsearch instance, you can pass in the
+        es_cloud_id argument instead of the es_url argument.
 
-    Instantiate from cloud (with username/password):
-        ```python
-        from langchain_elasticsearch import ElasticsearchRetriever
+        **Instantiate from cloud (with username/password):**
+            ```python
+            from langchain_elasticsearch import ElasticsearchRetriever
 
-        def body_func(query: str) -> dict:
-            return {"query": {"match": {"text": {"query": query}}}}
+            def body_func(query: str) -> dict:
+                return {"query": {"match": {"text": {"query": query}}}}
 
-        retriever = ElasticsearchRetriever(
-            index_name="langchain-demo",
-            body_func=body_func,
-            content_field="text",
-            es_cloud_id="<cloud_id>",
-            es_user="elastic",
-            es_password="<password>"
-        )
-        ```
+            retriever = ElasticsearchRetriever(
+                index_name="langchain-demo",
+                body_func=body_func,
+                content_field="text",
+                es_cloud_id="<cloud_id>",
+                es_user="elastic",
+                es_password="<password>"
+            )
+            ```
 
-    Instantiate from cloud (with API key):
-        ```python
-        from langchain_elasticsearch import ElasticsearchRetriever
+        **Instantiate from cloud (with API key):**
+            ```python
+            from langchain_elasticsearch import ElasticsearchRetriever
 
-        def body_func(query: str) -> dict:
-            return {"query": {"match": {"text": {"query": query}}}}
+            def body_func(query: str) -> dict:
+                return {"query": {"match": {"text": {"query": query}}}}
 
-        retriever = ElasticsearchRetriever(
-            index_name="langchain-demo",
-            body_func=body_func,
-            content_field="text",
-            es_cloud_id="<cloud_id>",
-            es_api_key="your-api-key"
-        )
-        ```
+            retriever = ElasticsearchRetriever(
+                index_name="langchain-demo",
+                body_func=body_func,
+                content_field="text",
+                es_cloud_id="<cloud_id>",
+                es_api_key="your-api-key"
+            )
+            ```
 
-    You can also connect to an existing Elasticsearch instance by passing in a
-    pre-existing Elasticsearch connection via the client argument.
+        You can also connect to an existing Elasticsearch instance by passing in a
+        pre-existing Elasticsearch connection via the client argument.
 
-    Instantiate from existing connection:
-        ```python
-        from langchain_elasticsearch import ElasticsearchRetriever
-        from elasticsearch import Elasticsearch
+        **Instantiate from existing connection:**
+            ```python
+            from langchain_elasticsearch import ElasticsearchRetriever
+            from elasticsearch import Elasticsearch
 
-        def body_func(query: str) -> dict:
-            return {"query": {"match": {"text": {"query": query}}}}
+            def body_func(query: str) -> dict:
+                return {"query": {"match": {"text": {"query": query}}}}
 
-        client = Elasticsearch("http://localhost:9200")
-        retriever = ElasticsearchRetriever(
-            index_name="langchain-demo",
-            body_func=body_func,
-            content_field="text",
-            client=client
-        )
-        ```
+            client = Elasticsearch("http://localhost:9200")
+            retriever = ElasticsearchRetriever(
+                index_name="langchain-demo",
+                body_func=body_func,
+                content_field="text",
+                client=client
+            )
+            ```
 
     Retrieve documents:
         Note: Use `invoke()` or `ainvoke()` instead of the deprecated
@@ -301,7 +299,7 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         # Create a chain that retrieves documents and then generates a response
         def format_docs(docs):
             # Format documents for the prompt
-            return "\n\n".join(doc.page_content for doc in docs)
+            return "\\n\\n".join(doc.page_content for doc in docs)
 
         system_prompt = (
             "You are an assistant for question-answering tasks. "
@@ -309,7 +307,7 @@ class AsyncElasticsearchRetriever(BaseRetriever):
             "the question. If you don't know the answer, say that you "
             "don't know. Use three sentences maximum and keep the "
             "answer concise."
-            "\n\n"
+            "\\n\\n"
             "Context: {context}"
         )
 
@@ -371,13 +369,14 @@ class AsyncElasticsearchRetriever(BaseRetriever):
         # Apply user agent
         es_connection = async_with_user_agent_header(es_connection, "langchain-py-r")
 
-        super().__init__(
-            client=es_connection,
-            index_name=index_name,
-            body_func=body_func,
-            content_field=content_field,
-            document_mapper=document_mapper,
-        )
+        init_kwargs: Dict[str, Any] = {
+            "client": es_connection,
+            "index_name": index_name,
+            "body_func": body_func,
+            "content_field": content_field,
+            "document_mapper": document_mapper,
+        }
+        super().__init__(**init_kwargs)
 
         # Now Pydantic has set everything, do validation
         if self.content_field is None and self.document_mapper is None:

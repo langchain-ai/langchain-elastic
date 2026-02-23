@@ -71,30 +71,25 @@ class ElasticsearchCache(BaseCache):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args:
-        index_name: str
-            The name of the index or alias to use for the cache.
-        store_input: bool
-            Whether to store the LLM input (prompt) in the cache. Default True.
-        store_input_params: bool
-            Whether to store the LLM parameters in the cache. Default True.
-        metadata: Optional[Dict[str, Any]]
-            Additional metadata to store in the cache for filtering.
+    Initialize the Elasticsearch cache store.
 
-    Key init args — client params:
-        client: Optional[AsyncElasticsearch or Elasticsearch]
-            Pre-existing Elasticsearch connection. Either provide this OR
-            credentials.
-        es_url: Optional[str]
-            URL of the Elasticsearch instance to connect to.
-        es_cloud_id: Optional[str]
-            Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Optional[str]
-            Username to use when connecting to Elasticsearch.
-        es_api_key: Optional[str]
-            API key to use when connecting to Elasticsearch.
-        es_password: Optional[str]
-            Password to use when connecting to Elasticsearch.
+    Args:
+        index_name (str): The name of the index or alias to use for the
+            cache. If it doesn't exist, an index is created according to
+            the default mapping.
+        store_input (bool): Whether to store the LLM input (prompt) in the
+            cache. Default True.
+        store_input_params (bool): Whether to store the LLM parameters in
+            the cache. Default True.
+        metadata (dict, optional): Additional metadata to store in the
+            cache for filtering. Must be JSON serializable.
+        client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+            connection. Either provide this OR credentials.
+        es_url (str, optional): URL of the Elasticsearch instance.
+        es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+        es_user (str, optional): Username for Elasticsearch.
+        es_api_key (str, optional): API key for Elasticsearch.
+        es_password (str, optional): Password for Elasticsearch.
 
     Instantiate:
         ```python
@@ -169,26 +164,6 @@ class ElasticsearchCache(BaseCache):
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
     ):
-        """Initialize the Elasticsearch cache store.
-
-        Args:
-            index_name (str): The name of the index or alias to use for the
-                cache. If it doesn't exist, an index is created according to
-                the default mapping.
-            store_input (bool): Whether to store the LLM input (prompt) in the
-                cache. Default True.
-            store_input_params (bool): Whether to store the LLM parameters in
-                the cache. Default True.
-            metadata (dict, optional): Additional metadata to store in the
-                cache for filtering. Must be JSON serializable.
-            client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
-                connection. Either provide this OR credentials.
-            es_url (str, optional): URL of the Elasticsearch instance.
-            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
-            es_user (str, optional): Username for Elasticsearch.
-            es_api_key (str, optional): API key for Elasticsearch.
-            es_password (str, optional): Password for Elasticsearch.
-        """
         self._index_name = index_name
         self._store_input = store_input
         self._store_input_params = store_input_params
@@ -332,32 +307,26 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         for the `elastic` user and API key are stored in the `.env` file in the
         `elastic-start-local` folder.
 
-    Key init args:
-        index_name: str
-            The name of the index or alias to use for the cache.
-        store_input: bool
-            Whether to store the input text in the cache. Default True.
-        metadata: Optional[Dict[str, Any]]
-            Additional metadata to store in the cache for filtering.
-        namespace: Optional[str]
-            A namespace to organize the cache.
-        maximum_duplicates_allowed: int
-            Maximum duplicate keys permitted when using aliases. Default 1.
+    Initialize the Elasticsearch embeddings cache store.
 
-    Key init args — client params:
-        client: Optional[AsyncElasticsearch or Elasticsearch]
-            Pre-existing Elasticsearch connection. Either provide this OR
-            credentials.
-        es_url: Optional[str]
-            URL of the Elasticsearch instance to connect to.
-        es_cloud_id: Optional[str]
-            Cloud ID of the Elasticsearch instance to connect to.
-        es_user: Optional[str]
-            Username to use when connecting to Elasticsearch.
-        es_api_key: Optional[str]
-            API key to use when connecting to Elasticsearch.
-        es_password: Optional[str]
-            Password to use when connecting to Elasticsearch.
+    Args:
+        index_name (str): The name of the index or alias to use for the
+            cache. If it doesn't exist, an index is created according to
+            the default mapping.
+        store_input (bool): Whether to store the input text in the cache.
+            Default is True.
+        metadata (dict, optional): Additional metadata to store in the
+            cache for filtering. Must be JSON serializable.
+        namespace (str, optional): A namespace to organize the cache.
+        maximum_duplicates_allowed (int): Maximum duplicate keys permitted
+            when using aliases across multiple indices. Default is 1.
+        client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
+            connection. Either provide this OR credentials.
+        es_url (str, optional): URL of the Elasticsearch instance.
+        es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
+        es_user (str, optional): Username for Elasticsearch.
+        es_api_key (str, optional): API key for Elasticsearch.
+        es_password (str, optional): Password for Elasticsearch.
 
     Instantiate:
         ```python
@@ -369,39 +338,39 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         )
         ```
 
-    Instantiate with API key:
-        ```python
-        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+        **Instantiate with API key:**
+            ```python
+            from langchain_elasticsearch import ElasticsearchEmbeddingsCache
 
-        cache = ElasticsearchEmbeddingsCache(
-            index_name="embeddings-cache",
-            es_url="http://localhost:9200",
-            es_api_key="your-api-key"
-        )
-        ```
+            cache = ElasticsearchEmbeddingsCache(
+                index_name="embeddings-cache",
+                es_url="http://localhost:9200",
+                es_api_key="your-api-key"
+            )
+            ```
 
-    Instantiate from cloud:
-        ```python
-        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+        **Instantiate from cloud:**
+            ```python
+            from langchain_elasticsearch import ElasticsearchEmbeddingsCache
 
-        cache = ElasticsearchEmbeddingsCache(
-            index_name="embeddings-cache",
-            es_cloud_id="<cloud_id>",
-            es_api_key="your-api-key"
-        )
-        ```
+            cache = ElasticsearchEmbeddingsCache(
+                index_name="embeddings-cache",
+                es_cloud_id="<cloud_id>",
+                es_api_key="your-api-key"
+            )
+            ```
 
-    Instantiate from existing connection:
-        ```python
-        from langchain_elasticsearch import ElasticsearchEmbeddingsCache
-        from elasticsearch import Elasticsearch
+        **Instantiate from existing connection:**
+            ```python
+            from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+            from elasticsearch import Elasticsearch
 
-        client = Elasticsearch("http://localhost:9200")
-        cache = ElasticsearchEmbeddingsCache(
-            index_name="embeddings-cache",
-            client=client
-        )
-        ```
+            client = Elasticsearch("http://localhost:9200")
+            cache = ElasticsearchEmbeddingsCache(
+                index_name="embeddings-cache",
+                client=client
+            )
+            ```
 
     Use with CacheBackedEmbeddings:
         ```python
@@ -441,27 +410,6 @@ class ElasticsearchEmbeddingsCache(ByteStore):
         es_api_key: Optional[str] = None,
         es_password: Optional[str] = None,
     ):
-        """Initialize the Elasticsearch embeddings cache store.
-
-        Args:
-            index_name (str): The name of the index or alias to use for the
-                cache. If it doesn't exist, an index is created according to
-                the default mapping.
-            store_input (bool): Whether to store the input text in the cache.
-                Default True.
-            metadata (dict, optional): Additional metadata to store in the
-                cache for filtering. Must be JSON serializable.
-            namespace (str, optional): A namespace to organize the cache.
-            maximum_duplicates_allowed (int): Maximum duplicate keys permitted
-                when using aliases across multiple indices. Default 1.
-            client (AsyncElasticsearch, optional): Pre-existing Elasticsearch
-                connection. Either provide this OR credentials.
-            es_url (str, optional): URL of the Elasticsearch instance.
-            es_cloud_id (str, optional): Cloud ID of the Elasticsearch instance.
-            es_user (str, optional): Username for Elasticsearch.
-            es_api_key (str, optional): API key for Elasticsearch.
-            es_password (str, optional): Password for Elasticsearch.
-        """
         self._namespace = namespace
         self._maximum_duplicates_allowed = maximum_duplicates_allowed
         self._index_name = index_name

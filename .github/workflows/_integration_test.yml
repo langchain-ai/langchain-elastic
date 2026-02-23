@@ -14,6 +14,9 @@ on:
         type: string
         description: "From which folder this pipeline executes"
 
+permissions:
+  contents: read
+
 env:
   POETRY_VERSION: "1.7.1"
 
@@ -52,7 +55,7 @@ jobs:
           --health-interval 3s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }} + Poetry ${{ env.POETRY_VERSION }}
         uses: "./.github/actions/poetry_setup"
@@ -65,6 +68,11 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: poetry install --with=test_integration,test
+
+      - name: Downgrade ES client for ES 8.x servers
+        if: startsWith(matrix.elasticsearch-version, '8.')
+        shell: bash
+        run: poetry run pip install 'elasticsearch[vectorstore_mmr]>=8.19.0,<9.0.0'
 
       - name: Run integration tests
         shell: bash

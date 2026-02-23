@@ -1,4 +1,4 @@
-from typing import Dict, Generator, Union
+from typing import Dict, Generator
 
 import pytest
 from elasticsearch.helpers import BulkIndexError
@@ -15,7 +15,7 @@ from ._test_utilities import clear_test_indices, create_es_client, read_env
 
 
 @pytest.fixture
-def es_env_fx() -> Union[dict, Generator]:
+def es_env_fx() -> Generator:
     params = read_env()
     es = create_es_client(params)
     es.options(ignore_status=404).indices.delete(index="test_index1")
@@ -262,12 +262,12 @@ def test_mget_cache_store_multiple_keys(es_env_fx: Dict) -> None:
     assert all(cached_records)
     assert len(cached_records) == 5
     assert (es_client.count(index="test_alias"))["count"] == 8
-    assert cached_records[:3] != [
-        d[1] for d in docs
-    ], "the first 3 records should be updated"
-    assert cached_records == [
-        d[1] for d in new_docs
-    ], "new records should be returned and the updated ones"
+    assert cached_records[:3] != [d[1] for d in docs], (
+        "the first 3 records should be updated"
+    )
+    assert cached_records == [d[1] for d in new_docs], (
+        "new records should be returned and the updated ones"
+    )
     assert all([r == d[1] for r, d in zip(cached_records, new_docs)])
     es_client.options(ignore_status=404).indices.delete_alias(
         index="test_index3", name="test_alias"
