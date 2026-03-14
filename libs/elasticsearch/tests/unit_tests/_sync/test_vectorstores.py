@@ -267,6 +267,7 @@ class TestVectorStore:
             query="test",
             k=7,
             fetch_k=34,
+            num_candidates=34,
             filter=[{"f": 1}],
             custom_query=self.dummy_custom_query,
         )
@@ -274,6 +275,7 @@ class TestVectorStore:
         store._store.search.assert_called_with(
             query="test",
             k=7,
+            num_candidates=34,
             filter=[{"f": 1}],
             custom_query=self.dummy_custom_query,
         )
@@ -295,6 +297,7 @@ class TestVectorStore:
             query=None,
             query_vector=[1, 2, 3],
             k=7,
+            num_candidates=34,
             filter=[{"f": 1}],
             custom_query=self.dummy_custom_query,
         )
