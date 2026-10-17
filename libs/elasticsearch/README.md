@@ -10,6 +10,10 @@ pip install -U langchain-elasticsearch
 
 ## Elasticsearch setup
 
+This package uses the Elasticsearch 8.19 Python client for compatibility with
+Elasticsearch 8 and 9 servers. The Elasticsearch 9 Python client requires a
+version 9 server and is not supported while Elasticsearch 8 remains supported.
+
 ### Elastic Cloud
 
 You need a running Elasticsearch deployment. The easiest way to start one is through [Elastic Cloud](https://cloud.elastic.co/).
@@ -39,7 +43,7 @@ The `ElasticsearchStore` class exposes Elasticsearch as a vector store.
 ```python
 from langchain_elasticsearch import ElasticsearchStore
 
-embeddings = ... # use a LangChain Embeddings class or ElasticsearchEmbeddings
+embeddings = ...  # use a LangChain Embeddings class or ElasticsearchEmbeddings
 
 vectorstore = ElasticsearchStore(
     es_cloud_id="your-cloud-id",
@@ -184,8 +188,7 @@ class SearchableElasticsearchCache(ElasticsearchCache):
 
 set_llm_cache(
     SearchableElasticsearchCache(
-       es_url="http://localhost:9200", 
-       index_name="llm-chat-cache"
+        es_url="http://localhost:9200", index_name="llm-chat-cache"
     )
 )
 ```
@@ -226,6 +229,7 @@ Similarly to the chat cache, one can subclass `ElasticsearchEmbeddingsCache` in 
 ```python
 from typing import Any, Dict, List
 from langchain_elasticsearch import ElasticsearchEmbeddingsCache
+
 
 class SearchableElasticsearchStore(ElasticsearchEmbeddingsCache):
     @property
