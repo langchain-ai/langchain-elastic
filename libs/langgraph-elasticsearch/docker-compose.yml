@@ -1,0 +1,29 @@
+version: "3.8"
+
+volumes:
+  esdata:
+    driver: local
+
+networks:
+  default:
+    name: elastic
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.2
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    environment:
+      - node.name=es01
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=elastic
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -X GET http://localhost:9200 | grep 'You Know, for Search'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
